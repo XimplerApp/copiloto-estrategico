@@ -218,6 +218,28 @@
       font-weight: 600;
     }
 
+    .btn-danger {
+      border: 1px solid #f3c6cb;
+      background: #fff5f5;
+      color: #b42318;
+      padding: 10px 14px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    .action-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .action-group .btn-light,
+    .action-group .btn-danger {
+      padding: 8px 12px;
+      font-size: 12px;
+    }
+
     .status-badge {
       display: inline-flex;
       align-items: center;
@@ -575,12 +597,12 @@
     <div class="modal-card">
       <div class="modal-header">
         <div class="modal-title">
-          <h2>Nuevo Objetivo</h2>
-          <p>Complete la información base del objetivo estratégico.</p>
+          <h2 id="modalTitleText">Nuevo Objetivo</h2>
+          <p id="modalSubtitleText">Complete la información base del objetivo estratégico.</p>
         </div>
         <div class="modal-actions">
           <button id="closeModalBtn" class="btn-secondary" type="button">Cancelar</button>
-          <button id="saveObjectiveBtn" class="btn-primary" type="button"><span>Guardar Objetivo</span><span>💾</span></button>
+          <button id="saveObjectiveBtn" class="btn-primary" type="button"><span id="saveObjectiveBtnText">Guardar Objetivo</span><span>💾</span></button>
         </div>
       </div>
 
@@ -841,7 +863,8 @@
 
     const state = {
       objectives: loadObjectives(),
-      tags: []
+      tags: [],
+      currentEditingId: null
     };
 
     const objectivesBody = document.getElementById('objectivesBody');
@@ -850,6 +873,9 @@
     const openModalBtn = document.getElementById('openModalBtn');
     const closeModalBtn = document.getElementById('closeModalBtn');
     const saveObjectiveBtn = document.getElementById('saveObjectiveBtn');
+    const saveObjectiveBtnText = document.getElementById('saveObjectiveBtnText');
+    const modalTitleText = document.getElementById('modalTitleText');
+    const modalSubtitleText = document.getElementById('modalSubtitleText');
     const objectiveForm = document.getElementById('objectiveForm');
     const searchInput = document.getElementById('searchInput');
     const statusFilter = document.getElementById('statusFilter');
@@ -957,7 +983,13 @@
           <td>${escapeHtml(obj.leader || '—')}</td>
           <td>${formatDate(obj.endDate)}</td>
           <td><span class="status-badge status-${obj.status}">${statusLabel(obj.status)}</span></td>
-          <td><button class="btn-light" type="button" data-toggle="${obj.id}">Detalles</button></td>
+          <td>
+            <div class="action-group">
+              <button class="btn-light" type="button" data-toggle="${obj.id}">Detalles</button>
+              <button class="btn-light" type="button" data-edit="${obj.id}">Editar</button>
+              <button class="btn-danger" type="button" data-delete="${obj.id}">Eliminar</button>
+            </div>
+          </td>
         `;
 
         const detailTr = document.createElement('tr');
@@ -992,6 +1024,7 @@
       });
 
       bindDetailToggles();
+      bindActionButtons();
     }
 
     function bindDetailToggles() {
@@ -1008,6 +1041,90 @@
       });
     }
 
+    function bindActionButtons() {
+      document.querySelectorAll('[data-edit]').forEach(button => {
+        button.onclick = () => editObjective(button.getAttribute('data-edit'));
+      });
+
+      document.querySelectorAll('[data-delete]').forEach(button => {
+        button.onclick = () => deleteObjective(button.getAttribute('data-delete'));
+      });
+    }
+
+    function setModalMode(isEditing = false) {
+      if (isEditing) {
+        modalTitleText.textContent = 'Editar Objetivo';
+        modalSubtitleText.textContent = 'Actualiza la información del objetivo estratégico.';
+        saveObjectiveBtnText.textContent = 'Actualizar Objetivo';
+      } else {
+        modalTitleText.textContent = 'Nuevo Objetivo';
+        modalSubtitleText.textContent = 'Complete la información base del objetivo estratégico.';
+        saveObjectiveBtnText.textContent = 'Guardar Objetivo';
+      }
+    }
+
+    function setMultiSelectValues(selectEl, values = []) {
+      Array.from(selectEl.options).forEach(option => {
+        option.selected = values.includes(option.value || option.textContent);
+      });
+    }
+
+    function editObjective(id) {
+      const objective = state.objectives.find(item => item.id === id);
+      if (!objective) return;
+
+      state.currentEditingId = id;
+      setModalMode(true);
+      objectiveForm.reset();
+      indicatorsList.innerHTML = '';
+      initiativesList.innerHTML = '';
+
+      document.getElementById('objectiveName').value = objective.name || '';
+      document.getElementById('objectiveDescription').value = objective.description || '';
+      document.getElementById('startDate').value = objective.startDate || '';
+      document.getElementById('endDate').value = objective.endDate || '';
+      document.getElementById('leader').value = objective.leader || '';
+      document.getElementById('objectiveStatus').value = objective.status || 'activo';
+
+      setMultiSelectValues(document.getElementById('involved'), objective.involved || []);
+      setMultiSelectValues(document.getElementById('areas'), objective.areas || []);
+      setMultiSelectValues(document.getElementById('linkedProjects'), objective.linkedProjects || []);
+
+      state.tags = [...(objective.tags || [])];
+      renderTags();
+
+      if (objective.indicators?.length) {
+        objective.indicators.forEach(item => addIndicatorRow(item));
+      } else {
+        addIndicatorRow();
+      }
+
+      if (objective.initiatives?.length) {
+        objective.initiatives.forEach(item => addInitiativeRow(item));
+      } else {
+        addInitiativeRow();
+      }
+
+      openModal();
+    }
+
+    function deleteObjective(id) {
+      const objective = state.objectives.find(item => item.id === id);
+      if (!objective) return;
+
+      const confirmed = window.confirm(`¿Seguro que deseas eliminar el objetivo "${objective.name}"?`);
+      if (!confirmed) return;
+
+      state.objectives = state.objectives.filter(item => item.id !== id);
+      persistObjectives();
+      renderObjectives();
+
+      if (state.currentEditingId === id) {
+        resetForm();
+        closeModal();
+      }
+    }
+
     function openModal() {
       modal.classList.add('open');
       modal.setAttribute('aria-hidden', 'false');
@@ -1019,11 +1136,16 @@
     }
 
     function resetForm() {
+      state.currentEditingId = null;
+      setModalMode(false);
       objectiveForm.reset();
       indicatorsList.innerHTML = '';
       initiativesList.innerHTML = '';
       state.tags = [];
       renderTags();
+      setMultiSelectValues(document.getElementById('involved'), []);
+      setMultiSelectValues(document.getElementById('areas'), []);
+      setMultiSelectValues(document.getElementById('linkedProjects'), []);
       addIndicatorRow();
       addInitiativeRow();
     }
@@ -1113,7 +1235,7 @@
       }
 
       const objective = {
-        id: crypto.randomUUID(),
+        id: state.currentEditingId || crypto.randomUUID(),
         name,
         description: document.getElementById('objectiveDescription').value.trim(),
         startDate: document.getElementById('startDate').value,
@@ -1128,7 +1250,13 @@
         status: document.getElementById('objectiveStatus').value
       };
 
-      state.objectives.unshift(objective);
+      if (state.currentEditingId) {
+        const index = state.objectives.findIndex(item => item.id === state.currentEditingId);
+        if (index !== -1) state.objectives[index] = objective;
+      } else {
+        state.objectives.unshift(objective);
+      }
+
       persistObjectives();
       renderObjectives();
       closeModal();
@@ -1141,8 +1269,8 @@
       return div.innerHTML;
     }
 
-    openModalBtn.addEventListener('click', openModal);
-    closeModalBtn.addEventListener('click', closeModal);
+    openModalBtn.addEventListener('click', () => { resetForm(); openModal(); });
+    closeModalBtn.addEventListener('click', () => { closeModal(); resetForm(); });
     saveObjectiveBtn.addEventListener('click', saveObjective);
     addIndicatorBtn.addEventListener('click', () => addIndicatorRow());
     addInitiativeBtn.addEventListener('click', () => addInitiativeRow());
@@ -1156,10 +1284,10 @@
     searchInput.addEventListener('input', renderObjectives);
     statusFilter.addEventListener('change', renderObjectives);
     modal.addEventListener('click', (event) => {
-      if (event.target === modal) closeModal();
+      if (event.target === modal) { closeModal(); resetForm(); }
     });
     document.addEventListener('keydown', (event) => {
-      if (event.key === 'Escape') closeModal();
+      if (event.key === 'Escape') { closeModal(); resetForm(); }
     });
 
     resetForm();
