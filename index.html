@@ -159,6 +159,22 @@
     .inline-target-wrap{display:flex;align-items:center;gap:6px}
     .meta-plan-chip{background:#f7fafc;border:1px solid var(--line-dark);border-radius:10px;padding:8px 10px;font-size:12px;color:var(--muted)}
     .activity-empty-note{font-size:13px;color:var(--muted)}
+    .section-mini-list{display:flex;flex-direction:column;gap:10px}
+    .mini-item{border:1px solid var(--line-dark);background:#fff;border-radius:12px;padding:10px 12px;font-size:13px}
+    .mini-item-head{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:4px}
+    .mini-item-title{font-weight:700}
+    .mini-item-sub{color:var(--muted);font-size:12px;line-height:1.4}
+    .check-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
+    .check-row:last-child{border-bottom:none}
+    .check-row input[type="checkbox"]{width:16px;height:16px}
+    .check-row.done .check-label{text-decoration:line-through;color:var(--muted)}
+    .check-label{flex:1;font-size:14px}
+    .inline-add.stack{display:none;flex-direction:column;gap:8px}
+    .inline-add.stack.open{display:flex}
+    .link-anchor{color:var(--blue);text-decoration:none;font-weight:700;word-break:break-all}
+    .file-upload-wrap{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+    .file-upload-wrap input[type="file"]{max-width:100%}
+    .pill-action{border:1px solid var(--line-dark);background:#fff;border-radius:999px;padding:4px 8px;font-size:11px;cursor:pointer}
     .activity-modal-form{padding:22px}
     @media (max-width:1100px){
       .filters,.grid-2,.grid-3,.grid-4,.three-col,.comment-form,.detail-grid-top,.detail-main,.form-grid{grid-template-columns:1fr}
@@ -633,8 +649,8 @@
   </template>
 
   <script>
-    const STORAGE_KEYS = ['ximpler_objetivos_demo_v5','ximpler_objetivos_demo_v4','ximpler_objetivos_demo_v3','ximpler_objetivos_demo_v1'];
-    const SAVE_KEY = 'ximpler_objetivos_demo_v5';
+    const STORAGE_KEYS = ['ximpler_objetivos_demo_v6','ximpler_objetivos_demo_v5','ximpler_objetivos_demo_v4','ximpler_objetivos_demo_v3','ximpler_objetivos_demo_v1'];
+    const SAVE_KEY = 'ximpler_objetivos_demo_v6';
 
     const sampleObjectives = [
       {
@@ -755,6 +771,23 @@
           status: act.status || 'pendiente',
           progress: Number(act.progress ?? 0)
         })),
+        reminders: Array.isArray(obj.reminders) ? obj.reminders.map(item => ({
+          text: item?.text || item?.title || '',
+          dueDate: item?.dueDate || item?.date || ''
+        })).filter(item => item.text) : [],
+        checklist: Array.isArray(obj.checklist) ? obj.checklist.map(item => ({
+          text: item?.text || item?.label || '',
+          done: Boolean(item?.done)
+        })).filter(item => item.text) : [],
+        links: Array.isArray(obj.links) ? obj.links.map(item => ({
+          title: item?.title || item?.name || item?.url || '',
+          url: item?.url || ''
+        })).filter(item => item.title || item.url) : [],
+        attachments: Array.isArray(obj.attachments) ? obj.attachments.map(item => ({
+          name: item?.name || item?.fileName || 'Archivo',
+          size: Number(item?.size || 0),
+          addedAt: item?.addedAt || item?.date || new Date().toISOString()
+        })) : [],
         tags: Array.isArray(obj.tags) ? obj.tags : [],
         areas: Array.isArray(obj.areas) ? obj.areas : [],
         linkedProjects: Array.isArray(obj.linkedProjects) ? obj.linkedProjects : [],
@@ -1021,7 +1054,7 @@
       const query = document.getElementById('searchInput').value.trim().toLowerCase();
       const status = document.getElementById('statusFilter').value;
       const filtered = state.objectives.filter(obj => {
-        const haystack = [obj.name, obj.description, obj.leader, obj.createdBy, ...(obj.tags || []), ...(obj.areas || []), ...(obj.linkedProjects || []), ...(obj.invited || [])].join(' ').toLowerCase();
+        const haystack = [obj.name, obj.description, obj.leader, obj.createdBy, ...(obj.tags || []), ...(obj.areas || []), ...(obj.linkedProjects || []), ...(obj.invited || []), ...((obj.reminders || []).map(x => x.text || '')), ...((obj.checklist || []).map(x => x.text || '')), ...((obj.links || []).flatMap(x => [x.title || '', x.url || ''])), ...((obj.attachments || []).map(x => x.name || ''))].join(' ').toLowerCase();
         return (!query || haystack.includes(query)) && (status === 'all' || obj.status === status);
       });
 
@@ -1346,6 +1379,13 @@
       return `<div class="comment-card"><div class="comment-head"><div class="comment-author">${escapeHtml(comment.author)}</div><div class="comment-date">${formatDate(comment.date)}</div></div><div class="comment-text">${escapeHtml(comment.text)}</div></div>`;
     }
 
+    function formatFileSize(size = 0){
+      const n = Number(size || 0);
+      if (n >= 1024 * 1024) return `${(n / (1024 * 1024)).toFixed(2)} MB`;
+      if (n >= 1024) return `${(n / 1024).toFixed(1)} KB`;
+      return `${n} B`;
+    }
+
     function renderDetailModal(){
       const obj = state.objectives.find(item => item.id === state.detailId);
       if (!obj){
@@ -1491,6 +1531,21 @@
 
               <div class="detail-panel">
                 <div class="right-section-title">
+                  <h3 style="margin:0">Recordatorios</h3>
+                  <button class="btn-secondary small" type="button" id="toggleReminderBoxBtn">Agregar</button>
+                </div>
+                <div class="section-mini-list">
+                  ${obj.reminders.length ? obj.reminders.map((item, index) => `<div class="mini-item"><div class="mini-item-head"><span class="mini-item-title">${escapeHtml(item.text)}</span><button class="btn-light small btn-tight" type="button" data-remove-reminder-index="${index}">Quitar</button></div><div class="mini-item-sub">${item.dueDate ? `Fecha: ${formatDate(item.dueDate)}` : 'Sin fecha'}</div></div>`).join('') : '<div class="muted">No hay recordatorios</div>'}
+                </div>
+                <div class="inline-add stack" id="inlineReminderBox">
+                  <input id="inlineReminderText" class="input" type="text" placeholder="Escribe un recordatorio" />
+                  <input id="inlineReminderDate" class="input" type="date" />
+                  <button class="btn-secondary" type="button" id="saveInlineReminderBtn">Agregar</button>
+                </div>
+              </div>
+
+              <div class="detail-panel">
+                <div class="right-section-title">
                   <h3 style="margin:0">Etiquetas</h3>
                   <div class="tag-tools"><button class="icon-btn plus-mini" type="button" id="toggleInlineTagBtn">+</button></div>
                 </div>
@@ -1500,6 +1555,52 @@
                 <div class="inline-add" id="inlineTagBox">
                   <input id="inlineTagInput" class="input" type="text" placeholder="Nueva etiqueta" />
                   <button class="btn-secondary" type="button" id="saveInlineTagBtn">Agregar</button>
+                </div>
+              </div>
+
+              <div class="detail-panel">
+                <div class="right-section-title">
+                  <h3 style="margin:0">Check List</h3>
+                  <button class="btn-secondary small" type="button" id="toggleChecklistBoxBtn">Agregar</button>
+                </div>
+                <div>
+                  ${obj.checklist.length ? obj.checklist.map((item, index) => `<div class="check-row ${item.done ? 'done' : ''}"><input type="checkbox" ${item.done ? 'checked' : ''} data-toggle-check-index="${index}" /><span class="check-label">${escapeHtml(item.text)}</span><button class="btn-light small btn-tight" type="button" data-remove-check-index="${index}">Quitar</button></div>`).join('') : '<div class="muted">Sin elementos en check list</div>'}
+                </div>
+                <div class="inline-add stack" id="inlineChecklistBox">
+                  <input id="inlineChecklistText" class="input" type="text" placeholder="Nuevo elemento" />
+                  <button class="btn-secondary" type="button" id="saveInlineChecklistBtn">Agregar</button>
+                </div>
+              </div>
+
+              <div class="detail-panel">
+                <div class="right-section-title">
+                  <h3 style="margin:0">Enlaces</h3>
+                  <button class="btn-secondary small" type="button" id="toggleLinkBoxBtn">Agregar enlace</button>
+                </div>
+                <div class="section-mini-list">
+                  ${obj.links.length ? obj.links.map((item, index) => `<div class="mini-item"><div class="mini-item-head"><a class="link-anchor" href="${escapeHtml(item.url || '#')}" target="_blank" rel="noopener noreferrer">${escapeHtml(item.title || item.url || 'Enlace')}</a><button class="btn-light small btn-tight" type="button" data-remove-link-index="${index}">Quitar</button></div><div class="mini-item-sub">${escapeHtml(item.url || '')}</div></div>`).join('') : '<div class="muted">Sin enlaces</div>'}
+                </div>
+                <div class="inline-add stack" id="inlineLinkBox">
+                  <input id="inlineLinkTitle" class="input" type="text" placeholder="Nombre del enlace" />
+                  <input id="inlineLinkUrl" class="input" type="url" placeholder="https://..." />
+                  <button class="btn-secondary" type="button" id="saveInlineLinkBtn">Agregar enlace</button>
+                </div>
+              </div>
+
+              <div class="detail-panel">
+                <div class="right-section-title">
+                  <h3 style="margin:0">Archivos Adjuntos</h3>
+                  <button class="btn-secondary small" type="button" id="toggleAttachmentBoxBtn">Adjuntar archivos</button>
+                </div>
+                <div class="section-mini-list">
+                  ${obj.attachments.length ? obj.attachments.map((item, index) => `<div class="mini-item"><div class="mini-item-head"><span class="mini-item-title">${escapeHtml(item.name)}</span><button class="btn-light small btn-tight" type="button" data-remove-attachment-index="${index}">Quitar</button></div><div class="mini-item-sub">${formatFileSize(item.size)} · ${formatDateTime(item.addedAt)}</div></div>`).join('') : '<div class="muted">Sin archivos adjuntos</div>'}
+                </div>
+                <div class="inline-add stack" id="inlineAttachmentBox">
+                  <div class="file-upload-wrap">
+                    <input id="inlineAttachmentInput" type="file" multiple />
+                    <button class="btn-secondary" type="button" id="saveInlineAttachmentBtn">Registrar</button>
+                  </div>
+                  <div class="modal-mini-subnote">Se guardará el registro del archivo (nombre, tamaño y fecha) en esta demo local.</div>
                 </div>
               </div>
 
@@ -1583,6 +1684,37 @@
       const inlineTagInput = document.getElementById('inlineTagInput');
       if (inlineTagInput) inlineTagInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addInlineTagToDetail(); } });
       detailContent.querySelectorAll('[data-remove-detail-tag]').forEach(btn => btn.onclick = () => removeDetailTag(Number(btn.dataset.removeDetailTag)));
+
+      const toggleReminderBoxBtn = document.getElementById('toggleReminderBoxBtn');
+      if (toggleReminderBoxBtn) toggleReminderBoxBtn.onclick = () => { const box = document.getElementById('inlineReminderBox'); box.classList.toggle('open'); if (box.classList.contains('open')) document.getElementById('inlineReminderText').focus(); };
+      const saveInlineReminderBtn = document.getElementById('saveInlineReminderBtn');
+      if (saveInlineReminderBtn) saveInlineReminderBtn.onclick = addReminderFromDetail;
+      const inlineReminderText = document.getElementById('inlineReminderText');
+      if (inlineReminderText) inlineReminderText.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addReminderFromDetail(); } });
+      detailContent.querySelectorAll('[data-remove-reminder-index]').forEach(btn => btn.onclick = () => removeReminderFromDetail(Number(btn.dataset.removeReminderIndex)));
+
+      const toggleChecklistBoxBtn = document.getElementById('toggleChecklistBoxBtn');
+      if (toggleChecklistBoxBtn) toggleChecklistBoxBtn.onclick = () => { const box = document.getElementById('inlineChecklistBox'); box.classList.toggle('open'); if (box.classList.contains('open')) document.getElementById('inlineChecklistText').focus(); };
+      const saveInlineChecklistBtn = document.getElementById('saveInlineChecklistBtn');
+      if (saveInlineChecklistBtn) saveInlineChecklistBtn.onclick = addChecklistItemFromDetail;
+      const inlineChecklistText = document.getElementById('inlineChecklistText');
+      if (inlineChecklistText) inlineChecklistText.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addChecklistItemFromDetail(); } });
+      detailContent.querySelectorAll('[data-toggle-check-index]').forEach(input => input.onchange = () => toggleChecklistItem(Number(input.dataset.toggleCheckIndex), input.checked));
+      detailContent.querySelectorAll('[data-remove-check-index]').forEach(btn => btn.onclick = () => removeChecklistItem(Number(btn.dataset.removeCheckIndex)));
+
+      const toggleLinkBoxBtn = document.getElementById('toggleLinkBoxBtn');
+      if (toggleLinkBoxBtn) toggleLinkBoxBtn.onclick = () => { const box = document.getElementById('inlineLinkBox'); box.classList.toggle('open'); if (box.classList.contains('open')) document.getElementById('inlineLinkTitle').focus(); };
+      const saveInlineLinkBtn = document.getElementById('saveInlineLinkBtn');
+      if (saveInlineLinkBtn) saveInlineLinkBtn.onclick = addLinkFromDetail;
+      const inlineLinkUrl = document.getElementById('inlineLinkUrl');
+      if (inlineLinkUrl) inlineLinkUrl.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addLinkFromDetail(); } });
+      detailContent.querySelectorAll('[data-remove-link-index]').forEach(btn => btn.onclick = () => removeLinkFromDetail(Number(btn.dataset.removeLinkIndex)));
+
+      const toggleAttachmentBoxBtn = document.getElementById('toggleAttachmentBoxBtn');
+      if (toggleAttachmentBoxBtn) toggleAttachmentBoxBtn.onclick = () => document.getElementById('inlineAttachmentBox').classList.toggle('open');
+      const saveInlineAttachmentBtn = document.getElementById('saveInlineAttachmentBtn');
+      if (saveInlineAttachmentBtn) saveInlineAttachmentBtn.onclick = addAttachmentsFromDetail;
+      detailContent.querySelectorAll('[data-remove-attachment-index]').forEach(btn => btn.onclick = () => removeAttachmentFromDetail(Number(btn.dataset.removeAttachmentIndex)));
     }
 
     function openValueHistoryModal(indicatorIndex){
@@ -1668,6 +1800,109 @@
       if (!obj) return;
       const removed = obj.tags.splice(index, 1)[0];
       if (removed) obj.history.unshift(`Etiqueta eliminada: ${removed}.`);
+      persistObjectives();
+      renderDetailModal();
+      renderObjectives();
+    }
+
+    function addReminderFromDetail(){
+      const obj = state.objectives.find(item => item.id === state.detailId);
+      if (!obj) return;
+      const textValue = document.getElementById('inlineReminderText').value.trim();
+      const dueDate = document.getElementById('inlineReminderDate').value;
+      if (!textValue) return alert('Escribe un recordatorio.');
+      obj.reminders.push({ text: textValue, dueDate });
+      obj.history.unshift(`Recordatorio agregado: ${textValue}.`);
+      persistObjectives();
+      renderDetailModal();
+      renderObjectives();
+    }
+
+    function removeReminderFromDetail(index){
+      const obj = state.objectives.find(item => item.id === state.detailId);
+      if (!obj) return;
+      const removed = obj.reminders.splice(index, 1)[0];
+      if (removed) obj.history.unshift(`Recordatorio eliminado: ${removed.text}.`);
+      persistObjectives();
+      renderDetailModal();
+      renderObjectives();
+    }
+
+    function addChecklistItemFromDetail(){
+      const obj = state.objectives.find(item => item.id === state.detailId);
+      if (!obj) return;
+      const textValue = document.getElementById('inlineChecklistText').value.trim();
+      if (!textValue) return alert('Escribe un elemento del check list.');
+      obj.checklist.push({ text: textValue, done: false });
+      obj.history.unshift(`Elemento agregado a check list: ${textValue}.`);
+      persistObjectives();
+      renderDetailModal();
+      renderObjectives();
+    }
+
+    function toggleChecklistItem(index, checked){
+      const obj = state.objectives.find(item => item.id === state.detailId);
+      if (!obj || !obj.checklist[index]) return;
+      obj.checklist[index].done = Boolean(checked);
+      obj.history.unshift(`Check list ${checked ? 'completado' : 'reabierto'}: ${obj.checklist[index].text}.`);
+      persistObjectives();
+      renderDetailModal();
+      renderObjectives();
+    }
+
+    function removeChecklistItem(index){
+      const obj = state.objectives.find(item => item.id === state.detailId);
+      if (!obj) return;
+      const removed = obj.checklist.splice(index, 1)[0];
+      if (removed) obj.history.unshift(`Elemento eliminado de check list: ${removed.text}.`);
+      persistObjectives();
+      renderDetailModal();
+      renderObjectives();
+    }
+
+    function addLinkFromDetail(){
+      const obj = state.objectives.find(item => item.id === state.detailId);
+      if (!obj) return;
+      const title = document.getElementById('inlineLinkTitle').value.trim();
+      const url = document.getElementById('inlineLinkUrl').value.trim();
+      if (!title && !url) return alert('Agrega un nombre o una URL.');
+      obj.links.push({ title: title || url, url });
+      obj.history.unshift(`Enlace agregado: ${title || url}.`);
+      persistObjectives();
+      renderDetailModal();
+      renderObjectives();
+    }
+
+    function removeLinkFromDetail(index){
+      const obj = state.objectives.find(item => item.id === state.detailId);
+      if (!obj) return;
+      const removed = obj.links.splice(index, 1)[0];
+      if (removed) obj.history.unshift(`Enlace eliminado: ${removed.title || removed.url}.`);
+      persistObjectives();
+      renderDetailModal();
+      renderObjectives();
+    }
+
+    function addAttachmentsFromDetail(){
+      const obj = state.objectives.find(item => item.id === state.detailId);
+      if (!obj) return;
+      const input = document.getElementById('inlineAttachmentInput');
+      const files = Array.from(input.files || []);
+      if (!files.length) return alert('Selecciona al menos un archivo.');
+      files.forEach(file => {
+        obj.attachments.push({ name: file.name, size: file.size, addedAt: new Date().toISOString() });
+      });
+      obj.history.unshift(`${files.length} archivo(s) adjuntos registrados.`);
+      persistObjectives();
+      renderDetailModal();
+      renderObjectives();
+    }
+
+    function removeAttachmentFromDetail(index){
+      const obj = state.objectives.find(item => item.id === state.detailId);
+      if (!obj) return;
+      const removed = obj.attachments.splice(index, 1)[0];
+      if (removed) obj.history.unshift(`Archivo adjunto eliminado: ${removed.name}.`);
       persistObjectives();
       renderDetailModal();
       renderObjectives();
