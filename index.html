@@ -148,6 +148,18 @@
     .history-subnote{display:block;font-size:11px;color:var(--muted);margin-top:2px}
     .hidden-indicator-note{font-size:12px;color:var(--muted);margin-bottom:10px}
     .indicator-hidden-row{background:#fbfcfe}
+    .meta-action-wrap{display:flex;align-items:center;gap:6px}
+    .activity-head-actions{display:flex;align-items:center;gap:8px}
+    .activity-header-right{display:flex;align-items:center;gap:10px}
+    .meta-plan-note{padding:0 22px 14px;color:var(--muted);font-size:13px}
+    .meta-plan-row .grid-3{align-items:end}
+    .modal-body-pad{padding:22px}
+    .modal-mini-subnote{font-size:12px;color:var(--muted);margin-top:6px}
+    .calendar-btn{font-size:13px}
+    .inline-target-wrap{display:flex;align-items:center;gap:6px}
+    .meta-plan-chip{background:#f7fafc;border:1px solid var(--line-dark);border-radius:10px;padding:8px 10px;font-size:12px;color:var(--muted)}
+    .activity-empty-note{font-size:13px;color:var(--muted)}
+    .activity-modal-form{padding:22px}
     @media (max-width:1100px){
       .filters,.grid-2,.grid-3,.grid-4,.three-col,.comment-form,.detail-grid-top,.detail-main,.form-grid{grid-template-columns:1fr}
       .col + .col,.detail-right,.detail-top-box + .detail-top-box{border-left:none;border-top:1px solid var(--line)}
@@ -445,6 +457,96 @@
     </div>
   </div>
 
+  <div id="metaPlanModal" class="modal" aria-hidden="true">
+    <div class="modal-card" style="width:min(840px,100%)">
+      <div class="modal-header">
+        <div class="modal-title">
+          <h2>Planear Metas</h2>
+          <p id="metaPlanSubtitle">Indicador: —</p>
+        </div>
+        <div class="modal-actions">
+          <button id="closeMetaPlanBtn" class="btn-secondary" type="button">Cancelar</button>
+          <button id="saveMetaPlanBtn" class="btn-primary" type="button"><span>Guardar Planeación</span><span>💾</span></button>
+        </div>
+      </div>
+      <div class="meta-plan-note">Define metas futuras por fecha. Cuando llegue la fecha vigente, la meta se cargará automáticamente para el cálculo.</div>
+      <div class="modal-body-pad">
+        <div id="metaPlanRows" class="repeat-list"></div>
+        <div style="margin-top:14px">
+          <button id="addMetaPlanRowBtn" class="btn-secondary" type="button">Agregar fila</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="activityModal" class="modal" aria-hidden="true">
+    <div class="modal-card" style="width:min(760px,100%)">
+      <div class="modal-header">
+        <div class="modal-title">
+          <h2 id="activityModalTitle">Nueva Actividad</h2>
+          <p id="activityModalSubtitle">Agrega o edita una actividad desde la tarjeta del objetivo.</p>
+        </div>
+        <div class="modal-actions">
+          <button id="closeActivityBtn" class="btn-secondary" type="button">Cancelar</button>
+          <button id="saveActivityBtn" class="btn-primary" type="button"><span id="saveActivityBtnLabel">Guardar Actividad</span><span>💾</span></button>
+        </div>
+      </div>
+      <form id="activityModalForm" class="activity-modal-form">
+        <div class="grid-2">
+          <div class="field">
+            <label class="required" for="modalActivityName">Actividad</label>
+            <input id="modalActivityName" class="input" type="text" placeholder="Ej. Seguimiento a cartera crítica" />
+          </div>
+          <div class="field">
+            <label for="modalActivityOwner">Responsable</label>
+            <input id="modalActivityOwner" class="input" type="text" placeholder="Responsable" />
+          </div>
+        </div>
+        <div class="grid-3">
+          <div class="field">
+            <label for="modalActivityDate">Fecha compromiso</label>
+            <input id="modalActivityDate" class="input" type="date" />
+          </div>
+          <div class="field">
+            <label for="modalActivityStatus">Estatus</label>
+            <select id="modalActivityStatus" class="select">
+              <option value="pendiente">Pendiente</option>
+              <option value="en progreso" selected>En progreso</option>
+              <option value="terminada">Terminada</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="modalActivityProgress">Avance (%)</label>
+            <input id="modalActivityProgress" class="input" type="number" min="0" max="100" step="1" placeholder="0" />
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <template id="metaPlanRowTemplate">
+    <div class="repeat-item meta-plan-row">
+      <button class="remove-row" type="button">Eliminar</button>
+      <div class="grid-3">
+        <div class="field">
+          <label>Frecuencia</label>
+          <select class="select meta-frequency">
+            <option value="Quincenal">Quincenal</option>
+            <option value="Mensual" selected>Mensual</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Fecha planeada</label>
+          <input class="input meta-date" type="date" />
+        </div>
+        <div class="field">
+          <label>Meta planeada</label>
+          <input class="input meta-quantity" type="number" step="0.01" placeholder="0" />
+        </div>
+      </div>
+    </div>
+  </template>
+
   <template id="indicatorTemplate">
     <div class="repeat-item indicator-item">
       <button class="remove-row" type="button">Eliminar</button>
@@ -531,8 +633,8 @@
   </template>
 
   <script>
-    const STORAGE_KEYS = ['ximpler_objetivos_demo_v4','ximpler_objetivos_demo_v3','ximpler_objetivos_demo_v1'];
-    const SAVE_KEY = 'ximpler_objetivos_demo_v4';
+    const STORAGE_KEYS = ['ximpler_objetivos_demo_v5','ximpler_objetivos_demo_v4','ximpler_objetivos_demo_v3','ximpler_objetivos_demo_v1'];
+    const SAVE_KEY = 'ximpler_objetivos_demo_v5';
 
     const sampleObjectives = [
       {
@@ -579,7 +681,7 @@
       }
     ];
 
-    const state = { objectives: loadObjectives(), formTags: [], editingId: null, detailId: null, detailTab: 'comments', detailIndicatorView: 'active', indicatorModalMode: 'create', editingIndicatorIndex: null, valueHistoryModalIndicatorIndex: null };
+    const state = { objectives: loadObjectives(), formTags: [], editingId: null, detailId: null, detailTab: 'comments', detailIndicatorView: 'active', indicatorModalMode: 'create', editingIndicatorIndex: null, valueHistoryModalIndicatorIndex: null, metaPlanIndicatorIndex: null, activityModalMode: 'create', editingActivityIndex: null };
     const objectivesBody = document.getElementById('objectivesBody');
     const emptyState = document.getElementById('emptyState');
     const formModal = document.getElementById('formModal');
@@ -594,6 +696,10 @@
     const indicatorModalForm = document.getElementById('indicatorModalForm');
     const valueHistoryModal = document.getElementById('valueHistoryModal');
     const valueHistoryContent = document.getElementById('valueHistoryContent');
+    const metaPlanModal = document.getElementById('metaPlanModal');
+    const metaPlanRows = document.getElementById('metaPlanRows');
+    const activityModal = document.getElementById('activityModal');
+    const activityModalForm = document.getElementById('activityModalForm');
 
     function normalizeComment(comment){
       if (typeof comment === 'string') return { author:'Sistema', text:comment, date:new Date().toISOString().slice(0,10) };
@@ -606,6 +712,14 @@
         timestamp: entry?.timestamp || entry?.date || new Date().toISOString(),
         value: Number(entry?.value ?? fallbackValue ?? 0),
         actor: entry?.actor || entry?.updatedBy || 'Sistema'
+      };
+    }
+
+    function normalizeMetaPlanEntry(entry, fallbackQuantity = 0){
+      return {
+        frequency: entry?.frequency || 'Mensual',
+        plannedDate: entry?.plannedDate || entry?.date || '',
+        quantity: Number(entry?.quantity ?? entry?.target ?? fallbackQuantity ?? 0)
       };
     }
 
@@ -631,7 +745,8 @@
           frequency: ind.frequency || 'Mensual',
           owner: ind.owner || '',
           hidden: Boolean(ind.hidden),
-          valueHistory: Array.isArray(ind.valueHistory) ? ind.valueHistory.map(entry => normalizeValueHistoryEntry(entry, ind.current ?? 0)) : []
+          valueHistory: Array.isArray(ind.valueHistory) ? ind.valueHistory.map(entry => normalizeValueHistoryEntry(entry, ind.current ?? 0)) : [],
+          metaPlan: Array.isArray(ind.metaPlan) ? ind.metaPlan.map(entry => normalizeMetaPlanEntry(entry, ind.target ?? 0)) : []
         })),
         activities: activities.map(act => ({
           name: act.name || '',
@@ -665,10 +780,22 @@
     function formatDate(dateString){ if (!dateString) return '—'; const date = new Date(dateString + 'T00:00:00'); return new Intl.DateTimeFormat('es-MX', { day:'2-digit', month:'short', year:'numeric' }).format(date); }
     function statusLabel(status){ return ({activo:'Activo', en_riesgo:'En riesgo', pausado:'Pausado', cumplido:'Cumplido'})[status] || status; }
     function getProgressColor(value){ if (value >= 80) return 'var(--green)'; if (value >= 50) return 'var(--yellow)'; return 'var(--red)'; }
+    function getEffectiveTarget(indicator = {}, referenceDate = new Date()){
+      const baseTarget = Number(indicator.target ?? 0);
+      const plans = Array.isArray(indicator.metaPlan)
+        ? indicator.metaPlan.filter(item => item?.plannedDate).sort((a, b) => String(a.plannedDate).localeCompare(String(b.plannedDate)))
+        : [];
+      if (!plans.length) return baseTarget;
+      const currentDate = referenceDate instanceof Date ? referenceDate : new Date(referenceDate);
+      const currentKey = currentDate.toISOString().slice(0, 10);
+      const applicable = plans.filter(item => item.plannedDate <= currentKey);
+      if (!applicable.length) return baseTarget;
+      return Number(applicable[applicable.length - 1].quantity ?? baseTarget);
+    }
     function calculateIndicatorAdvance(indicator = {}, allowNegative = true){
       const action = String(indicator.action || 'Incrementar').toLowerCase();
       const initial = Number(indicator.initialValue ?? 0);
-      const target = Number(indicator.target ?? 0);
+      const target = Number(getEffectiveTarget(indicator) ?? indicator.target ?? 0);
       const current = Number(indicator.current ?? 0);
 
       const normalizeProgress = (value) => {
@@ -684,10 +811,9 @@
       }
 
       if (action === 'mantener') {
-        if (target === 0) return current === 0 ? 100 : (allowNegative ? -100 : 0);
-        const deviation = Math.abs(current - target);
-        const toleranceBase = Math.abs(target) || 1;
-        return normalizeProgress((1 - (deviation / toleranceBase)) * 100);
+        if (current === target) return 100;
+        const toleranceBase = Math.abs(initial) || Math.abs(target) || 1;
+        return normalizeProgress((-Math.abs(current - target) / toleranceBase) * 100);
       }
 
       const totalGrowthNeeded = target - initial;
@@ -991,7 +1117,8 @@
         frequency: document.getElementById('modalIndicatorFrequency').value,
         owner: document.getElementById('modalIndicatorOwner').value.trim(),
         hidden: false,
-        valueHistory: []
+        valueHistory: [],
+        metaPlan: []
       };
 
       if (state.indicatorModalMode === 'edit' && state.editingIndicatorIndex !== null && obj.indicators[state.editingIndicatorIndex]) {
@@ -1000,6 +1127,7 @@
         const original = obj.indicators[state.editingIndicatorIndex];
         indicator.hidden = Boolean(original.hidden);
         indicator.valueHistory = Array.isArray(original.valueHistory) ? [...original.valueHistory] : [];
+        indicator.metaPlan = Array.isArray(original.metaPlan) ? [...original.metaPlan] : [];
         if (Number(original.current || 0) !== Number(indicator.current || 0)) {
           indicator.valueHistory.unshift({ timestamp: new Date().toISOString(), value: Number(indicator.current || 0), actor });
         }
@@ -1065,6 +1193,133 @@
       addHistoryEntry(obj, `Indicador "${obj.indicators[indicatorIndex].name}" recuperado por ${actor} el ${formatDateTime()}.`);
       state.detailIndicatorView = 'active';
       persistObjectives();
+      renderDetailModal();
+      renderObjectives();
+    }
+
+    function resetMetaPlanModal(){
+      metaPlanRows.innerHTML = '';
+      state.metaPlanIndicatorIndex = null;
+      document.getElementById('metaPlanSubtitle').textContent = 'Indicador: —';
+    }
+
+    function addMetaPlanRow(data = {}){
+      const tpl = document.getElementById('metaPlanRowTemplate');
+      const node = tpl.content.firstElementChild.cloneNode(true);
+      node.querySelector('.meta-frequency').value = data.frequency || 'Mensual';
+      node.querySelector('.meta-date').value = data.plannedDate || '';
+      node.querySelector('.meta-quantity').value = data.quantity ?? '';
+      node.querySelector('.remove-row').onclick = () => node.remove();
+      metaPlanRows.appendChild(node);
+    }
+
+    function collectMetaPlanRows(){
+      return Array.from(document.querySelectorAll('.meta-plan-row')).map(item => ({
+        frequency: item.querySelector('.meta-frequency').value,
+        plannedDate: item.querySelector('.meta-date').value,
+        quantity: Number(item.querySelector('.meta-quantity').value || 0)
+      })).filter(item => item.plannedDate).sort((a, b) => String(a.plannedDate).localeCompare(String(b.plannedDate)));
+    }
+
+    function openMetaPlanModal(indicatorIndex){
+      const obj = state.objectives.find(item => item.id === state.detailId);
+      const indicator = obj?.indicators?.[indicatorIndex];
+      if (!indicator) return;
+      resetMetaPlanModal();
+      state.metaPlanIndicatorIndex = indicatorIndex;
+      document.getElementById('metaPlanSubtitle').textContent = `Indicador: ${indicator.name} · Meta base: ${indicator.target ?? 0}`;
+      const plans = Array.isArray(indicator.metaPlan) ? indicator.metaPlan : [];
+      if (plans.length) plans.forEach(addMetaPlanRow);
+      else addMetaPlanRow({ frequency: indicator.frequency || 'Mensual', quantity: indicator.target ?? 0 });
+      metaPlanModal.classList.add('open');
+      metaPlanModal.setAttribute('aria-hidden', 'false');
+    }
+
+    function closeMetaPlanModal(){
+      metaPlanModal.classList.remove('open');
+      metaPlanModal.setAttribute('aria-hidden', 'true');
+      resetMetaPlanModal();
+    }
+
+    function saveMetaPlanFromModal(){
+      const obj = state.objectives.find(item => item.id === state.detailId);
+      const indicator = obj?.indicators?.[state.metaPlanIndicatorIndex];
+      if (!indicator) return;
+      const actor = askActionUser(obj.leader);
+      if (!actor) return;
+      indicator.metaPlan = collectMetaPlanRows();
+      addHistoryEntry(obj, `Planeación de metas del indicador "${indicator.name}" actualizada por ${actor} el ${formatDateTime()}.`);
+      persistObjectives();
+      closeMetaPlanModal();
+      renderDetailModal();
+      renderObjectives();
+    }
+
+    function resetActivityModal(){
+      activityModalForm.reset();
+      state.activityModalMode = 'create';
+      state.editingActivityIndex = null;
+      const obj = state.objectives.find(item => item.id === state.detailId);
+      if (obj?.leader) document.getElementById('modalActivityOwner').value = obj.leader;
+      document.getElementById('modalActivityStatus').value = 'en progreso';
+      document.getElementById('activityModalTitle').textContent = 'Nueva Actividad';
+      document.getElementById('activityModalSubtitle').textContent = 'Agrega o edita una actividad desde la tarjeta del objetivo.';
+      document.getElementById('saveActivityBtnLabel').textContent = 'Guardar Actividad';
+    }
+
+    function openActivityModal(mode = 'create', activityIndex = null){
+      resetActivityModal();
+      state.activityModalMode = mode;
+      state.editingActivityIndex = activityIndex;
+      const obj = state.objectives.find(item => item.id === state.detailId);
+      if (mode === 'edit' && obj && activityIndex !== null && obj.activities[activityIndex]) {
+        const activity = obj.activities[activityIndex];
+        document.getElementById('activityModalTitle').textContent = 'Editar Actividad';
+        document.getElementById('activityModalSubtitle').textContent = 'Actualiza la información de la actividad seleccionada.';
+        document.getElementById('saveActivityBtnLabel').textContent = 'Actualizar Actividad';
+        document.getElementById('modalActivityName').value = activity.name || '';
+        document.getElementById('modalActivityOwner').value = activity.owner || '';
+        document.getElementById('modalActivityDate').value = activity.dueDate || '';
+        document.getElementById('modalActivityStatus').value = activity.status || 'en progreso';
+        document.getElementById('modalActivityProgress').value = activity.progress ?? 0;
+      }
+      activityModal.classList.add('open');
+      activityModal.setAttribute('aria-hidden', 'false');
+      document.getElementById('modalActivityName').focus();
+    }
+
+    function closeActivityModal(){
+      activityModal.classList.remove('open');
+      activityModal.setAttribute('aria-hidden', 'true');
+      resetActivityModal();
+    }
+
+    function saveActivityFromModal(){
+      const obj = state.objectives.find(item => item.id === state.detailId);
+      if (!obj) return;
+      const name = document.getElementById('modalActivityName').value.trim();
+      if (!name) return alert('Escribe el nombre de la actividad.');
+      const actor = askActionUser(obj.leader);
+      if (!actor) return;
+
+      const activity = {
+        name,
+        owner: document.getElementById('modalActivityOwner').value.trim(),
+        dueDate: document.getElementById('modalActivityDate').value,
+        status: document.getElementById('modalActivityStatus').value,
+        progress: Number(document.getElementById('modalActivityProgress').value || 0)
+      };
+
+      if (state.activityModalMode === 'edit' && state.editingActivityIndex !== null && obj.activities[state.editingActivityIndex]) {
+        obj.activities[state.editingActivityIndex] = activity;
+        addHistoryEntry(obj, `Actividad "${activity.name}" actualizada por ${actor} el ${formatDateTime()}.`);
+      } else {
+        obj.activities.push(activity);
+        addHistoryEntry(obj, `Actividad "${activity.name}" agregada por ${actor} el ${formatDateTime()}.`);
+      }
+
+      persistObjectives();
+      closeActivityModal();
       renderDetailModal();
       renderObjectives();
     }
@@ -1179,14 +1434,16 @@
                           return `<tr><td colspan="9" class="muted">${state.detailIndicatorView === 'hidden' ? 'No hay indicadores ocultos.' : 'Sin indicadores capturados.'}</td></tr>`;
                         }
                         return source.map(ind => {
-                          const advance = calculateIndicatorAdvance(ind);
+                          const effectiveTarget = getEffectiveTarget(ind);
+                          const advance = calculateIndicatorAdvance({ ...ind, target: effectiveTarget });
+                          const targetCell = `<div class="inline-target-wrap"><span>${escapeHtml(effectiveTarget ?? '—')}</span><button class="view-history-btn calendar-btn" type="button" title="Planear metas" data-plan-meta-index="${ind._index}">📅</button></div>`;
                           const currentCell = state.detailIndicatorView === 'hidden'
                             ? `<div class="inline-current-wrap"><span>${escapeHtml(ind.current ?? '—')}</span><button class="view-history-btn" type="button" title="Ver historial" data-view-history-index="${ind._index}">👁</button></div>`
                             : `<div class="inline-current-wrap"><input class="inline-number-input" type="number" step="0.01" value="${escapeHtml(ind.current ?? 0)}" data-update-current-index="${ind._index}" /><button class="view-history-btn" type="button" title="Ver historial" data-view-history-index="${ind._index}">👁</button></div>`;
                           const actionsCell = state.detailIndicatorView === 'hidden'
                             ? `<button class="btn-secondary small" type="button" data-recover-indicator-index="${ind._index}">Recuperar</button>`
                             : `<div class="indicator-actions-inline"><button class="btn-secondary small btn-tight" type="button" data-edit-indicator-index="${ind._index}">Editar</button><button class="btn-light small btn-tight" type="button" data-hide-indicator-index="${ind._index}">Ocultar</button></div>`;
-                          return `<tr class="${ind.hidden ? 'indicator-hidden-row' : ''}"><td>${escapeHtml(ind.name)}</td><td>${escapeHtml(ind.action || '—')}</td><td>${escapeHtml(ind.unit || '—')}</td><td>${escapeHtml(ind.initialValue ?? '—')}</td><td>${escapeHtml(ind.target ?? '—')}</td><td>${currentCell}</td><td>${advance}%</td><td>${escapeHtml(ind.owner || '—')}</td><td>${actionsCell}</td></tr>`;
+                          return `<tr class="${ind.hidden ? 'indicator-hidden-row' : ''}"><td>${escapeHtml(ind.name)}</td><td>${escapeHtml(ind.action || '—')}</td><td>${escapeHtml(ind.unit || '—')}</td><td>${escapeHtml(ind.initialValue ?? '—')}</td><td>${targetCell}</td><td>${currentCell}</td><td>${advance}%</td><td>${escapeHtml(ind.owner || '—')}</td><td>${actionsCell}</td></tr>`;
                         }).join('');
                       })()}
                     </tbody>
@@ -1223,9 +1480,12 @@
 
             <div class="detail-right">
               <div class="detail-panel">
-                <div class="right-section-title"><h3 style="margin:0">Agrega Actividades</h3></div>
+                <div class="right-section-title">
+                  <h3 style="margin:0">Agrega Actividades</h3>
+                  <button class="btn-secondary small" type="button" id="detailAddActivityBtn">Agregar +</button>
+                </div>
                 <div class="activity-list-scroll">
-                  ${obj.activities.length ? obj.activities.map(item => `<div class="activity-card"><div class="head"><span>${escapeHtml(item.name)}</span><span>${Number(item.progress || 0)}%</span></div><div class="tiny-progress"><div style="width:${Number(item.progress || 0)}%; background:${getProgressColor(Number(item.progress || 0))};"></div></div><div class="activity-meta"><div><strong>Responsable:</strong> ${escapeHtml(item.owner || '—')}</div><div><strong>Estatus:</strong> ${escapeHtml(item.status || '—')}</div><div><strong>Fecha:</strong> ${formatDate(item.dueDate)}</div></div></div>`).join('') : '<div class="simple-card muted">Sin actividades registradas.</div>'}
+                  ${obj.activities.length ? obj.activities.map((item, index) => `<div class="activity-card"><div class="head"><span>${escapeHtml(item.name)}</span><div class="activity-header-right"><span>${Number(item.progress || 0)}%</span><button class="btn-secondary small btn-tight" type="button" data-edit-activity-index="${index}">Editar</button></div></div><div class="tiny-progress"><div style="width:${Number(item.progress || 0)}%; background:${getProgressColor(Number(item.progress || 0))};"></div></div><div class="activity-meta"><div><strong>Responsable:</strong> ${escapeHtml(item.owner || '—')}</div><div><strong>Estatus:</strong> ${escapeHtml(item.status || '—')}</div><div><strong>Fecha:</strong> ${formatDate(item.dueDate)}</div></div></div>`).join('') : '<div class="simple-card muted">Sin actividades registradas.</div>'}
                 </div>
               </div>
 
@@ -1291,6 +1551,10 @@
         btn.onclick = () => openValueHistoryModal(Number(btn.dataset.viewHistoryIndex));
       });
 
+      detailContent.querySelectorAll('[data-plan-meta-index]').forEach(btn => {
+        btn.onclick = () => openMetaPlanModal(Number(btn.dataset.planMetaIndex));
+      });
+
       detailContent.querySelectorAll('[data-edit-indicator-index]').forEach(btn => {
         btn.onclick = () => openIndicatorModal('edit', Number(btn.dataset.editIndicatorIndex));
       });
@@ -1301,6 +1565,13 @@
 
       detailContent.querySelectorAll('[data-recover-indicator-index]').forEach(btn => {
         btn.onclick = () => recoverIndicator(Number(btn.dataset.recoverIndicatorIndex));
+      });
+
+      const detailAddActivityBtn = document.getElementById('detailAddActivityBtn');
+      if (detailAddActivityBtn) detailAddActivityBtn.onclick = () => openActivityModal('create');
+
+      detailContent.querySelectorAll('[data-edit-activity-index]').forEach(btn => {
+        btn.onclick = () => openActivityModal('edit', Number(btn.dataset.editActivityIndex));
       });
 
       const addCommentBtn = document.getElementById('addCommentBtn');
@@ -1411,16 +1682,23 @@
     document.getElementById('closeIndicatorBtn').addEventListener('click', closeIndicatorModal);
     document.getElementById('saveIndicatorBtn').addEventListener('click', saveIndicatorFromModal);
     document.getElementById('closeValueHistoryBtn').addEventListener('click', closeValueHistoryModal);
+    document.getElementById('closeMetaPlanBtn').addEventListener('click', closeMetaPlanModal);
+    document.getElementById('saveMetaPlanBtn').addEventListener('click', saveMetaPlanFromModal);
+    document.getElementById('addMetaPlanRowBtn').addEventListener('click', () => addMetaPlanRow());
+    document.getElementById('closeActivityBtn').addEventListener('click', closeActivityModal);
+    document.getElementById('saveActivityBtn').addEventListener('click', saveActivityFromModal);
     document.getElementById('tagInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addFormTag(); } });
     document.getElementById('searchInput').addEventListener('input', renderObjectives);
     document.getElementById('statusFilter').addEventListener('change', renderObjectives);
 
-    [formModal, detailModal, indicatorModal, valueHistoryModal].forEach(modal => modal.addEventListener('click', (e) => {
+    [formModal, detailModal, indicatorModal, valueHistoryModal, metaPlanModal, activityModal].forEach(modal => modal.addEventListener('click', (e) => {
       if (e.target === modal){
         if (modal === formModal){ closeFormModal(); resetForm(); }
         if (modal === detailModal) closeDetailModal();
         if (modal === indicatorModal) closeIndicatorModal();
         if (modal === valueHistoryModal) closeValueHistoryModal();
+        if (modal === metaPlanModal) closeMetaPlanModal();
+        if (modal === activityModal) closeActivityModal();
       }
     }));
 
@@ -1430,6 +1708,12 @@
         saveIndicatorFromModal();
       }
     });
+    document.getElementById('modalActivityName').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        saveActivityFromModal();
+      }
+    });
 
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape'){
@@ -1437,6 +1721,8 @@
         closeDetailModal();
         closeIndicatorModal();
         closeValueHistoryModal();
+        closeMetaPlanModal();
+        closeActivityModal();
       }
     });
 
