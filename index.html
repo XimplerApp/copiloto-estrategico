@@ -1,0 +1,1169 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ximpler - Objetivos</title>
+  <style>
+    :root {
+      --bg: #f5f7fa;
+      --card: #ffffff;
+      --line: #e6ebf0;
+      --text: #1f2a37;
+      --muted: #6b7280;
+      --green: #22a652;
+      --green-soft: #e8f7ee;
+      --yellow: #e0b300;
+      --yellow-soft: #fff7d6;
+      --red: #dc3545;
+      --red-soft: #fde8ea;
+      --blue: #0f5ea9;
+      --shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+      --radius: 14px;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .page {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 28px;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 18px;
+      gap: 16px;
+    }
+
+    .title-wrap h1 {
+      margin: 0;
+      font-size: 34px;
+      line-height: 1.1;
+    }
+
+    .title-wrap p {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .btn-primary {
+      border: none;
+      background: var(--green);
+      color: #fff;
+      padding: 14px 18px;
+      border-radius: 999px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: var(--shadow);
+    }
+
+    .btn-primary .plus {
+      width: 28px;
+      height: 28px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.2);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      line-height: 1;
+    }
+
+    .card {
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      border: 1px solid var(--line);
+      overflow: hidden;
+    }
+
+    .filters {
+      display: grid;
+      grid-template-columns: 1fr 220px;
+      gap: 12px;
+      padding: 18px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .input, .select, .textarea {
+      width: 100%;
+      border: 1px solid #d6dde5;
+      background: #fff;
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-size: 14px;
+      color: var(--text);
+      outline: none;
+      transition: .2s border-color, .2s box-shadow;
+    }
+
+    .input:focus, .select:focus, .textarea:focus {
+      border-color: #7bb7ff;
+      box-shadow: 0 0 0 3px rgba(69, 137, 255, 0.12);
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 980px;
+    }
+
+    th, td {
+      padding: 16px 14px;
+      border-bottom: 1px solid var(--line);
+      font-size: 14px;
+      vertical-align: middle;
+    }
+
+    th {
+      text-align: left;
+      color: var(--muted);
+      font-weight: 700;
+      background: #fbfcfd;
+    }
+
+    tbody tr:hover {
+      background: #fcfdfd;
+    }
+
+    .objective-link {
+      color: var(--green);
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .expander {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: #fff;
+      cursor: pointer;
+      font-weight: bold;
+      color: var(--muted);
+    }
+
+    .progress-bar {
+      width: 120px;
+      height: 10px;
+      background: #edf1f5;
+      border-radius: 999px;
+      overflow: hidden;
+      position: relative;
+      margin-bottom: 6px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      border-radius: 999px;
+    }
+
+    .progress-label {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .ring {
+      --size: 48px;
+      width: var(--size);
+      height: var(--size);
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text);
+      position: relative;
+      background: conic-gradient(var(--ring-color) calc(var(--val) * 1%), #edf1f5 0);
+    }
+
+    .ring::after {
+      content: "";
+      width: 36px;
+      height: 36px;
+      background: #fff;
+      border-radius: 50%;
+      position: absolute;
+    }
+
+    .ring span {
+      position: relative;
+      z-index: 1;
+    }
+
+    .btn-light {
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--text);
+      padding: 10px 14px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 12px;
+      text-transform: capitalize;
+    }
+
+    .status-activo { background: var(--green-soft); color: var(--green); }
+    .status-en_riesgo { background: var(--yellow-soft); color: var(--yellow); }
+    .status-pausado { background: #eef2f7; color: #667085; }
+    .status-cumplido { background: #eaf2ff; color: var(--blue); }
+
+    .details-row {
+      display: none;
+      background: #fbfcfe;
+    }
+
+    .details-row.open {
+      display: table-row;
+    }
+
+    .details-panel {
+      padding: 18px 22px 22px;
+    }
+
+    .detail-grid {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr 1fr;
+      gap: 16px;
+    }
+
+    .mini-card {
+      background: white;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 16px;
+    }
+
+    .mini-card h4 {
+      margin: 0 0 12px;
+      font-size: 14px;
+    }
+
+    .mini-card ul {
+      margin: 0;
+      padding-left: 18px;
+    }
+
+    .mini-card li {
+      margin-bottom: 8px;
+      color: #445;
+      font-size: 13px;
+    }
+
+    .tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .tag {
+      background: #eef5ff;
+      color: var(--blue);
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.38);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      z-index: 1000;
+    }
+
+    .modal.open { display: flex; }
+
+    .modal-card {
+      width: min(1180px, 100%);
+      max-height: 92vh;
+      overflow: auto;
+      background: #fff;
+      border-radius: 18px;
+      box-shadow: 0 30px 60px rgba(2, 8, 23, 0.2);
+      border: 1px solid var(--line);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 18px 24px;
+      border-bottom: 1px solid var(--line);
+      position: sticky;
+      top: 0;
+      background: #fff;
+      z-index: 3;
+    }
+
+    .modal-title {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .modal-title h2 {
+      margin: 0;
+      font-size: 24px;
+    }
+
+    .modal-title p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn-secondary {
+      background: #fff;
+      border: 1px solid var(--line);
+      color: var(--text);
+      border-radius: 10px;
+      padding: 12px 16px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1.3fr 1fr;
+      gap: 0;
+    }
+
+    .col {
+      padding: 22px;
+    }
+
+    .col + .col {
+      border-left: 1px solid var(--line);
+    }
+
+    .section {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 16px;
+      margin-bottom: 16px;
+      background: #fff;
+    }
+
+    .section h3 {
+      margin: 0 0 14px;
+      font-size: 15px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .section h3 .small-btn {
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 9px;
+      padding: 8px 10px;
+      font-size: 12px;
+      cursor: pointer;
+      font-weight: 700;
+      color: var(--muted);
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    .field {
+      margin-bottom: 14px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 13px;
+      font-weight: 700;
+      color: #374151;
+    }
+
+    .textarea {
+      min-height: 120px;
+      resize: vertical;
+    }
+
+    .hint {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 8px;
+    }
+
+    .repeat-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .repeat-item {
+      border: 1px dashed #cfd8e3;
+      border-radius: 12px;
+      padding: 12px;
+      background: #fbfdff;
+      position: relative;
+    }
+
+    .remove-row {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      border: none;
+      background: transparent;
+      color: #b42318;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .chip {
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      background: #edf5ff;
+      color: var(--blue);
+      border-radius: 999px;
+      padding: 7px 10px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .chip button {
+      border: none;
+      background: transparent;
+      color: var(--blue);
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 0;
+    }
+
+    .empty-state {
+      padding: 22px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .required::after {
+      content: " *";
+      color: var(--red);
+    }
+
+    @media (max-width: 980px) {
+      .form-grid, .detail-grid {
+        grid-template-columns: 1fr;
+      }
+      .col + .col {
+        border-left: none;
+        border-top: 1px solid var(--line);
+      }
+      .filters {
+        grid-template-columns: 1fr;
+      }
+      .grid-2, .grid-3 {
+        grid-template-columns: 1fr;
+      }
+      .topbar {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .btn-primary {
+        justify-content: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="topbar">
+      <div class="title-wrap">
+        <h1>Objetivos</h1>
+        <p>Primer index funcional para el módulo de seguimiento estratégico de Ximpler.</p>
+      </div>
+      <button id="openModalBtn" class="btn-primary">
+        <span>Nuevo Objetivo</span>
+        <span class="plus">+</span>
+      </button>
+    </div>
+
+    <div class="card">
+      <div class="filters">
+        <input id="searchInput" class="input" type="text" placeholder="Buscar / Filtrar" />
+        <select id="statusFilter" class="select">
+          <option value="all">Todos los estatus</option>
+          <option value="activo" selected>Activos</option>
+          <option value="en_riesgo">En riesgo</option>
+          <option value="pausado">Pausados</option>
+          <option value="cumplido">Cumplidos</option>
+        </select>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:52px;"></th>
+              <th>Objetivo</th>
+              <th>Avance Cualitativo</th>
+              <th>Avance Cuantitativo</th>
+              <th>Líder Responsable</th>
+              <th>Fecha</th>
+              <th>Estatus</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="objectivesBody"></tbody>
+        </table>
+      </div>
+      <div id="emptyState" class="empty-state" style="display:none;">No hay objetivos que coincidan con el filtro.</div>
+    </div>
+  </div>
+
+  <div id="modal" class="modal" aria-hidden="true">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title">
+          <h2>Nuevo Objetivo</h2>
+          <p>Complete la información base del objetivo estratégico.</p>
+        </div>
+        <div class="modal-actions">
+          <button id="closeModalBtn" class="btn-secondary" type="button">Cancelar</button>
+          <button id="saveObjectiveBtn" class="btn-primary" type="button"><span>Guardar Objetivo</span><span>💾</span></button>
+        </div>
+      </div>
+
+      <form id="objectiveForm">
+        <div class="form-grid">
+          <div class="col">
+            <div class="section">
+              <div class="field">
+                <label class="required" for="objectiveName">Nombre del Objetivo (KPI)</label>
+                <input id="objectiveName" class="input" type="text" placeholder="Ej. Reducir cartera vencida" required />
+              </div>
+
+              <div class="grid-2">
+                <div class="field">
+                  <label for="objectiveDescription">Descripción</label>
+                  <textarea id="objectiveDescription" class="textarea" placeholder="Describe el propósito, alcance o criterio de éxito del objetivo..."></textarea>
+                </div>
+                <div>
+                  <div class="field">
+                    <label for="startDate">Fecha de inicio</label>
+                    <input id="startDate" class="input" type="date" />
+                  </div>
+                  <div class="field">
+                    <label for="endDate">Fecha de cumplimiento</label>
+                    <input id="endDate" class="input" type="date" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="section">
+              <div class="grid-2">
+                <div class="field">
+                  <label class="required" for="leader">Líder Responsable</label>
+                  <select id="leader" class="select" required>
+                    <option value="">Selecciona un líder</option>
+                    <option>Anel Castro</option>
+                    <option>Melchor Iván Angulo</option>
+                    <option>Ana García</option>
+                    <option>Carlos López</option>
+                    <option>María Torres</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="involved">Involucrados en el objetivo</label>
+                  <select id="involved" class="select" multiple size="5">
+                    <option>Anel Castro</option>
+                    <option>Melchor Iván Angulo</option>
+                    <option>Ana García</option>
+                    <option>Carlos López</option>
+                    <option>María Torres</option>
+                    <option>Raúl Mendoza</option>
+                    <option>Sofía Vega</option>
+                  </select>
+                  <div class="hint">Usa Ctrl/Cmd + click para seleccionar varios involucrados.</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="section">
+              <h3>
+                <span>Indicadores Cuantitativos</span>
+                <button id="addIndicatorBtn" class="small-btn" type="button">+ Agregar</button>
+              </h3>
+              <div id="indicatorsList" class="repeat-list"></div>
+              <div class="hint">Aquí puedes agregar los indicadores alineados al objetivo y calcular el avance cuantitativo.</div>
+            </div>
+
+            <div class="section">
+              <h3>
+                <span>Iniciativas o actividades alineadas al objetivo</span>
+                <button id="addInitiativeBtn" class="small-btn" type="button">+ Agregar</button>
+              </h3>
+              <div id="initiativesList" class="repeat-list"></div>
+              <div class="hint">Estas iniciativas ayudan a medir el avance cualitativo y el aterrizaje operativo.</div>
+            </div>
+          </div>
+
+          <div class="col">
+            <div class="section">
+              <div class="field">
+                <label for="tagInput">Asignación de etiquetas</label>
+                <div class="grid-2">
+                  <input id="tagInput" class="input" type="text" placeholder="Escribe una etiqueta" />
+                  <button id="addTagBtn" class="btn-secondary" type="button">Agregar etiqueta</button>
+                </div>
+                <div id="tagsContainer" class="chips"></div>
+              </div>
+            </div>
+
+            <div class="section">
+              <div class="field">
+                <label for="areas">Áreas involucradas en la ejecución o medición</label>
+                <select id="areas" class="select" multiple size="6">
+                  <option>Dirección General</option>
+                  <option>Comercial</option>
+                  <option>Cobranza</option>
+                  <option>Operaciones</option>
+                  <option>Finanzas</option>
+                  <option>Marketing</option>
+                  <option>RH</option>
+                  <option>Tecnología</option>
+                </select>
+                <div class="hint">Selecciona una o más áreas.</div>
+              </div>
+            </div>
+
+            <div class="section">
+              <div class="field">
+                <label for="linkedProjects">Proyectos ligados</label>
+                <select id="linkedProjects" class="select" multiple size="6">
+                  <option>Proyecto Cobranza 2026</option>
+                  <option>Campaña Branding Norte</option>
+                  <option>Pipeline Comercial Q3</option>
+                  <option>Optimización Operativa X</option>
+                  <option>Transformación Digital Ventas</option>
+                  <option>Atención a Clientes Premium</option>
+                </select>
+                <div class="hint">Relaciona el objetivo con proyectos ya existentes dentro de Ximpler.</div>
+              </div>
+            </div>
+
+            <div class="section">
+              <div class="field">
+                <label for="objectiveStatus">Estatus inicial</label>
+                <select id="objectiveStatus" class="select">
+                  <option value="activo" selected>Activo</option>
+                  <option value="en_riesgo">En riesgo</option>
+                  <option value="pausado">Pausado</option>
+                  <option value="cumplido">Cumplido</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <template id="indicatorTemplate">
+    <div class="repeat-item indicator-item">
+      <button class="remove-row" type="button">Eliminar</button>
+      <div class="grid-3">
+        <div class="field">
+          <label>Indicador</label>
+          <input class="input indicator-name" type="text" placeholder="Ej. % recuperación" />
+        </div>
+        <div class="field">
+          <label>Unidad</label>
+          <input class="input indicator-unit" type="text" placeholder="%, $, días" />
+        </div>
+        <div class="field">
+          <label>Meta</label>
+          <input class="input indicator-target" type="number" min="0" step="0.01" placeholder="100" />
+        </div>
+      </div>
+      <div class="grid-3">
+        <div class="field">
+          <label>Valor actual</label>
+          <input class="input indicator-current" type="number" min="0" step="0.01" placeholder="0" />
+        </div>
+        <div class="field">
+          <label>Frecuencia</label>
+          <select class="select indicator-frequency">
+            <option>Diaria</option>
+            <option>Semanal</option>
+            <option selected>Mensual</option>
+            <option>Trimestral</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Responsable</label>
+          <input class="input indicator-owner" type="text" placeholder="Responsable del dato" />
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <template id="initiativeTemplate">
+    <div class="repeat-item initiative-item">
+      <button class="remove-row" type="button">Eliminar</button>
+      <div class="grid-2">
+        <div class="field">
+          <label>Iniciativa / actividad</label>
+          <input class="input initiative-name" type="text" placeholder="Ej. Rediseñar flujo de cobranza" />
+        </div>
+        <div class="field">
+          <label>Responsable</label>
+          <input class="input initiative-owner" type="text" placeholder="Responsable" />
+        </div>
+      </div>
+      <div class="grid-3">
+        <div class="field">
+          <label>Fecha compromiso</label>
+          <input class="input initiative-date" type="date" />
+        </div>
+        <div class="field">
+          <label>Estatus</label>
+          <select class="select initiative-status">
+            <option value="pendiente">Pendiente</option>
+            <option value="en progreso" selected>En progreso</option>
+            <option value="terminada">Terminada</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Avance (%)</label>
+          <input class="input initiative-progress" type="number" min="0" max="100" step="1" placeholder="0" />
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <script>
+    const STORAGE_KEY = 'ximpler_objetivos_demo_v1';
+
+    const sampleObjectives = [
+      {
+        id: crypto.randomUUID(),
+        name: 'Recuperar Cartera Vencida',
+        description: 'Reducir el rezago de cobranza y mejorar la recuperación mensual.',
+        startDate: '2021-05-01',
+        endDate: '2021-05-31',
+        leader: 'Anel Castro',
+        involved: ['Carlos López', 'María Torres'],
+        indicators: [
+          { name: '% recuperación', unit: '%', target: 100, current: 85, frequency: 'Mensual', owner: 'Cobranza' }
+        ],
+        initiatives: [
+          { name: 'Campaña de cobranza intensiva', owner: 'Carlos López', dueDate: '2021-05-25', status: 'en progreso', progress: 20 },
+          { name: 'Revisión de cartera crítica', owner: 'María Torres', dueDate: '2021-05-20', status: 'pendiente', progress: 0 }
+        ],
+        tags: ['Cobranza', 'Flujo de efectivo'],
+        areas: ['Cobranza', 'Finanzas'],
+        linkedProjects: ['Proyecto Cobranza 2026'],
+        status: 'activo'
+      },
+      {
+        id: crypto.randomUUID(),
+        name: 'Posicionar la marca en redes sociales',
+        description: 'Incrementar notoriedad y tracción digital de marca en redes clave.',
+        startDate: '2021-05-13',
+        endDate: '2021-12-31',
+        leader: 'Anel Castro',
+        involved: ['Ana García', 'Sofía Vega'],
+        indicators: [
+          { name: 'Alcance mensual', unit: '%', target: 100, current: 25, frequency: 'Mensual', owner: 'Marketing' }
+        ],
+        initiatives: [
+          { name: 'Calendario de contenidos', owner: 'Ana García', dueDate: '2021-06-15', status: 'terminada', progress: 100 },
+          { name: 'Campaña de awareness', owner: 'Sofía Vega', dueDate: '2021-07-10', status: 'en progreso', progress: 70 }
+        ],
+        tags: ['Marketing', 'Branding'],
+        areas: ['Marketing', 'Dirección General'],
+        linkedProjects: ['Campaña Branding Norte'],
+        status: 'activo'
+      }
+    ];
+
+    const state = {
+      objectives: loadObjectives(),
+      tags: []
+    };
+
+    const objectivesBody = document.getElementById('objectivesBody');
+    const emptyState = document.getElementById('emptyState');
+    const modal = document.getElementById('modal');
+    const openModalBtn = document.getElementById('openModalBtn');
+    const closeModalBtn = document.getElementById('closeModalBtn');
+    const saveObjectiveBtn = document.getElementById('saveObjectiveBtn');
+    const objectiveForm = document.getElementById('objectiveForm');
+    const searchInput = document.getElementById('searchInput');
+    const statusFilter = document.getElementById('statusFilter');
+    const indicatorsList = document.getElementById('indicatorsList');
+    const initiativesList = document.getElementById('initiativesList');
+    const addIndicatorBtn = document.getElementById('addIndicatorBtn');
+    const addInitiativeBtn = document.getElementById('addInitiativeBtn');
+    const addTagBtn = document.getElementById('addTagBtn');
+    const tagInput = document.getElementById('tagInput');
+    const tagsContainer = document.getElementById('tagsContainer');
+
+    function loadObjectives() {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (!saved) return sampleObjectives;
+      try {
+        const parsed = JSON.parse(saved);
+        return Array.isArray(parsed) && parsed.length ? parsed : sampleObjectives;
+      } catch {
+        return sampleObjectives;
+      }
+    }
+
+    function persistObjectives() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state.objectives));
+    }
+
+    function formatDate(dateString) {
+      if (!dateString) return '—';
+      const date = new Date(dateString + 'T00:00:00');
+      return new Intl.DateTimeFormat('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }).format(date);
+    }
+
+    function statusLabel(status) {
+      const map = {
+        activo: 'Activo',
+        en_riesgo: 'En riesgo',
+        pausado: 'Pausado',
+        cumplido: 'Cumplido'
+      };
+      return map[status] || status;
+    }
+
+    function getProgressColor(value) {
+      if (value >= 80) return 'var(--green)';
+      if (value >= 50) return 'var(--yellow)';
+      return 'var(--red)';
+    }
+
+    function calculateQuantitativeProgress(indicators = []) {
+      if (!indicators.length) return 0;
+      const values = indicators.map(item => {
+        const target = Number(item.target || 0);
+        const current = Number(item.current || 0);
+        if (!target) return 0;
+        return Math.max(0, Math.min(100, (current / target) * 100));
+      });
+      return Math.round(values.reduce((acc, val) => acc + val, 0) / values.length);
+    }
+
+    function calculateQualitativeProgress(initiatives = []) {
+      if (!initiatives.length) return 0;
+      const values = initiatives.map(item => Math.max(0, Math.min(100, Number(item.progress || 0))));
+      return Math.round(values.reduce((acc, val) => acc + val, 0) / values.length);
+    }
+
+    function renderObjectives() {
+      const query = searchInput.value.trim().toLowerCase();
+      const status = statusFilter.value;
+
+      const filtered = state.objectives.filter(obj => {
+        const haystack = [
+          obj.name,
+          obj.description,
+          obj.leader,
+          ...(obj.tags || []),
+          ...(obj.areas || []),
+          ...(obj.linkedProjects || [])
+        ].join(' ').toLowerCase();
+
+        const matchesQuery = !query || haystack.includes(query);
+        const matchesStatus = status === 'all' || obj.status === status;
+        return matchesQuery && matchesStatus;
+      });
+
+      objectivesBody.innerHTML = '';
+      emptyState.style.display = filtered.length ? 'none' : 'block';
+
+      filtered.forEach(obj => {
+        const ql = calculateQualitativeProgress(obj.initiatives);
+        const qt = calculateQuantitativeProgress(obj.indicators);
+        const qlColor = getProgressColor(ql);
+        const qtColor = getProgressColor(qt);
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><button class="expander" type="button" data-toggle="${obj.id}">+</button></td>
+          <td><a class="objective-link" href="javascript:void(0)">${escapeHtml(obj.name)}</a></td>
+          <td>
+            <div class="progress-bar"><div class="progress-fill" style="width:${ql}%; background:${qlColor};"></div></div>
+            <div class="progress-label">${ql}%</div>
+          </td>
+          <td>
+            <div class="ring" style="--val:${qt}; --ring-color:${qtColor};"><span>${qt}%</span></div>
+          </td>
+          <td>${escapeHtml(obj.leader || '—')}</td>
+          <td>${formatDate(obj.endDate)}</td>
+          <td><span class="status-badge status-${obj.status}">${statusLabel(obj.status)}</span></td>
+          <td><button class="btn-light" type="button" data-toggle="${obj.id}">Detalles</button></td>
+        `;
+
+        const detailTr = document.createElement('tr');
+        detailTr.className = 'details-row';
+        detailTr.id = `details-${obj.id}`;
+        detailTr.innerHTML = `
+          <td colspan="8">
+            <div class="details-panel">
+              <div class="detail-grid">
+                <div class="mini-card">
+                  <h4>Resumen del objetivo</h4>
+                  <p style="margin:0 0 10px; font-size:13px; color:#475467;">${escapeHtml(obj.description || 'Sin descripción')}</p>
+                  <div class="tags">${(obj.tags || []).map(tag => `<span class="tag">${escapeHtml(tag)}</span>`).join('') || '<span class="tag">Sin etiquetas</span>'}</div>
+                  <p style="margin:12px 0 0; font-size:12px; color:#667085;"><strong>Áreas:</strong> ${escapeHtml((obj.areas || []).join(', ') || '—')}</p>
+                  <p style="margin:8px 0 0; font-size:12px; color:#667085;"><strong>Proyectos ligados:</strong> ${escapeHtml((obj.linkedProjects || []).join(', ') || '—')}</p>
+                </div>
+                <div class="mini-card">
+                  <h4>Indicadores cuantitativos</h4>
+                  <ul>${obj.indicators.length ? obj.indicators.map(item => `<li><strong>${escapeHtml(item.name)}</strong>: ${escapeHtml(String(item.current || 0))} / ${escapeHtml(String(item.target || 0))} ${escapeHtml(item.unit || '')}</li>`).join('') : '<li>Sin indicadores</li>'}</ul>
+                </div>
+                <div class="mini-card">
+                  <h4>Iniciativas / actividades</h4>
+                  <ul>${obj.initiatives.length ? obj.initiatives.map(item => `<li><strong>${escapeHtml(item.name)}</strong> - ${escapeHtml(item.status)} (${escapeHtml(String(item.progress || 0))}%)</li>`).join('') : '<li>Sin iniciativas</li>'}</ul>
+                </div>
+              </div>
+            </div>
+          </td>
+        `;
+
+        objectivesBody.appendChild(tr);
+        objectivesBody.appendChild(detailTr);
+      });
+
+      bindDetailToggles();
+    }
+
+    function bindDetailToggles() {
+      document.querySelectorAll('[data-toggle]').forEach(button => {
+        button.onclick = () => {
+          const id = button.getAttribute('data-toggle');
+          const details = document.getElementById(`details-${id}`);
+          const expander = document.querySelector(`.expander[data-toggle="${id}"]`);
+          if (!details) return;
+          const isOpen = details.classList.contains('open');
+          details.classList.toggle('open');
+          if (expander) expander.textContent = isOpen ? '+' : '−';
+        };
+      });
+    }
+
+    function openModal() {
+      modal.classList.add('open');
+      modal.setAttribute('aria-hidden', 'false');
+    }
+
+    function closeModal() {
+      modal.classList.remove('open');
+      modal.setAttribute('aria-hidden', 'true');
+    }
+
+    function resetForm() {
+      objectiveForm.reset();
+      indicatorsList.innerHTML = '';
+      initiativesList.innerHTML = '';
+      state.tags = [];
+      renderTags();
+      addIndicatorRow();
+      addInitiativeRow();
+    }
+
+    function addIndicatorRow(data = {}) {
+      const tpl = document.getElementById('indicatorTemplate');
+      const node = tpl.content.firstElementChild.cloneNode(true);
+      node.querySelector('.indicator-name').value = data.name || '';
+      node.querySelector('.indicator-unit').value = data.unit || '';
+      node.querySelector('.indicator-target').value = data.target ?? '';
+      node.querySelector('.indicator-current').value = data.current ?? '';
+      node.querySelector('.indicator-frequency').value = data.frequency || 'Mensual';
+      node.querySelector('.indicator-owner').value = data.owner || '';
+      node.querySelector('.remove-row').onclick = () => node.remove();
+      indicatorsList.appendChild(node);
+    }
+
+    function addInitiativeRow(data = {}) {
+      const tpl = document.getElementById('initiativeTemplate');
+      const node = tpl.content.firstElementChild.cloneNode(true);
+      node.querySelector('.initiative-name').value = data.name || '';
+      node.querySelector('.initiative-owner').value = data.owner || '';
+      node.querySelector('.initiative-date').value = data.dueDate || '';
+      node.querySelector('.initiative-status').value = data.status || 'en progreso';
+      node.querySelector('.initiative-progress').value = data.progress ?? '';
+      node.querySelector('.remove-row').onclick = () => node.remove();
+      initiativesList.appendChild(node);
+    }
+
+    function getMultiSelectValues(selectEl) {
+      return Array.from(selectEl.selectedOptions).map(opt => opt.value || opt.textContent).filter(Boolean);
+    }
+
+    function collectIndicators() {
+      return Array.from(document.querySelectorAll('.indicator-item')).map(item => ({
+        name: item.querySelector('.indicator-name').value.trim(),
+        unit: item.querySelector('.indicator-unit').value.trim(),
+        target: Number(item.querySelector('.indicator-target').value || 0),
+        current: Number(item.querySelector('.indicator-current').value || 0),
+        frequency: item.querySelector('.indicator-frequency').value,
+        owner: item.querySelector('.indicator-owner').value.trim()
+      })).filter(item => item.name);
+    }
+
+    function collectInitiatives() {
+      return Array.from(document.querySelectorAll('.initiative-item')).map(item => ({
+        name: item.querySelector('.initiative-name').value.trim(),
+        owner: item.querySelector('.initiative-owner').value.trim(),
+        dueDate: item.querySelector('.initiative-date').value,
+        status: item.querySelector('.initiative-status').value,
+        progress: Number(item.querySelector('.initiative-progress').value || 0)
+      })).filter(item => item.name);
+    }
+
+    function renderTags() {
+      tagsContainer.innerHTML = state.tags.map((tag, index) => `
+        <span class="chip">${escapeHtml(tag)} <button type="button" data-remove-tag="${index}">×</button></span>
+      `).join('');
+
+      document.querySelectorAll('[data-remove-tag]').forEach(btn => {
+        btn.onclick = () => {
+          const idx = Number(btn.getAttribute('data-remove-tag'));
+          state.tags.splice(idx, 1);
+          renderTags();
+        };
+      });
+    }
+
+    function addTag() {
+      const value = tagInput.value.trim();
+      if (!value) return;
+      if (!state.tags.includes(value)) state.tags.push(value);
+      tagInput.value = '';
+      renderTags();
+    }
+
+    function saveObjective() {
+      const name = document.getElementById('objectiveName').value.trim();
+      const leader = document.getElementById('leader').value.trim();
+      if (!name) {
+        alert('Ingresa el Nombre del Objetivo (KPI).');
+        return;
+      }
+      if (!leader) {
+        alert('Selecciona un Líder Responsable.');
+        return;
+      }
+
+      const objective = {
+        id: crypto.randomUUID(),
+        name,
+        description: document.getElementById('objectiveDescription').value.trim(),
+        startDate: document.getElementById('startDate').value,
+        endDate: document.getElementById('endDate').value,
+        leader,
+        involved: getMultiSelectValues(document.getElementById('involved')),
+        indicators: collectIndicators(),
+        initiatives: collectInitiatives(),
+        tags: [...state.tags],
+        areas: getMultiSelectValues(document.getElementById('areas')),
+        linkedProjects: getMultiSelectValues(document.getElementById('linkedProjects')),
+        status: document.getElementById('objectiveStatus').value
+      };
+
+      state.objectives.unshift(objective);
+      persistObjectives();
+      renderObjectives();
+      closeModal();
+      resetForm();
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    openModalBtn.addEventListener('click', openModal);
+    closeModalBtn.addEventListener('click', closeModal);
+    saveObjectiveBtn.addEventListener('click', saveObjective);
+    addIndicatorBtn.addEventListener('click', () => addIndicatorRow());
+    addInitiativeBtn.addEventListener('click', () => addInitiativeRow());
+    addTagBtn.addEventListener('click', addTag);
+    tagInput.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        addTag();
+      }
+    });
+    searchInput.addEventListener('input', renderObjectives);
+    statusFilter.addEventListener('change', renderObjectives);
+    modal.addEventListener('click', (event) => {
+      if (event.target === modal) closeModal();
+    });
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') closeModal();
+    });
+
+    resetForm();
+    renderObjectives();
+  </script>
+</body>
+</html>
