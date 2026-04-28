@@ -168,13 +168,13 @@
     .mini-item-head{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:4px}
     .mini-item-title{font-weight:700}
     .mini-item-sub{color:var(--muted);font-size:12px;line-height:1.4}
-    .check-row{display:grid;grid-template-columns:22px 1fr 126px auto;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
+    .check-row{display:grid;grid-template-columns:22px minmax(120px,1fr) 142px auto;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
     .check-row:last-child{border-bottom:none}
     .check-row input[type="checkbox"]{width:16px;height:16px}
-    .check-row.done .check-label{text-decoration:line-through;color:var(--muted)}
-    .check-label{font-size:14px}
-    .check-date{font-size:12px;color:var(--muted);white-space:nowrap}
-    .check-header{display:grid;grid-template-columns:22px 1fr 126px auto;gap:10px;align-items:center;font-size:12px;color:var(--muted);font-weight:700;padding:0 0 6px;border-bottom:1px solid var(--line)}
+    .check-row.done .check-edit-text{text-decoration:line-through;color:var(--muted)}
+    .check-edit-text,.check-edit-date{padding:7px 8px;font-size:13px;border-radius:8px}
+    .check-edit-date{min-width:138px}
+    .check-header{display:grid;grid-template-columns:22px minmax(120px,1fr) 142px auto;gap:10px;align-items:center;font-size:12px;color:var(--muted);font-weight:700;padding:0 0 6px;border-bottom:1px solid var(--line)}
     .inline-add.stack{display:none;flex-direction:column;gap:8px}
     .inline-add.stack.open{display:flex}
     .link-anchor{color:var(--blue);text-decoration:none;font-weight:700;word-break:break-all}
@@ -655,8 +655,8 @@
   </template>
 
   <script>
-    const STORAGE_KEYS = ['ximpler_objetivos_demo_v6_1','ximpler_objetivos_demo_v6','ximpler_objetivos_demo_v5','ximpler_objetivos_demo_v4','ximpler_objetivos_demo_v3','ximpler_objetivos_demo_v1'];
-    const SAVE_KEY = 'ximpler_objetivos_demo_v6_1';
+    const STORAGE_KEYS = ['ximpler_objetivos_demo_v6_3','ximpler_objetivos_demo_v6_1','ximpler_objetivos_demo_v6','ximpler_objetivos_demo_v5','ximpler_objetivos_demo_v4','ximpler_objetivos_demo_v3','ximpler_objetivos_demo_v1'];
+    const SAVE_KEY = 'ximpler_objetivos_demo_v6_3';
 
     const sampleObjectives = [
       {
@@ -1592,7 +1592,7 @@
                   <button class="btn-secondary small" type="button" id="toggleChecklistBoxBtn">Agregar</button>
                 </div>
                 <div>
-                  ${obj.checklist.length ? `<div class="check-header"><span></span><span>Punto</span><span>Fecha compromiso</span><span></span></div>` + obj.checklist.map((item, index) => `<div class="check-row ${item.done ? 'done' : ''}"><input type="checkbox" ${item.done ? 'checked' : ''} data-toggle-check-index="${index}" /><span class="check-label">${escapeHtml(item.text)}</span><span class="check-date">${formatDate(item.dueDate)}</span><button class="btn-light small btn-tight" type="button" data-remove-check-index="${index}">Quitar</button></div>`).join('') : '<div class="muted">Sin elementos en check list</div>'}
+                  ${obj.checklist.length ? `<div class="check-header"><span></span><span>Punto</span><span>Fecha compromiso</span><span></span></div>` + obj.checklist.map((item, index) => `<div class="check-row ${item.done ? 'done' : ''}"><input type="checkbox" ${item.done ? 'checked' : ''} data-toggle-check-index="${index}" /><input class="input check-edit-text" type="text" value="${escapeHtml(item.text)}" data-edit-check-text="${index}" /><input class="input check-edit-date" type="date" value="${escapeHtml(item.dueDate || '')}" data-edit-check-date="${index}" /><button class="btn-light small btn-tight" type="button" data-remove-check-index="${index}">Quitar</button></div>`).join('') : '<div class="muted">Sin elementos en check list</div>'}
                 </div>
                 <div class="inline-add stack" id="inlineChecklistBox">
                   <input id="inlineChecklistText" class="input" type="text" placeholder="Nuevo elemento" />
@@ -1759,6 +1759,13 @@
       const inlineChecklistText = document.getElementById('inlineChecklistText');
       if (inlineChecklistText) inlineChecklistText.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addChecklistItemFromDetail(); } });
       detailContent.querySelectorAll('[data-toggle-check-index]').forEach(input => input.onchange = () => toggleChecklistItem(Number(input.dataset.toggleCheckIndex), input.checked));
+      detailContent.querySelectorAll('[data-edit-check-text]').forEach(input => {
+        input.addEventListener('change', () => editChecklistItemText(Number(input.dataset.editCheckText), input.value));
+        input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); input.blur(); } });
+      });
+      detailContent.querySelectorAll('[data-edit-check-date]').forEach(input => {
+        input.addEventListener('change', () => editChecklistItemDate(Number(input.dataset.editCheckDate), input.value));
+      });
       detailContent.querySelectorAll('[data-remove-check-index]').forEach(btn => btn.onclick = () => removeChecklistItem(Number(btn.dataset.removeCheckIndex)));
 
       const toggleLinkBoxBtn = document.getElementById('toggleLinkBoxBtn');
@@ -1960,6 +1967,34 @@
       if (!obj || !obj.checklist[index]) return;
       obj.checklist[index].done = Boolean(checked);
       obj.history.unshift(`Check list ${checked ? 'completado' : 'reabierto'}: ${obj.checklist[index].text}.`);
+      persistObjectives();
+      renderDetailModal();
+      renderObjectives();
+    }
+
+    function editChecklistItemText(index, value){
+      const obj = state.objectives.find(item => item.id === state.detailId);
+      if (!obj || !obj.checklist[index]) return;
+      const textValue = String(value || '').trim();
+      if (!textValue) {
+        alert('El punto del check list no puede quedar vacío.');
+        renderDetailModal();
+        return;
+      }
+      const previous = obj.checklist[index].text;
+      obj.checklist[index].text = textValue;
+      if (previous !== textValue) obj.history.unshift(`Check list editado: ${previous} → ${textValue}.`);
+      persistObjectives();
+      renderDetailModal();
+      renderObjectives();
+    }
+
+    function editChecklistItemDate(index, value){
+      const obj = state.objectives.find(item => item.id === state.detailId);
+      if (!obj || !obj.checklist[index]) return;
+      const previous = obj.checklist[index].dueDate || '';
+      obj.checklist[index].dueDate = value || '';
+      if (previous !== obj.checklist[index].dueDate) obj.history.unshift(`Fecha compromiso del check list actualizada: ${obj.checklist[index].text}${value ? ` · ${value}` : ''}.`);
       persistObjectives();
       renderDetailModal();
       renderObjectives();
