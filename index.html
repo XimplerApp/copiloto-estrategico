@@ -35,6 +35,8 @@
     .btn-secondary,.btn-light{border:1px solid var(--line-dark);background:#fff;color:var(--text);padding:10px 14px}
     .btn-danger{border:1px solid #f0c4cb;background:#fff5f6;color:#cf3344;padding:10px 14px}
     .btn-light.small,.btn-secondary.small,.btn-danger.small{padding:7px 10px;font-size:12px}
+    .indicator-actions-inline{display:flex;flex-wrap:nowrap;gap:6px;align-items:center}
+    .btn-tight{padding:5px 8px !important;font-size:11px !important;line-height:1.1;white-space:nowrap}
     .icon-btn{border:1px solid var(--line-dark);background:#fff;color:var(--text);width:36px;height:36px;display:inline-flex;align-items:center;justify-content:center}
     .icon-btn.plus-mini{width:28px;height:28px;border-radius:999px;font-size:18px}
     .card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);border:1px solid var(--line);overflow:hidden}
@@ -133,6 +135,11 @@
     .inline-add{display:none;margin-top:10px}
     .inline-add.open{display:flex;gap:8px}
     .muted{color:var(--muted)}
+    .indicator-view-tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .inline-number-input{width:88px;padding:8px 10px;border:1px solid var(--line-dark);border-radius:8px;background:#fff;font-size:13px;font-family:inherit}
+    .inline-number-input:focus{outline:none;border-color:#7bb7ff;box-shadow:0 0 0 3px rgba(69,137,255,.12)}
+    .hidden-indicator-note{font-size:12px;color:var(--muted);margin-bottom:10px}
+    .indicator-hidden-row{background:#fbfcfe}
     @media (max-width:1100px){
       .filters,.grid-2,.grid-3,.grid-4,.three-col,.comment-form,.detail-grid-top,.detail-main,.form-grid{grid-template-columns:1fr}
       .col + .col,.detail-right,.detail-top-box + .detail-top-box{border-left:none;border-top:1px solid var(--line)}
@@ -355,12 +362,12 @@
     <div class="modal-card" style="width:min(760px,100%)">
       <div class="modal-header">
         <div class="modal-title">
-          <h2>Nuevo Indicador Cuantitativo</h2>
-          <p>Agrega un indicador desde la tarjeta del objetivo.</p>
+          <h2 id="indicatorModalTitle">Nuevo Indicador Cuantitativo</h2>
+          <p id="indicatorModalSubtitle">Agrega un indicador desde la tarjeta del objetivo.</p>
         </div>
         <div class="modal-actions">
           <button id="closeIndicatorBtn" class="btn-secondary" type="button">Cancelar</button>
-          <button id="saveIndicatorBtn" class="btn-primary" type="button"><span>Guardar Indicador</span><span>💾</span></button>
+          <button id="saveIndicatorBtn" class="btn-primary" type="button"><span id="saveIndicatorBtnLabel">Guardar Indicador</span><span>💾</span></button>
         </div>
       </div>
       <form id="indicatorModalForm" style="padding:22px">
@@ -549,7 +556,7 @@
       }
     ];
 
-    const state = { objectives: loadObjectives(), formTags: [], editingId: null, detailId: null, detailTab: 'comments' };
+    const state = { objectives: loadObjectives(), formTags: [], editingId: null, detailId: null, detailTab: 'comments', detailIndicatorView: 'active', indicatorModalMode: 'create', editingIndicatorIndex: null };
     const objectivesBody = document.getElementById('objectivesBody');
     const emptyState = document.getElementById('emptyState');
     const formModal = document.getElementById('formModal');
@@ -588,7 +595,8 @@
           target: Number(ind.target ?? 0),
           current: Number(ind.current ?? 0),
           frequency: ind.frequency || 'Mensual',
-          owner: ind.owner || ''
+          owner: ind.owner || '',
+          hidden: Boolean(ind.hidden)
         })),
         activities: activities.map(act => ({
           name: act.name || '',
@@ -622,9 +630,38 @@
     function formatDate(dateString){ if (!dateString) return '—'; const date = new Date(dateString + 'T00:00:00'); return new Intl.DateTimeFormat('es-MX', { day:'2-digit', month:'short', year:'numeric' }).format(date); }
     function statusLabel(status){ return ({activo:'Activo', en_riesgo:'En riesgo', pausado:'Pausado', cumplido:'Cumplido'})[status] || status; }
     function getProgressColor(value){ if (value >= 80) return 'var(--green)'; if (value >= 50) return 'var(--yellow)'; return 'var(--red)'; }
-    function calculateQuantitativeProgress(indicators=[]){ if (!indicators.length) return 0; const vals = indicators.map(item => { const target = Number(item.target || 0); const current = Number(item.current || 0); if (!target) return 0; return Math.max(0, Math.min(100, (current / target) * 100)); }); return Math.round(vals.reduce((a,b)=>a+b,0) / vals.length); }
+    function calculateQuantitativeProgress(indicators=[]){
+      const visibleIndicators = indicators.filter(item => !item.hidden);
+      if (!visibleIndicators.length) return 0;
+      const vals = visibleIndicators.map(item => {
+        const target = Number(item.target || 0);
+        const current = Number(item.current || 0);
+        if (!target) return 0;
+        return Math.max(0, Math.min(100, (current / target) * 100));
+      });
+      return Math.round(vals.reduce((a,b)=>a+b,0) / vals.length);
+    }
     function calculateQualitativeProgress(activities=[]){ if (!activities.length) return 0; const vals = activities.map(item => Math.max(0, Math.min(100, Number(item.progress || 0)))); return Math.round(vals.reduce((a,b)=>a+b,0) / vals.length); }
     function uniqueParticipants(obj){ return Array.from(new Set([obj.createdBy, obj.leader, ...(obj.invited || [])].filter(Boolean))); }
+    function formatDateTime(date = new Date()){
+      return new Intl.DateTimeFormat('es-MX', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' }).format(date);
+    }
+    function askActionUser(defaultName = ''){
+      const seed = localStorage.getItem('ximpler_last_actor') || defaultName || '';
+      const answer = prompt('¿Quién realiza esta acción?', seed);
+      if (answer === null) return null;
+      const name = answer.trim();
+      if (!name) {
+        alert('Debes indicar quién realiza la acción.');
+        return null;
+      }
+      localStorage.setItem('ximpler_last_actor', name);
+      return name;
+    }
+    function addHistoryEntry(obj, message){
+      if (!Array.isArray(obj.history)) obj.history = [];
+      obj.history.unshift(message);
+    }
     function escapeHtml(text){ const div = document.createElement('div'); div.textContent = String(text ?? ''); return div.innerHTML; }
     function clearMultiSelect(id){ Array.from(document.getElementById(id).options).forEach(opt => opt.selected = false); }
     function setMultiSelectValues(id, values=[]){ const set = new Set(values); Array.from(document.getElementById(id).options).forEach(opt => { const val = opt.value || opt.textContent; opt.selected = set.has(val); }); }
@@ -834,14 +871,36 @@
 
     function resetIndicatorModal(){
       indicatorModalForm.reset();
+      state.indicatorModalMode = 'create';
+      state.editingIndicatorIndex = null;
       const obj = state.objectives.find(item => item.id === state.detailId);
       if (obj?.leader) document.getElementById('modalIndicatorOwner').value = obj.leader;
       document.getElementById('modalIndicatorFrequency').value = 'Mensual';
       document.getElementById('modalIndicatorAction').value = 'Incrementar';
+      document.getElementById('indicatorModalTitle').textContent = 'Nuevo Indicador Cuantitativo';
+      document.getElementById('indicatorModalSubtitle').textContent = 'Agrega un indicador desde la tarjeta del objetivo.';
+      document.getElementById('saveIndicatorBtnLabel').textContent = 'Guardar Indicador';
     }
 
-    function openIndicatorModal(){
+    function openIndicatorModal(mode = 'create', indicatorIndex = null){
       resetIndicatorModal();
+      state.indicatorModalMode = mode;
+      state.editingIndicatorIndex = indicatorIndex;
+      const obj = state.objectives.find(item => item.id === state.detailId);
+      if (mode === 'edit' && obj && indicatorIndex !== null && obj.indicators[indicatorIndex]) {
+        const indicator = obj.indicators[indicatorIndex];
+        document.getElementById('indicatorModalTitle').textContent = 'Editar Indicador Cuantitativo';
+        document.getElementById('indicatorModalSubtitle').textContent = 'Actualiza la información del indicador seleccionado.';
+        document.getElementById('saveIndicatorBtnLabel').textContent = 'Actualizar Indicador';
+        document.getElementById('modalIndicatorName').value = indicator.name || '';
+        document.getElementById('modalIndicatorAction').value = indicator.action || 'Incrementar';
+        document.getElementById('modalIndicatorUnit').value = indicator.unit || '';
+        document.getElementById('modalIndicatorInitial').value = indicator.initialValue ?? '';
+        document.getElementById('modalIndicatorTarget').value = indicator.target ?? '';
+        document.getElementById('modalIndicatorCurrent').value = indicator.current ?? '';
+        document.getElementById('modalIndicatorFrequency').value = indicator.frequency || 'Mensual';
+        document.getElementById('modalIndicatorOwner').value = indicator.owner || '';
+      }
       indicatorModal.classList.add('open');
       indicatorModal.setAttribute('aria-hidden', 'false');
       document.getElementById('modalIndicatorName').focus();
@@ -851,6 +910,8 @@
       indicatorModal.classList.remove('open');
       indicatorModal.setAttribute('aria-hidden', 'true');
       indicatorModalForm.reset();
+      state.indicatorModalMode = 'create';
+      state.editingIndicatorIndex = null;
     }
 
     function saveIndicatorFromModal(){
@@ -858,6 +919,7 @@
       if (!obj) return;
       const name = document.getElementById('modalIndicatorName').value.trim();
       if (!name) return alert('Escribe el nombre del indicador.');
+
       const indicator = {
         name,
         action: document.getElementById('modalIndicatorAction').value,
@@ -866,12 +928,74 @@
         target: Number(document.getElementById('modalIndicatorTarget').value || 0),
         current: Number(document.getElementById('modalIndicatorCurrent').value || 0),
         frequency: document.getElementById('modalIndicatorFrequency').value,
-        owner: document.getElementById('modalIndicatorOwner').value.trim()
+        owner: document.getElementById('modalIndicatorOwner').value.trim(),
+        hidden: false
       };
-      obj.indicators.push(indicator);
-      obj.history.unshift(`Indicador cuantitativo agregado: ${name}.`);
+
+      if (state.indicatorModalMode === 'edit' && state.editingIndicatorIndex !== null && obj.indicators[state.editingIndicatorIndex]) {
+        const actor = askActionUser(obj.leader);
+        if (!actor) return;
+        const original = obj.indicators[state.editingIndicatorIndex];
+        indicator.hidden = Boolean(original.hidden);
+        obj.indicators[state.editingIndicatorIndex] = indicator;
+        addHistoryEntry(obj, `Indicador "${name}" editado por ${actor} el ${formatDateTime()}.`);
+      } else {
+        obj.indicators.push(indicator);
+        addHistoryEntry(obj, `Indicador cuantitativo agregado: ${name}.`);
+      }
+
       persistObjectives();
       closeIndicatorModal();
+      renderDetailModal();
+      renderObjectives();
+    }
+
+    function updateIndicatorCurrentValue(indicatorIndex, rawValue){
+      const obj = state.objectives.find(item => item.id === state.detailId);
+      if (!obj || !obj.indicators[indicatorIndex]) return;
+      const indicator = obj.indicators[indicatorIndex];
+      const parsed = Number(rawValue);
+      if (Number.isNaN(parsed)) {
+        alert('Ingresa un valor numérico válido.');
+        renderDetailModal();
+        return;
+      }
+      const oldValue = Number(indicator.current || 0);
+      if (oldValue === parsed) return;
+      const actor = askActionUser(obj.leader);
+      if (!actor) {
+        renderDetailModal();
+        return;
+      }
+      indicator.current = parsed;
+      addHistoryEntry(obj, `Valor actual del indicador "${indicator.name}" actualizado de ${oldValue} a ${parsed} por ${actor} el ${formatDateTime()}.`);
+      persistObjectives();
+      renderDetailModal();
+      renderObjectives();
+    }
+
+    function hideIndicator(indicatorIndex){
+      const obj = state.objectives.find(item => item.id === state.detailId);
+      if (!obj || !obj.indicators[indicatorIndex]) return;
+      const actor = askActionUser(obj.leader);
+      if (!actor) return;
+      obj.indicators[indicatorIndex].hidden = true;
+      addHistoryEntry(obj, `Indicador "${obj.indicators[indicatorIndex].name}" ocultado por ${actor} el ${formatDateTime()}.`);
+      state.detailIndicatorView = 'active';
+      persistObjectives();
+      renderDetailModal();
+      renderObjectives();
+    }
+
+    function recoverIndicator(indicatorIndex){
+      const obj = state.objectives.find(item => item.id === state.detailId);
+      if (!obj || !obj.indicators[indicatorIndex]) return;
+      const actor = askActionUser(obj.leader);
+      if (!actor) return;
+      obj.indicators[indicatorIndex].hidden = false;
+      addHistoryEntry(obj, `Indicador "${obj.indicators[indicatorIndex].name}" recuperado por ${actor} el ${formatDateTime()}.`);
+      state.detailIndicatorView = 'active';
+      persistObjectives();
       renderDetailModal();
       renderObjectives();
     }
@@ -879,6 +1003,7 @@
     function openDetailModal(id){
       state.detailId = id;
       state.detailTab = 'comments';
+      state.detailIndicatorView = 'active';
       renderDetailModal();
       detailModal.classList.add('open');
       detailModal.setAttribute('aria-hidden', 'false');
@@ -889,6 +1014,7 @@
       detailModal.setAttribute('aria-hidden', 'true');
       state.detailId = null;
       state.detailTab = 'comments';
+      state.detailIndicatorView = 'active';
     }
 
     function buildCommentMarkup(comment){
@@ -953,8 +1079,12 @@
               <div class="detail-panel">
                 <div class="right-section-title">
                   <h3 style="margin:0">Indicadores Cuantitativos</h3>
-                  <button class="btn-secondary small" type="button" id="detailAddIndicatorBtn">Agregar +</button>
+                  <div class="indicator-view-tools">
+                    <button class="btn-light small" type="button" id="toggleHiddenIndicatorsBtn">${state.detailIndicatorView === 'hidden' ? 'Ver Activos' : 'Indicadores Ocultos'}</button>
+                    <button class="btn-secondary small" type="button" id="detailAddIndicatorBtn">Agregar +</button>
+                  </div>
                 </div>
+                ${state.detailIndicatorView === 'hidden' ? '<div class="hidden-indicator-note">Aquí puedes visualizar indicadores ocultos y recuperarlos.</div>' : ''}
                 <div class="detail-table-wrap">
                   <table class="detail-table">
                     <thead>
@@ -971,10 +1101,24 @@
                       </tr>
                     </thead>
                     <tbody>
-                      ${obj.indicators.length ? obj.indicators.map(ind => {
-                        const advance = ind.target ? Math.round(Math.max(0, Math.min(100, (Number(ind.current || 0) / Number(ind.target || 1)) * 100))) : 0;
-                        return `<tr><td>${escapeHtml(ind.name)}</td><td>${escapeHtml(ind.action || '—')}</td><td>${escapeHtml(ind.unit || '—')}</td><td>${escapeHtml(ind.initialValue ?? '—')}</td><td>${escapeHtml(ind.target ?? '—')}</td><td>${escapeHtml(ind.current ?? '—')}</td><td>${advance}%</td><td>${escapeHtml(ind.owner || '—')}</td><td>—</td></tr>`;
-                      }).join('') : '<tr><td colspan="9" class="muted">Sin indicadores capturados.</td></tr>'}
+                      ${(() => {
+                        const source = obj.indicators
+                          .map((ind, index) => ({ ...ind, _index: index }))
+                          .filter(ind => state.detailIndicatorView === 'hidden' ? ind.hidden : !ind.hidden);
+                        if (!source.length) {
+                          return `<tr><td colspan="9" class="muted">${state.detailIndicatorView === 'hidden' ? 'No hay indicadores ocultos.' : 'Sin indicadores capturados.'}</td></tr>`;
+                        }
+                        return source.map(ind => {
+                          const advance = ind.target ? Math.round(Math.max(0, Math.min(100, (Number(ind.current || 0) / Number(ind.target || 1)) * 100))) : 0;
+                          const currentCell = state.detailIndicatorView === 'hidden'
+                            ? `${escapeHtml(ind.current ?? '—')}`
+                            : `<input class="inline-number-input" type="number" step="0.01" value="${escapeHtml(ind.current ?? 0)}" data-update-current-index="${ind._index}" />`;
+                          const actionsCell = state.detailIndicatorView === 'hidden'
+                            ? `<button class="btn-secondary small" type="button" data-recover-indicator-index="${ind._index}">Recuperar</button>`
+                            : `<div class="indicator-actions-inline"><button class="btn-secondary small btn-tight" type="button" data-edit-indicator-index="${ind._index}">Editar</button><button class="btn-light small btn-tight" type="button" data-hide-indicator-index="${ind._index}">Ocultar</button></div>`;
+                          return `<tr class="${ind.hidden ? 'indicator-hidden-row' : ''}"><td>${escapeHtml(ind.name)}</td><td>${escapeHtml(ind.action || '—')}</td><td>${escapeHtml(ind.unit || '—')}</td><td>${escapeHtml(ind.initialValue ?? '—')}</td><td>${escapeHtml(ind.target ?? '—')}</td><td>${currentCell}</td><td>${advance}%</td><td>${escapeHtml(ind.owner || '—')}</td><td>${actionsCell}</td></tr>`;
+                        }).join('');
+                      })()}
                     </tbody>
                   </table>
                 </div>
@@ -1046,9 +1190,44 @@
       document.getElementById('detailBackBtn').onclick = closeDetailModal;
       document.getElementById('detailEditBtn').onclick = () => { const id = obj.id; closeDetailModal(); startEdit(id); };
       document.getElementById('detailDeleteBtn').onclick = () => deleteObjective(obj.id);
+
       const detailAddIndicatorBtn = document.getElementById('detailAddIndicatorBtn');
-      if (detailAddIndicatorBtn) detailAddIndicatorBtn.onclick = openIndicatorModal;
-      detailContent.querySelectorAll('[data-detail-tab]').forEach(btn => btn.onclick = () => { state.detailTab = btn.dataset.detailTab; renderDetailModal(); });
+      if (detailAddIndicatorBtn) detailAddIndicatorBtn.onclick = () => openIndicatorModal('create');
+
+      const toggleHiddenIndicatorsBtn = document.getElementById('toggleHiddenIndicatorsBtn');
+      if (toggleHiddenIndicatorsBtn) {
+        toggleHiddenIndicatorsBtn.onclick = () => {
+          state.detailIndicatorView = state.detailIndicatorView === 'hidden' ? 'active' : 'hidden';
+          renderDetailModal();
+        };
+      }
+
+      detailContent.querySelectorAll('[data-detail-tab]').forEach(btn => btn.onclick = () => {
+        state.detailTab = btn.dataset.detailTab;
+        renderDetailModal();
+      });
+
+      detailContent.querySelectorAll('[data-update-current-index]').forEach(input => {
+        input.addEventListener('change', () => updateIndicatorCurrentValue(Number(input.dataset.updateCurrentIndex), input.value));
+        input.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            input.blur();
+          }
+        });
+      });
+
+      detailContent.querySelectorAll('[data-edit-indicator-index]').forEach(btn => {
+        btn.onclick = () => openIndicatorModal('edit', Number(btn.dataset.editIndicatorIndex));
+      });
+
+      detailContent.querySelectorAll('[data-hide-indicator-index]').forEach(btn => {
+        btn.onclick = () => hideIndicator(Number(btn.dataset.hideIndicatorIndex));
+      });
+
+      detailContent.querySelectorAll('[data-recover-indicator-index]').forEach(btn => {
+        btn.onclick = () => recoverIndicator(Number(btn.dataset.recoverIndicatorIndex));
+      });
 
       const addCommentBtn = document.getElementById('addCommentBtn');
       if (addCommentBtn) addCommentBtn.onclick = addCommentFromDetail;
