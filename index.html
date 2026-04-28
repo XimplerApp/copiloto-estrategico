@@ -168,11 +168,13 @@
     .mini-item-head{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:4px}
     .mini-item-title{font-weight:700}
     .mini-item-sub{color:var(--muted);font-size:12px;line-height:1.4}
-    .check-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
+    .check-row{display:grid;grid-template-columns:22px 1fr 126px auto;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
     .check-row:last-child{border-bottom:none}
     .check-row input[type="checkbox"]{width:16px;height:16px}
     .check-row.done .check-label{text-decoration:line-through;color:var(--muted)}
-    .check-label{flex:1;font-size:14px}
+    .check-label{font-size:14px}
+    .check-date{font-size:12px;color:var(--muted);white-space:nowrap}
+    .check-header{display:grid;grid-template-columns:22px 1fr 126px auto;gap:10px;align-items:center;font-size:12px;color:var(--muted);font-weight:700;padding:0 0 6px;border-bottom:1px solid var(--line)}
     .inline-add.stack{display:none;flex-direction:column;gap:8px}
     .inline-add.stack.open{display:flex}
     .link-anchor{color:var(--blue);text-decoration:none;font-weight:700;word-break:break-all}
@@ -782,6 +784,7 @@
         })).filter(item => item.text) : [],
         checklist: Array.isArray(obj.checklist) ? obj.checklist.map(item => ({
           text: item?.text || item?.label || '',
+          dueDate: item?.dueDate || item?.date || item?.commitmentDate || '',
           done: Boolean(item?.done)
         })).filter(item => item.text) : [],
         links: Array.isArray(obj.links) ? obj.links.map(item => ({
@@ -1076,7 +1079,7 @@
       const query = document.getElementById('searchInput').value.trim().toLowerCase();
       const status = document.getElementById('statusFilter').value;
       const filtered = state.objectives.filter(obj => {
-        const haystack = [obj.name, obj.description, obj.leader, obj.createdBy, ...(obj.tags || []), ...(obj.areas || []), ...(obj.linkedProjects || []), ...(obj.invited || []), ...((obj.reminders || []).map(x => x.text || '')), ...((obj.checklist || []).map(x => x.text || '')), ...((obj.links || []).flatMap(x => [x.title || '', x.url || ''])), ...((obj.attachments || []).map(x => x.name || ''))].join(' ').toLowerCase();
+        const haystack = [obj.name, obj.description, obj.leader, obj.createdBy, ...(obj.tags || []), ...(obj.areas || []), ...(obj.linkedProjects || []), ...(obj.invited || []), ...((obj.reminders || []).map(x => x.text || '')), ...((obj.checklist || []).flatMap(x => [x.text || '', x.dueDate || ''])), ...((obj.links || []).flatMap(x => [x.title || '', x.url || ''])), ...((obj.attachments || []).map(x => x.name || ''))].join(' ').toLowerCase();
         return (!query || haystack.includes(query)) && (status === 'all' || obj.status === status);
       });
 
@@ -1589,10 +1592,11 @@
                   <button class="btn-secondary small" type="button" id="toggleChecklistBoxBtn">Agregar</button>
                 </div>
                 <div>
-                  ${obj.checklist.length ? obj.checklist.map((item, index) => `<div class="check-row ${item.done ? 'done' : ''}"><input type="checkbox" ${item.done ? 'checked' : ''} data-toggle-check-index="${index}" /><span class="check-label">${escapeHtml(item.text)}</span><button class="btn-light small btn-tight" type="button" data-remove-check-index="${index}">Quitar</button></div>`).join('') : '<div class="muted">Sin elementos en check list</div>'}
+                  ${obj.checklist.length ? `<div class="check-header"><span></span><span>Punto</span><span>Fecha compromiso</span><span></span></div>` + obj.checklist.map((item, index) => `<div class="check-row ${item.done ? 'done' : ''}"><input type="checkbox" ${item.done ? 'checked' : ''} data-toggle-check-index="${index}" /><span class="check-label">${escapeHtml(item.text)}</span><span class="check-date">${formatDate(item.dueDate)}</span><button class="btn-light small btn-tight" type="button" data-remove-check-index="${index}">Quitar</button></div>`).join('') : '<div class="muted">Sin elementos en check list</div>'}
                 </div>
                 <div class="inline-add stack" id="inlineChecklistBox">
                   <input id="inlineChecklistText" class="input" type="text" placeholder="Nuevo elemento" />
+                  <input id="inlineChecklistDate" class="input" type="date" />
                   <button class="btn-secondary" type="button" id="saveInlineChecklistBtn">Agregar</button>
                 </div>
               </div>
@@ -1609,23 +1613,6 @@
                   <input id="inlineLinkTitle" class="input" type="text" placeholder="Nombre del enlace" />
                   <input id="inlineLinkUrl" class="input" type="url" placeholder="https://..." />
                   <button class="btn-secondary" type="button" id="saveInlineLinkBtn">Agregar enlace</button>
-                </div>
-              </div>
-
-              <div class="detail-panel">
-                <div class="right-section-title">
-                  <h3 style="margin:0">Archivos Adjuntos</h3>
-                  <button class="btn-secondary small" type="button" id="toggleAttachmentBoxBtn">Adjuntar archivos</button>
-                </div>
-                <div class="section-mini-list">
-                  ${obj.attachments.length ? obj.attachments.map((item, index) => `<div class="mini-item"><div class="mini-item-head"><span class="mini-item-title">${escapeHtml(item.name)}</span><div class="mini-item-actions">${item.dataUrl ? `<a class="btn-secondary small btn-tight attachment-anchor-btn" href="${item.dataUrl}" target="_blank" rel="noopener noreferrer">Ver</a><a class="btn-light small btn-tight attachment-anchor-btn" href="${item.dataUrl}" download="${escapeHtml(item.name)}">Descargar</a>` : ''}<button class="btn-light small btn-tight" type="button" data-remove-attachment-index="${index}">Quitar</button></div></div><div class="mini-item-sub">${formatFileSize(item.size)} · ${formatDateTime(item.addedAt)}</div></div>`).join('') : '<div class="muted">Sin archivos adjuntos</div>'}
-                </div>
-                <div class="inline-add stack" id="inlineAttachmentBox">
-                  <div class="file-upload-wrap">
-                    <input id="inlineAttachmentInput" type="file" multiple />
-                    <button class="btn-secondary" type="button" id="saveInlineAttachmentBtn">Registrar</button>
-                  </div>
-                  <div class="modal-mini-subnote">En esta demo local se guarda el archivo en el navegador para poder visualizarlo y descargarlo.</div>
                 </div>
               </div>
 
@@ -1650,6 +1637,23 @@
                 <div class="inline-add" id="inlineProjectBox">
                   <input id="inlineProjectInput" class="input" type="text" placeholder="Nuevo proyecto ligado" />
                   <button class="btn-secondary" type="button" id="saveInlineProjectBtn">Agregar</button>
+                </div>
+              </div>
+
+              <div class="detail-panel">
+                <div class="right-section-title">
+                  <h3 style="margin:0">Archivos Adjuntos</h3>
+                  <button class="btn-secondary small" type="button" id="toggleAttachmentBoxBtn">Adjuntar archivos</button>
+                </div>
+                <div class="section-mini-list">
+                  ${obj.attachments.length ? obj.attachments.map((item, index) => `<div class="mini-item"><div class="mini-item-head"><span class="mini-item-title">${escapeHtml(item.name)}</span><div class="mini-item-actions">${item.dataUrl ? `<a class="btn-secondary small btn-tight attachment-anchor-btn" href="${item.dataUrl}" target="_blank" rel="noopener noreferrer">Ver</a><a class="btn-light small btn-tight attachment-anchor-btn" href="${item.dataUrl}" download="${escapeHtml(item.name)}">Descargar</a>` : ''}<button class="btn-light small btn-tight" type="button" data-remove-attachment-index="${index}">Quitar</button></div></div><div class="mini-item-sub">${formatFileSize(item.size)} · ${formatDateTime(item.addedAt)}</div></div>`).join('') : '<div class="muted">Sin archivos adjuntos</div>'}
+                </div>
+                <div class="inline-add stack" id="inlineAttachmentBox">
+                  <div class="file-upload-wrap">
+                    <input id="inlineAttachmentInput" type="file" multiple />
+                    <button class="btn-secondary" type="button" id="saveInlineAttachmentBtn">Registrar</button>
+                  </div>
+                  <div class="modal-mini-subnote">En esta demo local se guarda el archivo en el navegador para poder visualizarlo y descargarlo.</div>
                 </div>
               </div>
             </div>
@@ -1942,9 +1946,10 @@
       const obj = state.objectives.find(item => item.id === state.detailId);
       if (!obj) return;
       const textValue = document.getElementById('inlineChecklistText').value.trim();
+      const dueDate = document.getElementById('inlineChecklistDate').value;
       if (!textValue) return alert('Escribe un elemento del check list.');
-      obj.checklist.push({ text: textValue, done: false });
-      obj.history.unshift(`Elemento agregado a check list: ${textValue}.`);
+      obj.checklist.push({ text: textValue, dueDate, done: false });
+      obj.history.unshift(`Elemento agregado a check list: ${textValue}${dueDate ? ` · compromiso ${dueDate}` : ''}.`);
       persistObjectives();
       renderDetailModal();
       renderObjectives();
