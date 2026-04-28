@@ -13,7 +13,7 @@
       --muted: #6b7280;
       --green: #22a652;
       --green-soft: #e8f7ee;
-      --yellow: #e0b300;
+      --yellow: #d4a600;
       --yellow-soft: #fff7d6;
       --red: #dc3545;
       --red-soft: #fde8ea;
@@ -56,30 +56,59 @@
       font-size: 14px;
     }
 
-    .btn-primary {
+    .btn-primary,
+    .btn-secondary,
+    .btn-light,
+    .btn-danger {
       border: none;
-      background: var(--green);
-      color: #fff;
-      padding: 14px 18px;
-      border-radius: 999px;
+      border-radius: 10px;
+      padding: 12px 16px;
       font-weight: 700;
       cursor: pointer;
+      font-size: 14px;
+    }
+
+    .btn-primary {
+      background: var(--green);
+      color: #fff;
       display: inline-flex;
       align-items: center;
       gap: 10px;
       box-shadow: var(--shadow);
+      border-radius: 999px;
+      padding: 14px 18px;
     }
 
     .btn-primary .plus {
       width: 28px;
       height: 28px;
       border-radius: 999px;
-      background: rgba(255,255,255,0.2);
+      background: rgba(255,255,255,0.18);
       display: inline-flex;
       align-items: center;
       justify-content: center;
       font-size: 22px;
       line-height: 1;
+    }
+
+    .btn-secondary {
+      background: #fff;
+      color: var(--text);
+      border: 1px solid var(--line);
+    }
+
+    .btn-light {
+      background: #fff;
+      color: var(--text);
+      border: 1px solid var(--line);
+      padding: 10px 12px;
+    }
+
+    .btn-danger {
+      background: var(--red-soft);
+      color: var(--red);
+      border: 1px solid #f3c1c7;
+      padding: 10px 12px;
     }
 
     .card {
@@ -115,6 +144,11 @@
       box-shadow: 0 0 0 3px rgba(69, 137, 255, 0.12);
     }
 
+    .textarea {
+      min-height: 120px;
+      resize: vertical;
+    }
+
     .table-wrap {
       overflow-x: auto;
     }
@@ -139,25 +173,19 @@
       background: #fbfcfd;
     }
 
-    tbody tr:hover {
-      background: #fcfdfd;
-    }
+    tbody tr:hover { background: #fcfdfd; }
 
     .objective-link {
       color: var(--green);
       font-weight: 700;
       text-decoration: none;
+      cursor: pointer;
     }
 
-    .expander {
-      width: 28px;
-      height: 28px;
-      border-radius: 8px;
-      border: 1px solid var(--line);
-      background: #fff;
-      cursor: pointer;
-      font-weight: bold;
-      color: var(--muted);
+    .action-group {
+      display: inline-flex;
+      gap: 8px;
+      flex-wrap: wrap;
     }
 
     .progress-bar {
@@ -208,38 +236,6 @@
       z-index: 1;
     }
 
-    .btn-light {
-      border: 1px solid var(--line);
-      background: #fff;
-      color: var(--text);
-      padding: 10px 14px;
-      border-radius: 10px;
-      cursor: pointer;
-      font-weight: 600;
-    }
-
-    .btn-danger {
-      border: 1px solid #f3c6cb;
-      background: #fff5f5;
-      color: #b42318;
-      padding: 10px 14px;
-      border-radius: 10px;
-      cursor: pointer;
-      font-weight: 700;
-    }
-
-    .action-group {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-
-    .action-group .btn-light,
-    .action-group .btn-danger {
-      padding: 8px 12px;
-      font-size: 12px;
-    }
-
     .status-badge {
       display: inline-flex;
       align-items: center;
@@ -256,61 +252,11 @@
     .status-pausado { background: #eef2f7; color: #667085; }
     .status-cumplido { background: #eaf2ff; color: var(--blue); }
 
-    .details-row {
-      display: none;
-      background: #fbfcfe;
-    }
-
-    .details-row.open {
-      display: table-row;
-    }
-
-    .details-panel {
-      padding: 18px 22px 22px;
-    }
-
-    .detail-grid {
-      display: grid;
-      grid-template-columns: 1.2fr 1fr 1fr;
-      gap: 16px;
-    }
-
-    .mini-card {
-      background: white;
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      padding: 16px;
-    }
-
-    .mini-card h4 {
-      margin: 0 0 12px;
+    .empty-state {
+      padding: 22px;
+      text-align: center;
+      color: var(--muted);
       font-size: 14px;
-    }
-
-    .mini-card ul {
-      margin: 0;
-      padding-left: 18px;
-    }
-
-    .mini-card li {
-      margin-bottom: 8px;
-      color: #445;
-      font-size: 13px;
-    }
-
-    .tags {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-
-    .tag {
-      background: #eef5ff;
-      color: var(--blue);
-      border-radius: 999px;
-      padding: 6px 10px;
-      font-size: 12px;
-      font-weight: 700;
     }
 
     .modal {
@@ -346,16 +292,11 @@
       top: 0;
       background: #fff;
       z-index: 3;
-    }
-
-    .modal-title {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
+      gap: 16px;
     }
 
     .modal-title h2 {
-      margin: 0;
+      margin: 0 0 4px;
       font-size: 24px;
     }
 
@@ -368,22 +309,12 @@
     .modal-actions {
       display: flex;
       gap: 10px;
-    }
-
-    .btn-secondary {
-      background: #fff;
-      border: 1px solid var(--line);
-      color: var(--text);
-      border-radius: 10px;
-      padding: 12px 16px;
-      font-weight: 700;
-      cursor: pointer;
+      flex-wrap: wrap;
     }
 
     .form-grid {
       display: grid;
       grid-template-columns: 1.3fr 1fr;
-      gap: 0;
     }
 
     .col {
@@ -411,7 +342,7 @@
       gap: 10px;
     }
 
-    .section h3 .small-btn {
+    .small-btn {
       border: 1px solid var(--line);
       background: #fff;
       border-radius: 9px;
@@ -434,9 +365,7 @@
       gap: 12px;
     }
 
-    .field {
-      margin-bottom: 14px;
-    }
+    .field { margin-bottom: 14px; }
 
     label {
       display: block;
@@ -446,9 +375,9 @@
       color: #374151;
     }
 
-    .textarea {
-      min-height: 120px;
-      resize: vertical;
+    .required::after {
+      content: " *";
+      color: var(--red);
     }
 
     .hint {
@@ -482,23 +411,30 @@
       cursor: pointer;
     }
 
-    .chips {
+    .chips, .tags {
       display: flex;
       flex-wrap: wrap;
       gap: 8px;
-      margin-top: 10px;
     }
 
-    .chip {
+    .chip, .tag {
       display: inline-flex;
       gap: 8px;
       align-items: center;
-      background: #edf5ff;
-      color: var(--blue);
       border-radius: 999px;
       padding: 7px 10px;
       font-size: 12px;
       font-weight: 700;
+    }
+
+    .chip {
+      background: #edf5ff;
+      color: var(--blue);
+    }
+
+    .tag {
+      background: #eef5ff;
+      color: var(--blue);
     }
 
     .chip button {
@@ -511,39 +447,239 @@
       padding: 0;
     }
 
-    .empty-state {
+    .detail-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.32);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      z-index: 1001;
+    }
+
+    .detail-overlay.open { display: flex; }
+
+    .detail-card {
+      width: min(1300px, 100%);
+      max-height: 94vh;
+      overflow: auto;
+      background: #fff;
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      box-shadow: 0 30px 60px rgba(2, 8, 23, 0.2);
+    }
+
+    .detail-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      padding: 18px 22px;
+      border-bottom: 1px solid var(--line);
+      position: sticky;
+      top: 0;
+      background: #fff;
+      z-index: 2;
+    }
+
+    .detail-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .back-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      background: #fff;
+      cursor: pointer;
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .detail-title h2 {
+      margin: 0;
+      font-size: 28px;
+    }
+
+    .detail-top {
+      display: grid;
+      grid-template-columns: 1.1fr .8fr .7fr;
+      gap: 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .detail-top > div {
       padding: 22px;
-      text-align: center;
+      border-right: 1px solid var(--line);
+    }
+
+    .detail-top > div:last-child { border-right: none; }
+
+    .metric-title {
+      font-size: 13px;
       color: var(--muted);
+      margin-bottom: 8px;
+      font-weight: 700;
+    }
+
+    .detail-body {
+      display: grid;
+      grid-template-columns: 2.2fr 1fr;
+      min-height: 420px;
+    }
+
+    .detail-main, .detail-side { padding: 0; }
+    .detail-side { border-left: 1px solid var(--line); }
+
+    .block {
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .block h3, .side-block h4 {
+      margin: 0 0 12px;
+      font-size: 15px;
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+      margin-top: 12px;
+    }
+
+    .info-item strong {
+      display: block;
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+    }
+
+    .info-item div {
       font-size: 14px;
+      color: var(--text);
     }
 
-    .required::after {
-      content: " *";
-      color: var(--red);
+    .detail-table-wrap { overflow-x: auto; }
+
+    .detail-table {
+      width: 100%;
+      min-width: 860px;
     }
 
-    @media (max-width: 980px) {
-      .form-grid, .detail-grid {
+    .detail-table th, .detail-table td {
+      padding: 12px 10px;
+      border-bottom: 1px solid var(--line);
+      font-size: 13px;
+      vertical-align: top;
+    }
+
+    .side-block {
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .activity-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .activity-item {
+      border: 1px solid #dfe7ef;
+      border-radius: 12px;
+      padding: 12px;
+      background: #fbfdff;
+    }
+
+    .activity-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 8px;
+      font-weight: 700;
+      font-size: 13px;
+    }
+
+    .activity-meta {
+      display: grid;
+      gap: 4px;
+      margin-top: 8px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .empty-mini {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .side-link {
+      display: inline-block;
+      margin-right: 10px;
+      color: var(--blue);
+      font-weight: 700;
+      text-decoration: none;
+      margin-bottom: 6px;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 22px;
+      border-bottom: 1px solid var(--line);
+      margin-bottom: 14px;
+    }
+
+    .tab {
+      padding-bottom: 12px;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--muted);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+    }
+
+    .tab.active {
+      color: var(--green);
+      border-bottom-color: var(--green);
+    }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    .timeline-item {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 10px;
+      font-size: 13px;
+      color: #445;
+      background: #fff;
+    }
+
+    @media (max-width: 1100px) {
+      .form-grid, .detail-body, .detail-top, .info-grid, .grid-2, .grid-3 {
         grid-template-columns: 1fr;
       }
-      .col + .col {
+      .col + .col,
+      .detail-side,
+      .detail-top > div {
         border-left: none;
+        border-right: none;
         border-top: 1px solid var(--line);
       }
-      .filters {
-        grid-template-columns: 1fr;
-      }
-      .grid-2, .grid-3 {
-        grid-template-columns: 1fr;
-      }
-      .topbar {
+      .detail-top > div:first-child { border-top: none; }
+      .filters { grid-template-columns: 1fr; }
+      .topbar, .modal-header, .detail-header {
         flex-direction: column;
         align-items: stretch;
       }
-      .btn-primary {
-        justify-content: center;
-      }
+      .btn-primary { justify-content: center; }
     }
   </style>
 </head>
@@ -554,7 +690,7 @@
         <h1>Objetivos</h1>
         <p>Primer index funcional para el módulo de seguimiento estratégico de Ximpler.</p>
       </div>
-      <button id="openModalBtn" class="btn-primary">
+      <button id="openModalBtn" class="btn-primary" type="button">
         <span>Nuevo Objetivo</span>
         <span class="plus">+</span>
       </button>
@@ -576,12 +712,11 @@
         <table>
           <thead>
             <tr>
-              <th style="width:52px;"></th>
               <th>Objetivo</th>
               <th>Avance Cualitativo</th>
               <th>Avance Cuantitativo</th>
               <th>Líder Responsable</th>
-              <th>Fecha</th>
+              <th>Fecha Compromiso</th>
               <th>Estatus</th>
               <th>Acciones</th>
             </tr>
@@ -626,7 +761,7 @@
                     <input id="startDate" class="input" type="date" />
                   </div>
                   <div class="field">
-                    <label for="endDate">Fecha de cumplimiento</label>
+                    <label for="endDate">Fecha Compromiso</label>
                     <input id="endDate" class="input" type="date" />
                   </div>
                 </div>
@@ -647,7 +782,7 @@
                   </select>
                 </div>
                 <div class="field">
-                  <label for="involved">Involucrados en el objetivo</label>
+                  <label for="involved">Invitados</label>
                   <select id="involved" class="select" multiple size="5">
                     <option>Anel Castro</option>
                     <option>Melchor Iván Angulo</option>
@@ -657,7 +792,7 @@
                     <option>Raúl Mendoza</option>
                     <option>Sofía Vega</option>
                   </select>
-                  <div class="hint">Usa Ctrl/Cmd + click para seleccionar varios involucrados.</div>
+                  <div class="hint">Usa Ctrl/Cmd + click para seleccionar varios invitados.</div>
                 </div>
               </div>
             </div>
@@ -677,7 +812,7 @@
                 <button id="addInitiativeBtn" class="small-btn" type="button">+ Agregar</button>
               </h3>
               <div id="initiativesList" class="repeat-list"></div>
-              <div class="hint">Estas iniciativas ayudan a medir el avance cualitativo y el aterrizaje operativo.</div>
+              <div class="hint">El promedio de cumplimiento de estas actividades afecta el Avance Cualitativo del objetivo.</div>
             </div>
           </div>
 
@@ -689,7 +824,7 @@
                   <input id="tagInput" class="input" type="text" placeholder="Escribe una etiqueta" />
                   <button id="addTagBtn" class="btn-secondary" type="button">Agregar etiqueta</button>
                 </div>
-                <div id="tagsContainer" class="chips"></div>
+                <div id="tagsContainer" class="chips" style="margin-top:10px;"></div>
               </div>
             </div>
 
@@ -742,6 +877,8 @@
     </div>
   </div>
 
+  <div id="detailOverlay" class="detail-overlay" aria-hidden="true"></div>
+
   <template id="indicatorTemplate">
     <div class="repeat-item indicator-item">
       <button class="remove-row" type="button">Eliminar</button>
@@ -786,7 +923,7 @@
       <button class="remove-row" type="button">Eliminar</button>
       <div class="grid-2">
         <div class="field">
-          <label>Iniciativa / actividad</label>
+          <label>Actividad</label>
           <input class="input initiative-name" type="text" placeholder="Ej. Rediseñar flujo de cobranza" />
         </div>
         <div class="field">
@@ -808,7 +945,7 @@
           </select>
         </div>
         <div class="field">
-          <label>Avance (%)</label>
+          <label>Cumplimiento (%)</label>
           <input class="input initiative-progress" type="number" min="0" max="100" step="1" placeholder="0" />
         </div>
       </div>
@@ -816,14 +953,15 @@
   </template>
 
   <script>
-    const STORAGE_KEY = 'ximpler_objetivos_demo_v1';
+    const STORAGE_KEY = 'ximpler_objetivos_demo_v2';
 
     const sampleObjectives = [
       {
         id: crypto.randomUUID(),
         name: 'Recuperar Cartera Vencida',
-        description: 'Reducir el rezago de cobranza y mejorar la recuperación mensual.',
-        startDate: '2021-05-01',
+        creator: 'Anel Castro',
+        description: 'Recuperar cartera vencida correspondiente al periodo 2019 y 2020.',
+        startDate: '2021-05-13',
         endDate: '2021-05-31',
         leader: 'Anel Castro',
         involved: ['Carlos López', 'María Torres'],
@@ -831,17 +969,19 @@
           { name: '% recuperación', unit: '%', target: 100, current: 85, frequency: 'Mensual', owner: 'Cobranza' }
         ],
         initiatives: [
-          { name: 'Campaña de cobranza intensiva', owner: 'Carlos López', dueDate: '2021-05-25', status: 'en progreso', progress: 20 },
-          { name: 'Revisión de cartera crítica', owner: 'María Torres', dueDate: '2021-05-20', status: 'pendiente', progress: 0 }
+          { name: 'Actualizar CxC', owner: 'Carlos López', dueDate: '2021-05-25', status: 'en progreso', progress: 10 }
         ],
-        tags: ['Cobranza', 'Flujo de efectivo'],
-        areas: ['Cobranza', 'Finanzas'],
-        linkedProjects: ['Proyecto Cobranza 2026'],
-        status: 'activo'
+        tags: ['Ingresos'],
+        areas: ['Administración'],
+        linkedProjects: ['Proyecto de Ventas'],
+        status: 'activo',
+        comments: ['Se inició revisión de expedientes para acelerar cobro.'],
+        history: ['Objetivo creado por Anel Castro.']
       },
       {
         id: crypto.randomUUID(),
         name: 'Posicionar la marca en redes sociales',
+        creator: 'Anel Castro',
         description: 'Incrementar notoriedad y tracción digital de marca en redes clave.',
         startDate: '2021-05-13',
         endDate: '2021-12-31',
@@ -857,19 +997,23 @@
         tags: ['Marketing', 'Branding'],
         areas: ['Marketing', 'Dirección General'],
         linkedProjects: ['Campaña Branding Norte'],
-        status: 'activo'
+        status: 'activo',
+        comments: ['Se aprobó la nueva línea visual para publicaciones.'],
+        history: ['Objetivo actualizado por Anel Castro.']
       }
     ];
 
     const state = {
       objectives: loadObjectives(),
       tags: [],
-      currentEditingId: null
+      currentEditingId: null,
+      activeDetailTab: 'comments'
     };
 
     const objectivesBody = document.getElementById('objectivesBody');
     const emptyState = document.getElementById('emptyState');
     const modal = document.getElementById('modal');
+    const detailOverlay = document.getElementById('detailOverlay');
     const openModalBtn = document.getElementById('openModalBtn');
     const closeModalBtn = document.getElementById('closeModalBtn');
     const saveObjectiveBtn = document.getElementById('saveObjectiveBtn');
@@ -950,6 +1094,7 @@
           obj.name,
           obj.description,
           obj.leader,
+          ...(obj.involved || []),
           ...(obj.tags || []),
           ...(obj.areas || []),
           ...(obj.linkedProjects || [])
@@ -971,8 +1116,7 @@
 
         const tr = document.createElement('tr');
         tr.innerHTML = `
-          <td><button class="expander" type="button" data-toggle="${obj.id}">+</button></td>
-          <td><a class="objective-link" href="javascript:void(0)">${escapeHtml(obj.name)}</a></td>
+          <td><a class="objective-link" data-view="${obj.id}">${escapeHtml(obj.name)}</a></td>
           <td>
             <div class="progress-bar"><div class="progress-fill" style="width:${ql}%; background:${qlColor};"></div></div>
             <div class="progress-label">${ql}%</div>
@@ -985,63 +1129,207 @@
           <td><span class="status-badge status-${obj.status}">${statusLabel(obj.status)}</span></td>
           <td>
             <div class="action-group">
-              <button class="btn-light" type="button" data-toggle="${obj.id}">Detalles</button>
+              <button class="btn-light" type="button" data-view="${obj.id}">Detalles</button>
               <button class="btn-light" type="button" data-edit="${obj.id}">Editar</button>
               <button class="btn-danger" type="button" data-delete="${obj.id}">Eliminar</button>
             </div>
           </td>
         `;
-
-        const detailTr = document.createElement('tr');
-        detailTr.className = 'details-row';
-        detailTr.id = `details-${obj.id}`;
-        detailTr.innerHTML = `
-          <td colspan="8">
-            <div class="details-panel">
-              <div class="detail-grid">
-                <div class="mini-card">
-                  <h4>Resumen del objetivo</h4>
-                  <p style="margin:0 0 10px; font-size:13px; color:#475467;">${escapeHtml(obj.description || 'Sin descripción')}</p>
-                  <div class="tags">${(obj.tags || []).map(tag => `<span class="tag">${escapeHtml(tag)}</span>`).join('') || '<span class="tag">Sin etiquetas</span>'}</div>
-                  <p style="margin:12px 0 0; font-size:12px; color:#667085;"><strong>Áreas:</strong> ${escapeHtml((obj.areas || []).join(', ') || '—')}</p>
-                  <p style="margin:8px 0 0; font-size:12px; color:#667085;"><strong>Proyectos ligados:</strong> ${escapeHtml((obj.linkedProjects || []).join(', ') || '—')}</p>
-                </div>
-                <div class="mini-card">
-                  <h4>Indicadores cuantitativos</h4>
-                  <ul>${obj.indicators.length ? obj.indicators.map(item => `<li><strong>${escapeHtml(item.name)}</strong>: ${escapeHtml(String(item.current || 0))} / ${escapeHtml(String(item.target || 0))} ${escapeHtml(item.unit || '')}</li>`).join('') : '<li>Sin indicadores</li>'}</ul>
-                </div>
-                <div class="mini-card">
-                  <h4>Iniciativas / actividades</h4>
-                  <ul>${obj.initiatives.length ? obj.initiatives.map(item => `<li><strong>${escapeHtml(item.name)}</strong> - ${escapeHtml(item.status)} (${escapeHtml(String(item.progress || 0))}%)</li>`).join('') : '<li>Sin iniciativas</li>'}</ul>
-                </div>
-              </div>
-            </div>
-          </td>
-        `;
-
         objectivesBody.appendChild(tr);
-        objectivesBody.appendChild(detailTr);
       });
 
-      bindDetailToggles();
       bindActionButtons();
     }
 
-    function bindDetailToggles() {
-      document.querySelectorAll('[data-toggle]').forEach(button => {
-        button.onclick = () => {
-          const id = button.getAttribute('data-toggle');
-          const details = document.getElementById(`details-${id}`);
-          const expander = document.querySelector(`.expander[data-toggle="${id}"]`);
-          if (!details) return;
-          const isOpen = details.classList.contains('open');
-          details.classList.toggle('open');
-          if (expander) expander.textContent = isOpen ? '+' : '−';
+    function buildTagList(items = []) {
+      return items.length ? items.map(item => `<span class="tag">${escapeHtml(item)}</span>`).join('') : '<div class="empty-mini">Sin registros.</div>';
+    }
+
+    function buildChipList(items = []) {
+      return items.length ? items.map(item => `<span class="chip">${escapeHtml(item)}</span>`).join('') : '<div class="empty-mini">Sin registros.</div>';
+    }
+
+    function openDetail(id) {
+      const obj = state.objectives.find(item => item.id === id);
+      if (!obj) return;
+
+      const ql = calculateQualitativeProgress(obj.initiatives);
+      const qt = calculateQuantitativeProgress(obj.indicators);
+      const qlColor = getProgressColor(ql);
+      const qtColor = getProgressColor(qt);
+      const creator = obj.creator || obj.leader || '—';
+      const invited = (obj.involved || []).join(', ') || '—';
+      const indicatorsRows = (obj.indicators || []).length ? obj.indicators.map(item => {
+        const target = Number(item.target || 0);
+        const current = Number(item.current || 0);
+        const progress = target ? Math.max(0, Math.min(100, Math.round((current / target) * 100))) : 0;
+        const action = target > current ? 'Incrementar' : (target < current ? 'Reducir' : 'Sostener');
+        return `
+          <tr>
+            <td>${escapeHtml(item.name || '—')}</td>
+            <td>${escapeHtml(action)}</td>
+            <td>${escapeHtml(item.unit || '—')}</td>
+            <td>—</td>
+            <td>${escapeHtml(String(item.target || 0))}</td>
+            <td>${escapeHtml(String(item.current || 0))}</td>
+            <td>${progress}%</td>
+            <td>${escapeHtml(item.owner || '—')}</td>
+            <td>—</td>
+          </tr>
+        `;
+      }).join('') : '<tr><td colspan="9">Sin indicadores cuantitativos.</td></tr>';
+
+      const activities = (obj.initiatives || []).length ? obj.initiatives.map(item => {
+        const progress = Math.max(0, Math.min(100, Number(item.progress || 0)));
+        return `
+          <div class="activity-item">
+            <div class="activity-head">
+              <span>${escapeHtml(item.name || 'Actividad')}</span>
+              <span>${progress}%</span>
+            </div>
+            <div class="progress-bar"><div class="progress-fill" style="width:${progress}%; background:${getProgressColor(progress)};"></div></div>
+            <div class="activity-meta">
+              <span><strong>Responsable:</strong> ${escapeHtml(item.owner || '—')}</span>
+              <span><strong>Estatus:</strong> ${escapeHtml(item.status || '—')}</span>
+              <span><strong>Fecha:</strong> ${formatDate(item.dueDate)}</span>
+            </div>
+          </div>
+        `;
+      }).join('') : '<div class="empty-mini">No hay actividades registradas.</div>';
+
+      const comments = (obj.comments || []).length ? obj.comments.map(item => `<div class="timeline-item">${escapeHtml(item)}</div>`).join('') : '<div class="empty-mini">Sin comentarios.</div>';
+      const history = (obj.history || []).length ? obj.history.map(item => `<div class="timeline-item">${escapeHtml(item)}</div>`).join('') : '<div class="empty-mini">Sin historial.</div>';
+
+      detailOverlay.innerHTML = `
+        <div class="detail-card">
+          <div class="detail-header">
+            <div class="detail-title">
+              <button class="back-btn" id="closeDetailBtn" type="button">←</button>
+              <h2>${escapeHtml(obj.name)}</h2>
+            </div>
+            <div class="action-group">
+              <button class="btn-light" type="button" data-edit="${obj.id}">Editar</button>
+              <button class="btn-danger" type="button" data-delete="${obj.id}">Eliminar</button>
+            </div>
+          </div>
+
+          <div class="detail-top">
+            <div>
+              <div class="metric-title">Fechas</div>
+              <div style="display:grid; gap:10px; font-size:14px;">
+                <div><strong>Fecha Inicio:</strong> ${formatDate(obj.startDate)}</div>
+                <div><strong>Fecha Compromiso:</strong> ${formatDate(obj.endDate)}</div>
+              </div>
+            </div>
+            <div>
+              <div class="metric-title">Avance Cualitativo</div>
+              <div class="progress-bar"><div class="progress-fill" style="width:${ql}%; background:${qlColor};"></div></div>
+              <div class="progress-label">${ql}%</div>
+            </div>
+            <div>
+              <div class="metric-title">Avance Cuantitativo</div>
+              <div class="ring" style="--val:${qt}; --ring-color:${qtColor};"><span>${qt}%</span></div>
+            </div>
+          </div>
+
+          <div class="detail-body">
+            <div class="detail-main">
+              <div class="block">
+                <h3>Descripción</h3>
+                <div style="font-size:14px; color:#475467; line-height:1.5;">${escapeHtml(obj.description || 'Sin descripción')}</div>
+                <div class="info-grid">
+                  <div class="info-item"><strong>Creador</strong><div>${escapeHtml(creator)}</div></div>
+                  <div class="info-item"><strong>Líder Responsable</strong><div>${escapeHtml(obj.leader || '—')}</div></div>
+                  <div class="info-item"><strong>Invitados</strong><div>${escapeHtml(invited)}</div></div>
+                </div>
+              </div>
+
+              <div class="block">
+                <h3>Indicadores Cuantitativos</h3>
+                <div class="detail-table-wrap">
+                  <table class="detail-table">
+                    <thead>
+                      <tr>
+                        <th>Indicador</th>
+                        <th>Acción</th>
+                        <th>Unidad de Medida</th>
+                        <th>Valor Inicial</th>
+                        <th>Meta</th>
+                        <th>Valor Actual</th>
+                        <th>Avance</th>
+                        <th>Responsable</th>
+                        <th>Acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody>${indicatorsRows}</tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div class="block">
+                <div class="tabs">
+                  <div class="tab ${state.activeDetailTab === 'comments' ? 'active' : ''}" data-tab="comments">Comentarios</div>
+                  <div class="tab ${state.activeDetailTab === 'history' ? 'active' : ''}" data-tab="history">Historial</div>
+                </div>
+                <div class="tab-content ${state.activeDetailTab === 'comments' ? 'active' : ''}" data-content="comments">${comments}</div>
+                <div class="tab-content ${state.activeDetailTab === 'history' ? 'active' : ''}" data-content="history">${history}</div>
+              </div>
+            </div>
+
+            <div class="detail-side">
+              <div class="side-block">
+                <h4>Agrega Actividades</h4>
+                <div class="activity-list">${activities}</div>
+              </div>
+              <div class="side-block">
+                <h4>Etiquetas</h4>
+                <div class="tags">${buildTagList(obj.tags || [])}</div>
+              </div>
+              <div class="side-block">
+                <h4>Áreas</h4>
+                <div class="chips">${buildChipList(obj.areas || [])}</div>
+              </div>
+              <div class="side-block">
+                <h4>Ligado a</h4>
+                ${(obj.linkedProjects || []).length ? obj.linkedProjects.map(project => `<a href="javascript:void(0)" class="side-link">${escapeHtml(project)}</a>`).join('') : '<div class="empty-mini">Sin proyectos ligados.</div>'}
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      detailOverlay.classList.add('open');
+      detailOverlay.setAttribute('aria-hidden', 'false');
+      document.body.style.overflow = 'hidden';
+      bindActionButtons();
+      bindDetailTabs();
+      document.getElementById('closeDetailBtn').onclick = closeDetail;
+    }
+
+    function closeDetail() {
+      detailOverlay.classList.remove('open');
+      detailOverlay.setAttribute('aria-hidden', 'true');
+      detailOverlay.innerHTML = '';
+      document.body.style.overflow = '';
+    }
+
+    function bindDetailTabs() {
+      detailOverlay.querySelectorAll('[data-tab]').forEach(tab => {
+        tab.onclick = () => {
+          state.activeDetailTab = tab.getAttribute('data-tab');
+          detailOverlay.querySelectorAll('[data-tab]').forEach(item => item.classList.toggle('active', item === tab));
+          detailOverlay.querySelectorAll('[data-content]').forEach(content => {
+            content.classList.toggle('active', content.getAttribute('data-content') === state.activeDetailTab);
+          });
         };
       });
     }
 
     function bindActionButtons() {
+      document.querySelectorAll('[data-view]').forEach(button => {
+        button.onclick = () => openDetail(button.getAttribute('data-view'));
+      });
+
       document.querySelectorAll('[data-edit]').forEach(button => {
         button.onclick = () => editObjective(button.getAttribute('data-edit'));
       });
@@ -1073,6 +1361,7 @@
       const objective = state.objectives.find(item => item.id === id);
       if (!objective) return;
 
+      closeDetail();
       state.currentEditingId = id;
       setModalMode(true);
       objectiveForm.reset();
@@ -1118,6 +1407,7 @@
       state.objectives = state.objectives.filter(item => item.id !== id);
       persistObjectives();
       renderObjectives();
+      closeDetail();
 
       if (state.currentEditingId === id) {
         resetForm();
@@ -1234,8 +1524,10 @@
         return;
       }
 
+      const existing = state.currentEditingId ? state.objectives.find(item => item.id === state.currentEditingId) : null;
       const objective = {
         id: state.currentEditingId || crypto.randomUUID(),
+        creator: existing?.creator || leader,
         name,
         description: document.getElementById('objectiveDescription').value.trim(),
         startDate: document.getElementById('startDate').value,
@@ -1247,7 +1539,9 @@
         tags: [...state.tags],
         areas: getMultiSelectValues(document.getElementById('areas')),
         linkedProjects: getMultiSelectValues(document.getElementById('linkedProjects')),
-        status: document.getElementById('objectiveStatus').value
+        status: document.getElementById('objectiveStatus').value,
+        comments: existing?.comments || ['Sin comentarios todavía.'],
+        history: state.currentEditingId ? [...(existing?.history || []), 'Objetivo actualizado.'] : ['Objetivo creado.']
       };
 
       if (state.currentEditingId) {
@@ -1265,12 +1559,15 @@
 
     function escapeHtml(text) {
       const div = document.createElement('div');
-      div.textContent = text;
+      div.textContent = String(text ?? '');
       return div.innerHTML;
     }
 
-    openModalBtn.addEventListener('click', () => { resetForm(); openModal(); });
-    closeModalBtn.addEventListener('click', () => { closeModal(); resetForm(); });
+    openModalBtn.addEventListener('click', () => {
+      resetForm();
+      openModal();
+    });
+    closeModalBtn.addEventListener('click', closeModal);
     saveObjectiveBtn.addEventListener('click', saveObjective);
     addIndicatorBtn.addEventListener('click', () => addIndicatorRow());
     addInitiativeBtn.addEventListener('click', () => addInitiativeRow());
@@ -1284,10 +1581,16 @@
     searchInput.addEventListener('input', renderObjectives);
     statusFilter.addEventListener('change', renderObjectives);
     modal.addEventListener('click', (event) => {
-      if (event.target === modal) { closeModal(); resetForm(); }
+      if (event.target === modal) closeModal();
+    });
+    detailOverlay.addEventListener('click', (event) => {
+      if (event.target === detailOverlay) closeDetail();
     });
     document.addEventListener('keydown', (event) => {
-      if (event.key === 'Escape') { closeModal(); resetForm(); }
+      if (event.key === 'Escape') {
+        closeModal();
+        closeDetail();
+      }
     });
 
     resetForm();
