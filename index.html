@@ -351,6 +351,70 @@
     </div>
   </div>
 
+  <div id="indicatorModal" class="modal" aria-hidden="true">
+    <div class="modal-card" style="width:min(760px,100%)">
+      <div class="modal-header">
+        <div class="modal-title">
+          <h2>Nuevo Indicador Cuantitativo</h2>
+          <p>Agrega un indicador desde la tarjeta del objetivo.</p>
+        </div>
+        <div class="modal-actions">
+          <button id="closeIndicatorBtn" class="btn-secondary" type="button">Cancelar</button>
+          <button id="saveIndicatorBtn" class="btn-primary" type="button"><span>Guardar Indicador</span><span>💾</span></button>
+        </div>
+      </div>
+      <form id="indicatorModalForm" style="padding:22px">
+        <div class="grid-2">
+          <div class="field">
+            <label class="required" for="modalIndicatorName">Indicador</label>
+            <input id="modalIndicatorName" class="input" type="text" placeholder="Ej. % recuperación" />
+          </div>
+          <div class="field">
+            <label for="modalIndicatorAction">Acción</label>
+            <select id="modalIndicatorAction" class="select">
+              <option value="Incrementar" selected>Incrementar</option>
+              <option value="Reducir">Reducir</option>
+              <option value="Mantener">Mantener</option>
+            </select>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="field">
+            <label for="modalIndicatorUnit">Unidad de Medida</label>
+            <input id="modalIndicatorUnit" class="input" type="text" placeholder="%, $, días" />
+          </div>
+          <div class="field">
+            <label for="modalIndicatorOwner">Responsable</label>
+            <input id="modalIndicatorOwner" class="input" type="text" placeholder="Responsable del dato" />
+          </div>
+        </div>
+        <div class="grid-3">
+          <div class="field">
+            <label for="modalIndicatorInitial">Valor Inicial</label>
+            <input id="modalIndicatorInitial" class="input" type="number" step="0.01" placeholder="0" />
+          </div>
+          <div class="field">
+            <label for="modalIndicatorTarget">Meta</label>
+            <input id="modalIndicatorTarget" class="input" type="number" step="0.01" placeholder="100" />
+          </div>
+          <div class="field">
+            <label for="modalIndicatorCurrent">Valor Actual</label>
+            <input id="modalIndicatorCurrent" class="input" type="number" step="0.01" placeholder="0" />
+          </div>
+        </div>
+        <div class="field">
+          <label for="modalIndicatorFrequency">Frecuencia</label>
+          <select id="modalIndicatorFrequency" class="select">
+            <option>Diaria</option>
+            <option>Semanal</option>
+            <option selected>Mensual</option>
+            <option>Trimestral</option>
+          </select>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <template id="indicatorTemplate">
     <div class="repeat-item indicator-item">
       <button class="remove-row" type="button">Eliminar</button>
@@ -496,6 +560,8 @@
     const activitiesList = document.getElementById('activitiesList');
     const tagsContainer = document.getElementById('tagsContainer');
     const detailContent = document.getElementById('detailContent');
+    const indicatorModal = document.getElementById('indicatorModal');
+    const indicatorModalForm = document.getElementById('indicatorModalForm');
 
     function normalizeComment(comment){
       if (typeof comment === 'string') return { author:'Sistema', text:comment, date:new Date().toISOString().slice(0,10) };
@@ -765,6 +831,51 @@
       document.querySelectorAll('[data-delete-id]').forEach(btn => btn.onclick = () => deleteObjective(btn.dataset.deleteId));
     }
 
+
+    function resetIndicatorModal(){
+      indicatorModalForm.reset();
+      const obj = state.objectives.find(item => item.id === state.detailId);
+      if (obj?.leader) document.getElementById('modalIndicatorOwner').value = obj.leader;
+      document.getElementById('modalIndicatorFrequency').value = 'Mensual';
+      document.getElementById('modalIndicatorAction').value = 'Incrementar';
+    }
+
+    function openIndicatorModal(){
+      resetIndicatorModal();
+      indicatorModal.classList.add('open');
+      indicatorModal.setAttribute('aria-hidden', 'false');
+      document.getElementById('modalIndicatorName').focus();
+    }
+
+    function closeIndicatorModal(){
+      indicatorModal.classList.remove('open');
+      indicatorModal.setAttribute('aria-hidden', 'true');
+      indicatorModalForm.reset();
+    }
+
+    function saveIndicatorFromModal(){
+      const obj = state.objectives.find(item => item.id === state.detailId);
+      if (!obj) return;
+      const name = document.getElementById('modalIndicatorName').value.trim();
+      if (!name) return alert('Escribe el nombre del indicador.');
+      const indicator = {
+        name,
+        action: document.getElementById('modalIndicatorAction').value,
+        unit: document.getElementById('modalIndicatorUnit').value.trim(),
+        initialValue: Number(document.getElementById('modalIndicatorInitial').value || 0),
+        target: Number(document.getElementById('modalIndicatorTarget').value || 0),
+        current: Number(document.getElementById('modalIndicatorCurrent').value || 0),
+        frequency: document.getElementById('modalIndicatorFrequency').value,
+        owner: document.getElementById('modalIndicatorOwner').value.trim()
+      };
+      obj.indicators.push(indicator);
+      obj.history.unshift(`Indicador cuantitativo agregado: ${name}.`);
+      persistObjectives();
+      closeIndicatorModal();
+      renderDetailModal();
+      renderObjectives();
+    }
+
     function openDetailModal(id){
       state.detailId = id;
       state.detailTab = 'comments';
@@ -840,7 +951,10 @@
               </div>
 
               <div class="detail-panel">
-                <h3>Indicadores Cuantitativos</h3>
+                <div class="right-section-title">
+                  <h3 style="margin:0">Indicadores Cuantitativos</h3>
+                  <button class="btn-secondary small" type="button" id="detailAddIndicatorBtn">Agregar +</button>
+                </div>
                 <div class="detail-table-wrap">
                   <table class="detail-table">
                     <thead>
@@ -932,6 +1046,8 @@
       document.getElementById('detailBackBtn').onclick = closeDetailModal;
       document.getElementById('detailEditBtn').onclick = () => { const id = obj.id; closeDetailModal(); startEdit(id); };
       document.getElementById('detailDeleteBtn').onclick = () => deleteObjective(obj.id);
+      const detailAddIndicatorBtn = document.getElementById('detailAddIndicatorBtn');
+      if (detailAddIndicatorBtn) detailAddIndicatorBtn.onclick = openIndicatorModal;
       detailContent.querySelectorAll('[data-detail-tab]').forEach(btn => btn.onclick = () => { state.detailTab = btn.dataset.detailTab; renderDetailModal(); });
 
       const addCommentBtn = document.getElementById('addCommentBtn');
@@ -991,18 +1107,34 @@
     document.getElementById('addIndicatorBtn').addEventListener('click', () => addIndicatorRow());
     document.getElementById('addActivityBtn').addEventListener('click', () => addActivityRow());
     document.getElementById('addTagBtn').addEventListener('click', addFormTag);
+    document.getElementById('closeIndicatorBtn').addEventListener('click', closeIndicatorModal);
+    document.getElementById('saveIndicatorBtn').addEventListener('click', saveIndicatorFromModal);
     document.getElementById('tagInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addFormTag(); } });
     document.getElementById('searchInput').addEventListener('input', renderObjectives);
     document.getElementById('statusFilter').addEventListener('change', renderObjectives);
 
-    [formModal, detailModal].forEach(modal => modal.addEventListener('click', (e) => {
+    [formModal, detailModal, indicatorModal].forEach(modal => modal.addEventListener('click', (e) => {
       if (e.target === modal){
         if (modal === formModal){ closeFormModal(); resetForm(); }
         if (modal === detailModal) closeDetailModal();
+        if (modal === indicatorModal) closeIndicatorModal();
       }
     }));
 
-    document.addEventListener('keydown', (e) => { if (e.key === 'Escape'){ closeFormModal(); closeDetailModal(); } });
+    document.getElementById('modalIndicatorName').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        saveIndicatorFromModal();
+      }
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape'){
+        closeFormModal();
+        closeDetailModal();
+        closeIndicatorModal();
+      }
+    });
 
     resetForm();
     renderObjectives();
