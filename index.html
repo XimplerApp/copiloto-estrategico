@@ -630,15 +630,35 @@
     function formatDate(dateString){ if (!dateString) return '—'; const date = new Date(dateString + 'T00:00:00'); return new Intl.DateTimeFormat('es-MX', { day:'2-digit', month:'short', year:'numeric' }).format(date); }
     function statusLabel(status){ return ({activo:'Activo', en_riesgo:'En riesgo', pausado:'Pausado', cumplido:'Cumplido'})[status] || status; }
     function getProgressColor(value){ if (value >= 80) return 'var(--green)'; if (value >= 50) return 'var(--yellow)'; return 'var(--red)'; }
+    function calculateIndicatorAdvance(indicator = {}){
+      const action = String(indicator.action || 'Incrementar').toLowerCase();
+      const initial = Number(indicator.initialValue ?? 0);
+      const target = Number(indicator.target ?? 0);
+      const current = Number(indicator.current ?? 0);
+
+      if (action === 'reducir') {
+        const totalReductionNeeded = initial - target;
+        if (totalReductionNeeded <= 0) return current <= target ? 100 : 0;
+        const achievedReduction = initial - current;
+        return Math.round(Math.max(0, Math.min(100, (achievedReduction / totalReductionNeeded) * 100)));
+      }
+
+      if (action === 'mantener') {
+        if (target === 0) return current === 0 ? 100 : 0;
+        const deviation = Math.abs(current - target);
+        const toleranceBase = Math.abs(target) || 1;
+        return Math.round(Math.max(0, Math.min(100, (1 - (deviation / toleranceBase)) * 100)));
+      }
+
+      const totalGrowthNeeded = target - initial;
+      if (totalGrowthNeeded <= 0) return current >= target ? 100 : 0;
+      const achievedGrowth = current - initial;
+      return Math.round(Math.max(0, Math.min(100, (achievedGrowth / totalGrowthNeeded) * 100)));
+    }
     function calculateQuantitativeProgress(indicators=[]){
       const visibleIndicators = indicators.filter(item => !item.hidden);
       if (!visibleIndicators.length) return 0;
-      const vals = visibleIndicators.map(item => {
-        const target = Number(item.target || 0);
-        const current = Number(item.current || 0);
-        if (!target) return 0;
-        return Math.max(0, Math.min(100, (current / target) * 100));
-      });
+      const vals = visibleIndicators.map(item => calculateIndicatorAdvance(item));
       return Math.round(vals.reduce((a,b)=>a+b,0) / vals.length);
     }
     function calculateQualitativeProgress(activities=[]){ if (!activities.length) return 0; const vals = activities.map(item => Math.max(0, Math.min(100, Number(item.progress || 0)))); return Math.round(vals.reduce((a,b)=>a+b,0) / vals.length); }
@@ -1109,7 +1129,7 @@
                           return `<tr><td colspan="9" class="muted">${state.detailIndicatorView === 'hidden' ? 'No hay indicadores ocultos.' : 'Sin indicadores capturados.'}</td></tr>`;
                         }
                         return source.map(ind => {
-                          const advance = ind.target ? Math.round(Math.max(0, Math.min(100, (Number(ind.current || 0) / Number(ind.target || 1)) * 100))) : 0;
+                          const advance = calculateIndicatorAdvance(ind);
                           const currentCell = state.detailIndicatorView === 'hidden'
                             ? `${escapeHtml(ind.current ?? '—')}`
                             : `<input class="inline-number-input" type="number" step="0.01" value="${escapeHtml(ind.current ?? 0)}" data-update-current-index="${ind._index}" />`;
