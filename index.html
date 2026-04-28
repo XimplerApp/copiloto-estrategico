@@ -630,35 +630,40 @@
     function formatDate(dateString){ if (!dateString) return '—'; const date = new Date(dateString + 'T00:00:00'); return new Intl.DateTimeFormat('es-MX', { day:'2-digit', month:'short', year:'numeric' }).format(date); }
     function statusLabel(status){ return ({activo:'Activo', en_riesgo:'En riesgo', pausado:'Pausado', cumplido:'Cumplido'})[status] || status; }
     function getProgressColor(value){ if (value >= 80) return 'var(--green)'; if (value >= 50) return 'var(--yellow)'; return 'var(--red)'; }
-    function calculateIndicatorAdvance(indicator = {}){
+    function calculateIndicatorAdvance(indicator = {}, allowNegative = true){
       const action = String(indicator.action || 'Incrementar').toLowerCase();
       const initial = Number(indicator.initialValue ?? 0);
       const target = Number(indicator.target ?? 0);
       const current = Number(indicator.current ?? 0);
 
+      const normalizeProgress = (value) => {
+        if (allowNegative) return Math.round(Math.min(100, value));
+        return Math.round(Math.max(0, Math.min(100, value)));
+      };
+
       if (action === 'reducir') {
         const totalReductionNeeded = initial - target;
-        if (totalReductionNeeded <= 0) return current <= target ? 100 : 0;
+        if (totalReductionNeeded <= 0) return current <= target ? 100 : (allowNegative ? -100 : 0);
         const achievedReduction = initial - current;
-        return Math.round(Math.max(0, Math.min(100, (achievedReduction / totalReductionNeeded) * 100)));
+        return normalizeProgress((achievedReduction / totalReductionNeeded) * 100);
       }
 
       if (action === 'mantener') {
-        if (target === 0) return current === 0 ? 100 : 0;
+        if (target === 0) return current === 0 ? 100 : (allowNegative ? -100 : 0);
         const deviation = Math.abs(current - target);
         const toleranceBase = Math.abs(target) || 1;
-        return Math.round(Math.max(0, Math.min(100, (1 - (deviation / toleranceBase)) * 100)));
+        return normalizeProgress((1 - (deviation / toleranceBase)) * 100);
       }
 
       const totalGrowthNeeded = target - initial;
-      if (totalGrowthNeeded <= 0) return current >= target ? 100 : 0;
+      if (totalGrowthNeeded <= 0) return current >= target ? 100 : (allowNegative ? -100 : 0);
       const achievedGrowth = current - initial;
-      return Math.round(Math.max(0, Math.min(100, (achievedGrowth / totalGrowthNeeded) * 100)));
+      return normalizeProgress((achievedGrowth / totalGrowthNeeded) * 100);
     }
     function calculateQuantitativeProgress(indicators=[]){
       const visibleIndicators = indicators.filter(item => !item.hidden);
       if (!visibleIndicators.length) return 0;
-      const vals = visibleIndicators.map(item => calculateIndicatorAdvance(item));
+      const vals = visibleIndicators.map(item => calculateIndicatorAdvance(item, false));
       return Math.round(vals.reduce((a,b)=>a+b,0) / vals.length);
     }
     function calculateQualitativeProgress(activities=[]){ if (!activities.length) return 0; const vals = activities.map(item => Math.max(0, Math.min(100, Number(item.progress || 0)))); return Math.round(vals.reduce((a,b)=>a+b,0) / vals.length); }
