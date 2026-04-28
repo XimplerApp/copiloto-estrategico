@@ -138,6 +138,14 @@
     .indicator-view-tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
     .inline-number-input{width:88px;padding:8px 10px;border:1px solid var(--line-dark);border-radius:8px;background:#fff;font-size:13px;font-family:inherit}
     .inline-number-input:focus{outline:none;border-color:#7bb7ff;box-shadow:0 0 0 3px rgba(69,137,255,.12)}
+    .inline-current-wrap{display:flex;align-items:center;gap:6px}
+    .view-history-btn{width:30px;height:30px;border:1px solid var(--line-dark);background:#fff;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;line-height:1}
+    .value-history-table-wrap{max-height:340px;overflow:auto;padding:0 22px 22px}
+    .value-history-table{width:100%;border-collapse:collapse}
+    .value-history-table th,.value-history-table td{padding:12px 10px;border-bottom:1px solid var(--line);font-size:13px;text-align:left}
+    .value-history-table th{background:#fbfcfd;color:var(--text)}
+    .value-history-empty{padding:22px;color:var(--muted);font-size:14px}
+    .history-subnote{display:block;font-size:11px;color:var(--muted);margin-top:2px}
     .hidden-indicator-note{font-size:12px;color:var(--muted);margin-bottom:10px}
     .indicator-hidden-row{background:#fbfcfe}
     @media (max-width:1100px){
@@ -422,6 +430,21 @@
     </div>
   </div>
 
+  <div id="valueHistoryModal" class="modal" aria-hidden="true">
+    <div class="modal-card" style="width:min(640px,100%)">
+      <div class="modal-header">
+        <div class="modal-title">
+          <h2>Historial de Registro del Valor Actual</h2>
+          <p id="valueHistorySubtitle">Indicador: —</p>
+        </div>
+        <div class="modal-actions">
+          <button id="closeValueHistoryBtn" class="btn-secondary" type="button">Cerrar</button>
+        </div>
+      </div>
+      <div id="valueHistoryContent"></div>
+    </div>
+  </div>
+
   <template id="indicatorTemplate">
     <div class="repeat-item indicator-item">
       <button class="remove-row" type="button">Eliminar</button>
@@ -556,7 +579,7 @@
       }
     ];
 
-    const state = { objectives: loadObjectives(), formTags: [], editingId: null, detailId: null, detailTab: 'comments', detailIndicatorView: 'active', indicatorModalMode: 'create', editingIndicatorIndex: null };
+    const state = { objectives: loadObjectives(), formTags: [], editingId: null, detailId: null, detailTab: 'comments', detailIndicatorView: 'active', indicatorModalMode: 'create', editingIndicatorIndex: null, valueHistoryModalIndicatorIndex: null };
     const objectivesBody = document.getElementById('objectivesBody');
     const emptyState = document.getElementById('emptyState');
     const formModal = document.getElementById('formModal');
@@ -569,10 +592,21 @@
     const detailContent = document.getElementById('detailContent');
     const indicatorModal = document.getElementById('indicatorModal');
     const indicatorModalForm = document.getElementById('indicatorModalForm');
+    const valueHistoryModal = document.getElementById('valueHistoryModal');
+    const valueHistoryContent = document.getElementById('valueHistoryContent');
 
     function normalizeComment(comment){
       if (typeof comment === 'string') return { author:'Sistema', text:comment, date:new Date().toISOString().slice(0,10) };
       return { author: comment?.author || 'Sistema', text: comment?.text || '', date: comment?.date || new Date().toISOString().slice(0,10) };
+    }
+
+    function normalizeValueHistoryEntry(entry, fallbackValue = 0){
+      if (typeof entry === 'number') return { timestamp: new Date().toISOString(), value: Number(entry), actor: 'Sistema' };
+      return {
+        timestamp: entry?.timestamp || entry?.date || new Date().toISOString(),
+        value: Number(entry?.value ?? fallbackValue ?? 0),
+        actor: entry?.actor || entry?.updatedBy || 'Sistema'
+      };
     }
 
     function normalizeObjective(obj){
@@ -596,7 +630,8 @@
           current: Number(ind.current ?? 0),
           frequency: ind.frequency || 'Mensual',
           owner: ind.owner || '',
-          hidden: Boolean(ind.hidden)
+          hidden: Boolean(ind.hidden),
+          valueHistory: Array.isArray(ind.valueHistory) ? ind.valueHistory.map(entry => normalizeValueHistoryEntry(entry, ind.current ?? 0)) : []
         })),
         activities: activities.map(act => ({
           name: act.name || '',
@@ -669,7 +704,8 @@
     function calculateQualitativeProgress(activities=[]){ if (!activities.length) return 0; const vals = activities.map(item => Math.max(0, Math.min(100, Number(item.progress || 0)))); return Math.round(vals.reduce((a,b)=>a+b,0) / vals.length); }
     function uniqueParticipants(obj){ return Array.from(new Set([obj.createdBy, obj.leader, ...(obj.invited || [])].filter(Boolean))); }
     function formatDateTime(date = new Date()){
-      return new Intl.DateTimeFormat('es-MX', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' }).format(date);
+      const value = date instanceof Date ? date : new Date(date);
+      return new Intl.DateTimeFormat('es-MX', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' }).format(value);
     }
     function askActionUser(defaultName = ''){
       const seed = localStorage.getItem('ximpler_last_actor') || defaultName || '';
@@ -954,7 +990,8 @@
         current: Number(document.getElementById('modalIndicatorCurrent').value || 0),
         frequency: document.getElementById('modalIndicatorFrequency').value,
         owner: document.getElementById('modalIndicatorOwner').value.trim(),
-        hidden: false
+        hidden: false,
+        valueHistory: []
       };
 
       if (state.indicatorModalMode === 'edit' && state.editingIndicatorIndex !== null && obj.indicators[state.editingIndicatorIndex]) {
@@ -962,9 +999,14 @@
         if (!actor) return;
         const original = obj.indicators[state.editingIndicatorIndex];
         indicator.hidden = Boolean(original.hidden);
+        indicator.valueHistory = Array.isArray(original.valueHistory) ? [...original.valueHistory] : [];
+        if (Number(original.current || 0) !== Number(indicator.current || 0)) {
+          indicator.valueHistory.unshift({ timestamp: new Date().toISOString(), value: Number(indicator.current || 0), actor });
+        }
         obj.indicators[state.editingIndicatorIndex] = indicator;
         addHistoryEntry(obj, `Indicador "${name}" editado por ${actor} el ${formatDateTime()}.`);
       } else {
+        indicator.valueHistory = [{ timestamp: new Date().toISOString(), value: Number(indicator.current || 0), actor: indicator.owner || obj.leader || 'Sistema' }];
         obj.indicators.push(indicator);
         addHistoryEntry(obj, `Indicador cuantitativo agregado: ${name}.`);
       }
@@ -993,6 +1035,8 @@
         return;
       }
       indicator.current = parsed;
+      if (!Array.isArray(indicator.valueHistory)) indicator.valueHistory = [];
+      indicator.valueHistory.unshift({ timestamp: new Date().toISOString(), value: parsed, actor });
       addHistoryEntry(obj, `Valor actual del indicador "${indicator.name}" actualizado de ${oldValue} a ${parsed} por ${actor} el ${formatDateTime()}.`);
       persistObjectives();
       renderDetailModal();
@@ -1037,6 +1081,7 @@
     function closeDetailModal(){
       detailModal.classList.remove('open');
       detailModal.setAttribute('aria-hidden', 'true');
+      closeValueHistoryModal();
       state.detailId = null;
       state.detailTab = 'comments';
       state.detailIndicatorView = 'active';
@@ -1136,8 +1181,8 @@
                         return source.map(ind => {
                           const advance = calculateIndicatorAdvance(ind);
                           const currentCell = state.detailIndicatorView === 'hidden'
-                            ? `${escapeHtml(ind.current ?? '—')}`
-                            : `<input class="inline-number-input" type="number" step="0.01" value="${escapeHtml(ind.current ?? 0)}" data-update-current-index="${ind._index}" />`;
+                            ? `<div class="inline-current-wrap"><span>${escapeHtml(ind.current ?? '—')}</span><button class="view-history-btn" type="button" title="Ver historial" data-view-history-index="${ind._index}">👁</button></div>`
+                            : `<div class="inline-current-wrap"><input class="inline-number-input" type="number" step="0.01" value="${escapeHtml(ind.current ?? 0)}" data-update-current-index="${ind._index}" /><button class="view-history-btn" type="button" title="Ver historial" data-view-history-index="${ind._index}">👁</button></div>`;
                           const actionsCell = state.detailIndicatorView === 'hidden'
                             ? `<button class="btn-secondary small" type="button" data-recover-indicator-index="${ind._index}">Recuperar</button>`
                             : `<div class="indicator-actions-inline"><button class="btn-secondary small btn-tight" type="button" data-edit-indicator-index="${ind._index}">Editar</button><button class="btn-light small btn-tight" type="button" data-hide-indicator-index="${ind._index}">Ocultar</button></div>`;
@@ -1242,6 +1287,10 @@
         });
       });
 
+      detailContent.querySelectorAll('[data-view-history-index]').forEach(btn => {
+        btn.onclick = () => openValueHistoryModal(Number(btn.dataset.viewHistoryIndex));
+      });
+
       detailContent.querySelectorAll('[data-edit-indicator-index]').forEach(btn => {
         btn.onclick = () => openIndicatorModal('edit', Number(btn.dataset.editIndicatorIndex));
       });
@@ -1263,6 +1312,54 @@
       const inlineTagInput = document.getElementById('inlineTagInput');
       if (inlineTagInput) inlineTagInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addInlineTagToDetail(); } });
       detailContent.querySelectorAll('[data-remove-detail-tag]').forEach(btn => btn.onclick = () => removeDetailTag(Number(btn.dataset.removeDetailTag)));
+    }
+
+    function openValueHistoryModal(indicatorIndex){
+      state.valueHistoryModalIndicatorIndex = indicatorIndex;
+      renderValueHistoryModal();
+      valueHistoryModal.classList.add('open');
+      valueHistoryModal.setAttribute('aria-hidden', 'false');
+    }
+
+    function closeValueHistoryModal(){
+      valueHistoryModal.classList.remove('open');
+      valueHistoryModal.setAttribute('aria-hidden', 'true');
+      state.valueHistoryModalIndicatorIndex = null;
+    }
+
+    function renderValueHistoryModal(){
+      const obj = state.objectives.find(item => item.id === state.detailId);
+      const indicator = obj?.indicators?.[state.valueHistoryModalIndicatorIndex];
+      document.getElementById('valueHistorySubtitle').textContent = `Indicador: ${indicator ? indicator.name : '—'}`;
+      if (!indicator) {
+        valueHistoryContent.innerHTML = '<div class="value-history-empty">No se encontró el indicador.</div>';
+        return;
+      }
+      const entries = Array.isArray(indicator.valueHistory) ? indicator.valueHistory : [];
+      if (!entries.length) {
+        valueHistoryContent.innerHTML = '<div class="value-history-empty">No hay registros del valor actual para este indicador.</div>';
+        return;
+      }
+      valueHistoryContent.innerHTML = `
+        <div class="value-history-table-wrap">
+          <table class="value-history-table">
+            <thead>
+              <tr>
+                <th>Fecha del Registro</th>
+                <th>Valor Actual Registrado</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${entries.map(entry => `
+                <tr>
+                  <td>${formatDateTime(entry.timestamp)}<span class="history-subnote">${escapeHtml(entry.actor || 'Sistema')}</span></td>
+                  <td>${escapeHtml(entry.value)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      `;
     }
 
     function addCommentFromDetail(){
@@ -1313,15 +1410,17 @@
     document.getElementById('addTagBtn').addEventListener('click', addFormTag);
     document.getElementById('closeIndicatorBtn').addEventListener('click', closeIndicatorModal);
     document.getElementById('saveIndicatorBtn').addEventListener('click', saveIndicatorFromModal);
+    document.getElementById('closeValueHistoryBtn').addEventListener('click', closeValueHistoryModal);
     document.getElementById('tagInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addFormTag(); } });
     document.getElementById('searchInput').addEventListener('input', renderObjectives);
     document.getElementById('statusFilter').addEventListener('change', renderObjectives);
 
-    [formModal, detailModal, indicatorModal].forEach(modal => modal.addEventListener('click', (e) => {
+    [formModal, detailModal, indicatorModal, valueHistoryModal].forEach(modal => modal.addEventListener('click', (e) => {
       if (e.target === modal){
         if (modal === formModal){ closeFormModal(); resetForm(); }
         if (modal === detailModal) closeDetailModal();
         if (modal === indicatorModal) closeIndicatorModal();
+        if (modal === valueHistoryModal) closeValueHistoryModal();
       }
     }));
 
@@ -1337,6 +1436,7 @@
         closeFormModal();
         closeDetailModal();
         closeIndicatorModal();
+        closeValueHistoryModal();
       }
     });
 
