@@ -903,9 +903,20 @@
       localStorage.setItem('ximpler_last_actor', name);
       return name;
     }
-    function addHistoryEntry(obj, message){
+    function buildHistoryMessage(action, actor = 'Sistema', when = new Date()){
+      const cleanAction = String(action || '').trim().replace(/\.+$/, '');
+      const cleanActor = String(actor || 'Sistema').trim() || 'Sistema';
+      return `${cleanAction} por ${cleanActor} el ${formatDateTime(when)}.`;
+    }
+    function addHistoryEntry(obj, action, actor = 'Sistema'){
       if (!Array.isArray(obj.history)) obj.history = [];
-      obj.history.unshift(message);
+      obj.history.unshift(buildHistoryMessage(action, actor));
+    }
+    function renderHistoryEntry(item){
+      const text = String(item || '');
+      const hasActorAndTime = /\bpor\b/.test(text) && /\bel\b/.test(text) && /\d{1,2}:\d{2}/.test(text);
+      if (hasActorAndTime) return text;
+      return `${text} <span class="history-subnote">Registro anterior sin usuario/hora detallada.</span>`;
     }
     function escapeHtml(text){ const div = document.createElement('div'); div.textContent = String(text ?? ''); return div.innerHTML; }
     function clearMultiSelect(id){ Array.from(document.getElementById(id).options).forEach(opt => opt.selected = false); }
@@ -994,11 +1005,10 @@
     function openFormModal(){ formModal.classList.add('open'); formModal.setAttribute('aria-hidden', 'false'); }
     function closeFormModal(){ formModal.classList.remove('open'); formModal.setAttribute('aria-hidden', 'true'); }
 
-    function buildHistory(previous, name){
-      const stamp = new Intl.DateTimeFormat('es-MX', { day:'2-digit', month:'short', year:'numeric' }).format(new Date());
-      if (!previous) return [`Objetivo creado el ${stamp}.`];
+    function buildHistory(previous, name, actor){
+      if (!previous) return [buildHistoryMessage(`Objetivo creado (${name})`, actor)];
       const history = Array.isArray(previous.history) ? [...previous.history] : [];
-      history.unshift(`Objetivo actualizado (${name}) el ${stamp}.`);
+      history.unshift(buildHistoryMessage(`Objetivo actualizado (${name})`, actor));
       return history;
     }
 
@@ -1009,6 +1019,8 @@
       if (!leader) return alert('Selecciona un Líder Responsable.');
 
       const previous = state.editingId ? state.objectives.find(obj => obj.id === state.editingId) : null;
+      const actor = askActionUser(leader);
+      if (!actor) return;
       const objective = normalizeObjective({
         id: state.editingId || crypto.randomUUID(),
         name,
@@ -1025,7 +1037,11 @@
         linkedProjects: getMultiSelectValues(document.getElementById('linkedProjects')),
         status: document.getElementById('objectiveStatus').value,
         comments: previous?.comments || [],
-        history: buildHistory(previous, name)
+        reminders: previous?.reminders || [],
+        checklist: previous?.checklist || [],
+        links: previous?.links || [],
+        attachments: previous?.attachments || [],
+        history: buildHistory(previous, name, actor)
       });
 
       if (state.editingId){
@@ -1190,11 +1206,13 @@
           indicator.valueHistory.unshift({ timestamp: new Date().toISOString(), value: Number(indicator.current || 0), actor });
         }
         obj.indicators[state.editingIndicatorIndex] = indicator;
-        addHistoryEntry(obj, `Indicador "${name}" editado por ${actor} el ${formatDateTime()}.`);
+        addHistoryEntry(obj, `Indicador "${name}" editado`, actor);
       } else {
-        indicator.valueHistory = [{ timestamp: new Date().toISOString(), value: Number(indicator.current || 0), actor: indicator.owner || obj.leader || 'Sistema' }];
+        const actor = askActionUser(obj.leader);
+        if (!actor) return;
+        indicator.valueHistory = [{ timestamp: new Date().toISOString(), value: Number(indicator.current || 0), actor }];
         obj.indicators.push(indicator);
-        addHistoryEntry(obj, `Indicador cuantitativo agregado: ${name}.`);
+        addHistoryEntry(obj, `Indicador cuantitativo agregado: ${name}`, actor);
       }
 
       persistObjectives();
@@ -1223,7 +1241,7 @@
       indicator.current = parsed;
       if (!Array.isArray(indicator.valueHistory)) indicator.valueHistory = [];
       indicator.valueHistory.unshift({ timestamp: new Date().toISOString(), value: parsed, actor });
-      addHistoryEntry(obj, `Valor actual del indicador "${indicator.name}" actualizado de ${oldValue} a ${parsed} por ${actor} el ${formatDateTime()}.`);
+      addHistoryEntry(obj, `Valor actual del indicador "${indicator.name}" actualizado de ${oldValue} a ${parsed}`, actor);
       persistObjectives();
       renderDetailModal();
       renderObjectives();
@@ -1235,7 +1253,7 @@
       const actor = askActionUser(obj.leader);
       if (!actor) return;
       obj.indicators[indicatorIndex].hidden = true;
-      addHistoryEntry(obj, `Indicador "${obj.indicators[indicatorIndex].name}" ocultado por ${actor} el ${formatDateTime()}.`);
+      addHistoryEntry(obj, `Indicador "${obj.indicators[indicatorIndex].name}" ocultado`, actor);
       state.detailIndicatorView = 'active';
       persistObjectives();
       renderDetailModal();
@@ -1248,7 +1266,7 @@
       const actor = askActionUser(obj.leader);
       if (!actor) return;
       obj.indicators[indicatorIndex].hidden = false;
-      addHistoryEntry(obj, `Indicador "${obj.indicators[indicatorIndex].name}" recuperado por ${actor} el ${formatDateTime()}.`);
+      addHistoryEntry(obj, `Indicador "${obj.indicators[indicatorIndex].name}" recuperado`, actor);
       state.detailIndicatorView = 'active';
       persistObjectives();
       renderDetailModal();
@@ -1306,7 +1324,7 @@
       const actor = askActionUser(obj.leader);
       if (!actor) return;
       indicator.metaPlan = collectMetaPlanRows();
-      addHistoryEntry(obj, `Planeación de metas del indicador "${indicator.name}" actualizada por ${actor} el ${formatDateTime()}.`);
+      addHistoryEntry(obj, `Planeación de metas del indicador "${indicator.name}" actualizada`, actor);
       persistObjectives();
       closeMetaPlanModal();
       renderDetailModal();
@@ -1370,10 +1388,10 @@
 
       if (state.activityModalMode === 'edit' && state.editingActivityIndex !== null && obj.activities[state.editingActivityIndex]) {
         obj.activities[state.editingActivityIndex] = activity;
-        addHistoryEntry(obj, `Actividad "${activity.name}" actualizada por ${actor} el ${formatDateTime()}.`);
+        addHistoryEntry(obj, `Actividad "${activity.name}" actualizada`, actor);
       } else {
         obj.activities.push(activity);
-        addHistoryEntry(obj, `Actividad "${activity.name}" agregada por ${actor} el ${formatDateTime()}.`);
+        addHistoryEntry(obj, `Actividad "${activity.name}" agregada`, actor);
       }
 
       persistObjectives();
@@ -1537,7 +1555,7 @@
 
                 <div class="tab-pane ${state.detailTab === 'history' ? 'active' : ''}">
                   <div class="history-list">
-                    ${obj.history.length ? obj.history.map(item => `<div class="history-card">${escapeHtml(item)}</div>`).join('') : '<div class="simple-card muted">Sin historial registrado.</div>'}
+                    ${obj.history.length ? obj.history.map(item => `<div class="history-card">${renderHistoryEntry(escapeHtml(item))}</div>`).join('') : '<div class="simple-card muted">Sin historial registrado.</div>'}
                   </div>
                 </div>
               </div>
@@ -1838,7 +1856,7 @@
       const text = document.getElementById('newCommentText').value.trim();
       if (!text) return alert('Escribe un comentario.');
       obj.comments.unshift({ author, text, date: new Date().toISOString().slice(0,10) });
-      obj.history.unshift(`Comentario agregado por ${author} el ${new Intl.DateTimeFormat('es-MX', { day:'2-digit', month:'short', year:'numeric' }).format(new Date())}.`);
+      addHistoryEntry(obj, 'Comentario agregado', author);
       persistObjectives();
       renderDetailModal();
       renderObjectives();
@@ -1852,7 +1870,9 @@
       if (!value) return;
       if (!obj.tags.includes(value)){
         obj.tags.push(value);
-        obj.history.unshift(`Etiqueta agregada: ${value}.`);
+        const actor = askActionUser(obj.leader);
+        if (!actor) return;
+        addHistoryEntry(obj, `Etiqueta agregada: ${value}`, actor);
         persistObjectives();
         renderDetailModal();
         renderObjectives();
@@ -1865,7 +1885,11 @@
       const obj = state.objectives.find(item => item.id === state.detailId);
       if (!obj) return;
       const removed = obj.tags.splice(index, 1)[0];
-      if (removed) obj.history.unshift(`Etiqueta eliminada: ${removed}.`);
+      if (removed) {
+        const actor = askActionUser(obj.leader);
+        if (!actor) return;
+        addHistoryEntry(obj, `Etiqueta eliminada: ${removed}`, actor);
+      }
       persistObjectives();
       renderDetailModal();
       renderObjectives();
@@ -1879,7 +1903,9 @@
       if (!value) return;
       if (!obj.areas.includes(value)) {
         obj.areas.push(value);
-        obj.history.unshift(`Área agregada: ${value}.`);
+        const actor = askActionUser(obj.leader);
+        if (!actor) return;
+        addHistoryEntry(obj, `Área agregada: ${value}`, actor);
         persistObjectives();
         renderDetailModal();
         renderObjectives();
@@ -1892,7 +1918,11 @@
       const obj = state.objectives.find(item => item.id === state.detailId);
       if (!obj) return;
       const removed = obj.areas.splice(index, 1)[0];
-      if (removed) obj.history.unshift(`Área eliminada: ${removed}.`);
+      if (removed) {
+        const actor = askActionUser(obj.leader);
+        if (!actor) return;
+        addHistoryEntry(obj, `Área eliminada: ${removed}`, actor);
+      }
       persistObjectives();
       renderDetailModal();
       renderObjectives();
@@ -1906,7 +1936,9 @@
       if (!value) return;
       if (!obj.linkedProjects.includes(value)) {
         obj.linkedProjects.push(value);
-        obj.history.unshift(`Proyecto ligado agregado: ${value}.`);
+        const actor = askActionUser(obj.leader);
+        if (!actor) return;
+        addHistoryEntry(obj, `Proyecto ligado agregado: ${value}`, actor);
         persistObjectives();
         renderDetailModal();
         renderObjectives();
@@ -1919,7 +1951,11 @@
       const obj = state.objectives.find(item => item.id === state.detailId);
       if (!obj) return;
       const removed = obj.linkedProjects.splice(index, 1)[0];
-      if (removed) obj.history.unshift(`Proyecto ligado eliminado: ${removed}.`);
+      if (removed) {
+        const actor = askActionUser(obj.leader);
+        if (!actor) return;
+        addHistoryEntry(obj, `Proyecto ligado eliminado: ${removed}`, actor);
+      }
       persistObjectives();
       renderDetailModal();
       renderObjectives();
@@ -1933,7 +1969,9 @@
       const dueTime = document.getElementById('inlineReminderTime').value;
       if (!textValue) return alert('Escribe un recordatorio.');
       obj.reminders.push({ text: textValue, dueDate, dueTime });
-      obj.history.unshift(`Recordatorio agregado: ${textValue}${dueDate ? ` para ${dueDate}` : ''}${dueTime ? ` a las ${dueTime}` : ''}.`);
+      const actor = askActionUser(obj.leader);
+      if (!actor) return;
+      addHistoryEntry(obj, `Recordatorio agregado: ${textValue}${dueDate ? ` para ${dueDate}` : ''}${dueTime ? ` a las ${dueTime}` : ''}`, actor);
       persistObjectives();
       renderDetailModal();
       renderObjectives();
@@ -1943,7 +1981,11 @@
       const obj = state.objectives.find(item => item.id === state.detailId);
       if (!obj) return;
       const removed = obj.reminders.splice(index, 1)[0];
-      if (removed) obj.history.unshift(`Recordatorio eliminado: ${removed.text}.`);
+      if (removed) {
+        const actor = askActionUser(obj.leader);
+        if (!actor) return;
+        addHistoryEntry(obj, `Recordatorio eliminado: ${removed.text}`, actor);
+      }
       persistObjectives();
       renderDetailModal();
       renderObjectives();
@@ -1956,7 +1998,9 @@
       const dueDate = document.getElementById('inlineChecklistDate').value;
       if (!textValue) return alert('Escribe un elemento del check list.');
       obj.checklist.push({ text: textValue, dueDate, done: false });
-      obj.history.unshift(`Elemento agregado a check list: ${textValue}${dueDate ? ` · compromiso ${dueDate}` : ''}.`);
+      const actor = askActionUser(obj.leader);
+      if (!actor) return;
+      addHistoryEntry(obj, `Elemento agregado a check list: ${textValue}${dueDate ? ` · compromiso ${dueDate}` : ''}`, actor);
       persistObjectives();
       renderDetailModal();
       renderObjectives();
@@ -1966,7 +2010,9 @@
       const obj = state.objectives.find(item => item.id === state.detailId);
       if (!obj || !obj.checklist[index]) return;
       obj.checklist[index].done = Boolean(checked);
-      obj.history.unshift(`Check list ${checked ? 'completado' : 'reabierto'}: ${obj.checklist[index].text}.`);
+      const actor = askActionUser(obj.leader);
+      if (!actor) { renderDetailModal(); return; }
+      addHistoryEntry(obj, `Check list ${checked ? 'completado' : 'reabierto'}: ${obj.checklist[index].text}`, actor);
       persistObjectives();
       renderDetailModal();
       renderObjectives();
@@ -1983,7 +2029,11 @@
       }
       const previous = obj.checklist[index].text;
       obj.checklist[index].text = textValue;
-      if (previous !== textValue) obj.history.unshift(`Check list editado: ${previous} → ${textValue}.`);
+      if (previous !== textValue) {
+        const actor = askActionUser(obj.leader);
+        if (!actor) { renderDetailModal(); return; }
+        addHistoryEntry(obj, `Check list editado: ${previous} → ${textValue}`, actor);
+      }
       persistObjectives();
       renderDetailModal();
       renderObjectives();
@@ -1994,7 +2044,11 @@
       if (!obj || !obj.checklist[index]) return;
       const previous = obj.checklist[index].dueDate || '';
       obj.checklist[index].dueDate = value || '';
-      if (previous !== obj.checklist[index].dueDate) obj.history.unshift(`Fecha compromiso del check list actualizada: ${obj.checklist[index].text}${value ? ` · ${value}` : ''}.`);
+      if (previous !== obj.checklist[index].dueDate) {
+        const actor = askActionUser(obj.leader);
+        if (!actor) { renderDetailModal(); return; }
+        addHistoryEntry(obj, `Fecha compromiso del check list actualizada: ${obj.checklist[index].text}${value ? ` · ${value}` : ''}`, actor);
+      }
       persistObjectives();
       renderDetailModal();
       renderObjectives();
@@ -2004,7 +2058,11 @@
       const obj = state.objectives.find(item => item.id === state.detailId);
       if (!obj) return;
       const removed = obj.checklist.splice(index, 1)[0];
-      if (removed) obj.history.unshift(`Elemento eliminado de check list: ${removed.text}.`);
+      if (removed) {
+        const actor = askActionUser(obj.leader);
+        if (!actor) return;
+        addHistoryEntry(obj, `Elemento eliminado de check list: ${removed.text}`, actor);
+      }
       persistObjectives();
       renderDetailModal();
       renderObjectives();
@@ -2017,7 +2075,9 @@
       const url = document.getElementById('inlineLinkUrl').value.trim();
       if (!title && !url) return alert('Agrega un nombre o una URL.');
       obj.links.push({ title: title || url, url });
-      obj.history.unshift(`Enlace agregado: ${title || url}.`);
+      const actor = askActionUser(obj.leader);
+      if (!actor) return;
+      addHistoryEntry(obj, `Enlace agregado: ${title || url}`, actor);
       persistObjectives();
       renderDetailModal();
       renderObjectives();
@@ -2027,7 +2087,11 @@
       const obj = state.objectives.find(item => item.id === state.detailId);
       if (!obj) return;
       const removed = obj.links.splice(index, 1)[0];
-      if (removed) obj.history.unshift(`Enlace eliminado: ${removed.title || removed.url}.`);
+      if (removed) {
+        const actor = askActionUser(obj.leader);
+        if (!actor) return;
+        addHistoryEntry(obj, `Enlace eliminado: ${removed.title || removed.url}`, actor);
+      }
       persistObjectives();
       renderDetailModal();
       renderObjectives();
@@ -2048,7 +2112,9 @@
           addedAt: new Date().toISOString()
         })));
         processed.forEach(item => obj.attachments.push(item));
-        obj.history.unshift(`${files.length} archivo(s) adjuntos registrados.`);
+        const actor = askActionUser(obj.leader);
+        if (!actor) return;
+        addHistoryEntry(obj, `${files.length} archivo(s) adjuntos registrados`, actor);
         persistObjectives();
         renderDetailModal();
         renderObjectives();
@@ -2061,7 +2127,11 @@
       const obj = state.objectives.find(item => item.id === state.detailId);
       if (!obj) return;
       const removed = obj.attachments.splice(index, 1)[0];
-      if (removed) obj.history.unshift(`Archivo adjunto eliminado: ${removed.name}.`);
+      if (removed) {
+        const actor = askActionUser(obj.leader);
+        if (!actor) return;
+        addHistoryEntry(obj, `Archivo adjunto eliminado: ${removed.name}`, actor);
+      }
       persistObjectives();
       renderDetailModal();
       renderObjectives();
