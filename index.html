@@ -190,9 +190,15 @@
     .planning-card p{margin:0;color:var(--muted);font-size:13px;line-height:1.45}
     .planning-meta{display:grid;gap:6px;color:#526070;font-size:13px}
     .planning-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
+    .planning-tech-card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px 18px;margin-bottom:16px;box-shadow:var(--shadow)}
+    .planning-tech-card h3{margin:0 0 12px;font-size:16px}
+    .planning-tech-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+    .planning-tech-item{border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:#fbfcfd}
+    .planning-tech-label{font-size:11px;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:5px}
+    .planning-tech-value{font-size:14px;font-weight:700;color:var(--text)}
     .breadcrumb-btn{border:none;background:transparent;color:var(--green);font-weight:800;cursor:pointer;padding:0;font-size:14px;font-family:inherit}
     @media (max-width:1100px){
-      .filters,.grid-2,.grid-3,.grid-4,.three-col,.comment-form,.detail-grid-top,.detail-main,.form-grid{grid-template-columns:1fr}
+      .filters,.grid-2,.grid-3,.grid-4,.three-col,.comment-form,.detail-grid-top,.detail-main,.form-grid,.planning-tech-grid{grid-template-columns:1fr}
       .col + .col,.detail-right,.detail-top-box + .detail-top-box{border-left:none;border-top:1px solid var(--line)}
     }
     @media (max-width:780px){
@@ -248,6 +254,8 @@
         </button>
       </div>
 
+      <div id="planningTechCard" class="planning-tech-card"></div>
+
       <div class="card">
         <div class="filters">
           <input id="searchInput" class="input" type="text" placeholder="Buscar / Filtrar" />
@@ -301,6 +309,11 @@
         <div class="field">
           <label for="planningDescription">Descripción</label>
           <textarea id="planningDescription" class="textarea" placeholder="Describe el propósito, alcance o enfoque del plan..."></textarea>
+        </div>
+        <div class="field">
+          <label for="planningMap">Mapa</label>
+          <input id="planningMap" class="input" type="text" placeholder="Ej. Jerarquía / Área / Sucursal / Región / Unidad de negocio" />
+          <div class="hint">Campo abierto para clasificar la planeación por jerarquía, área, sucursal u otra estructura interna.</div>
         </div>
         <div class="grid-2">
           <div class="field">
@@ -754,6 +767,7 @@
         id: 'plan_demo_2026',
         name: 'Planeación Estratégica 2026',
         description: 'Plan base para gestionar objetivos, indicadores, actividades y seguimiento estratégico.',
+        map: 'Dirección General / Planeación Estratégica',
         owner: 'Melchor Iván Angulo',
         startDate: '2026-01-01',
         endDate: '2026-12-31',
@@ -931,6 +945,7 @@
         id: plan.id || crypto.randomUUID(),
         name: plan.name || '',
         description: plan.description || '',
+        map: plan.map || '',
         owner: plan.owner || '',
         startDate: plan.startDate || '',
         endDate: plan.endDate || '',
@@ -1275,6 +1290,7 @@
         document.getElementById('planningModalTitle').textContent = 'Editar Planeación';
         document.getElementById('planningName').value = plan.name || '';
         document.getElementById('planningDescription').value = plan.description || '';
+        document.getElementById('planningMap').value = plan.map || '';
         document.getElementById('planningOwner').value = plan.owner || '';
         document.getElementById('planningStartDate').value = plan.startDate || '';
         document.getElementById('planningEndDate').value = plan.endDate || '';
@@ -1302,6 +1318,7 @@
         id: previous?.id || crypto.randomUUID(),
         name,
         description: document.getElementById('planningDescription').value.trim(),
+        map: document.getElementById('planningMap').value.trim(),
         owner: document.getElementById('planningOwner').value.trim(),
         startDate: document.getElementById('planningStartDate').value,
         endDate: document.getElementById('planningEndDate').value,
@@ -1342,7 +1359,7 @@
       const query = document.getElementById('planningSearchInput').value.trim().toLowerCase();
       const status = document.getElementById('planningStatusFilter').value;
       const filtered = state.plannings.filter(plan => {
-        const haystack = [plan.name, plan.description, plan.owner].join(' ').toLowerCase();
+        const haystack = [plan.name, plan.description, plan.map, plan.owner].join(' ').toLowerCase();
         return (!query || haystack.includes(query)) && (status === 'all' || plan.status === status);
       });
 
@@ -1362,6 +1379,7 @@
           </div>
           <div class="planning-meta">
             <div><strong>Responsable:</strong> ${escapeHtml(plan.owner || '—')}</div>
+            <div><strong>Mapa:</strong> ${escapeHtml(plan.map || '—')}</div>
             <div><strong>Fecha:</strong> ${formatDate(plan.startDate)} → ${formatDate(plan.endDate)}</div>
             <div><strong>Objetivos:</strong> ${objectives.length}</div>
             <div><strong>Avance promedio:</strong> Cualitativo ${ql}% · Cuantitativo ${qt}%</div>
@@ -1385,6 +1403,18 @@
       const currentPlanning = getCurrentPlanning();
       if (objectivesTitle) objectivesTitle.textContent = currentPlanning ? currentPlanning.name : 'Objetivos';
       if (objectivesSubtitle) objectivesSubtitle.textContent = currentPlanning ? (currentPlanning.description || 'Objetivos asociados a esta planeación.') : 'Objetivos asociados a esta planeación.';
+      const planningTechCard = document.getElementById('planningTechCard');
+      if (planningTechCard) {
+        planningTechCard.innerHTML = currentPlanning ? `
+          <h3>Ficha Técnica de Planeación</h3>
+          <div class="planning-tech-grid">
+            <div class="planning-tech-item"><div class="planning-tech-label">Mapa</div><div class="planning-tech-value">${escapeHtml(currentPlanning.map || '—')}</div></div>
+            <div class="planning-tech-item"><div class="planning-tech-label">Responsable</div><div class="planning-tech-value">${escapeHtml(currentPlanning.owner || '—')}</div></div>
+            <div class="planning-tech-item"><div class="planning-tech-label">Periodo</div><div class="planning-tech-value">${formatDate(currentPlanning.startDate)} → ${formatDate(currentPlanning.endDate)}</div></div>
+            <div class="planning-tech-item"><div class="planning-tech-label">Estatus</div><div class="planning-tech-value">${statusLabel(currentPlanning.status)}</div></div>
+          </div>
+        ` : '';
+      }
       const query = document.getElementById('searchInput').value.trim().toLowerCase();
       const status = document.getElementById('statusFilter').value;
       const filtered = state.objectives.filter(obj => obj.planningId === state.currentPlanningId).filter(obj => {
