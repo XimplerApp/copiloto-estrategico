@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Ximpler - Tablero de Acciones</title>
+  <title>Ximpler - Tablero Operativo</title>
   <style>
     :root{
       --bg:#f5f7fa;--card:#fff;--line:#e6ebf0;--line-dark:#d5dde7;--text:#243041;--muted:#6b7280;
@@ -124,7 +124,12 @@
     function actionAdvance(action){ return isDoneStatus(action?.status) ? 100 : 0; }
     function initiativeOperationalAdvance(activity = {}){
       const actions = Array.isArray(activity.actions) ? activity.actions.map(normalizeAction) : [];
-      if (!actions.length) return 0;
+      // Regla operativa vigente:
+      // 1) Si la iniciativa tiene acciones, se promedia el avance real de sus acciones.
+      //    Terminada = 100%, cualquier otro estatus = 0%.
+      // 2) Si todavía no tiene acciones asignadas, se toma el estatus propio de la iniciativa.
+      //    Terminada = 100%, cualquier otro estatus = 0%.
+      if (!actions.length) return isDoneStatus(activity.status) ? 100 : 0;
       return Math.round(actions.reduce((acc, action) => acc + actionAdvance(action), 0) / actions.length);
     }
     function objectiveOperationalAdvance(obj = {}){
