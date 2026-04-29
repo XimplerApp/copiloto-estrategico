@@ -26,6 +26,14 @@
     th,td{padding:16px 14px;border-bottom:1px solid var(--line);font-size:14px;vertical-align:top}
     th{text-align:left;color:var(--muted);font-weight:700;background:#fbfcfd}
     tbody tr:hover{background:#fcfdfd}
+    .group-cell{background:#fff;vertical-align:top}
+    .group-box{border:1px solid var(--line-dark);border-radius:12px;padding:12px 13px;background:#fff;box-shadow:0 6px 14px rgba(15,23,42,.04);min-width:210px}
+    .group-box.objective-box{border-left:4px solid var(--green)}
+    .group-box.initiative-box{border-left:4px solid var(--blue)}
+    .group-kicker{font-size:11px;text-transform:uppercase;color:var(--muted);font-weight:800;margin-bottom:5px}
+    .group-sub{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.35}
+    .group-start td{border-top:1px solid var(--line)}
+    .action-stack{display:flex;flex-direction:column;gap:6px}
     .objective-name{font-weight:800;color:var(--green)}
     .initiative-name{font-weight:700;color:var(--text)}
     .action-title{font-weight:800;color:var(--text);margin-bottom:5px}
@@ -178,6 +186,25 @@
       return rows;
     }
 
+    function groupRows(rows){
+      const objectiveGroups = [];
+      rows.forEach(row => {
+        let objectiveGroup = objectiveGroups.find(group => group.name === row.objective);
+        if (!objectiveGroup) {
+          objectiveGroup = { name: row.objective, rows: [], initiativeGroups: [] };
+          objectiveGroups.push(objectiveGroup);
+        }
+        objectiveGroup.rows.push(row);
+        let initiativeGroup = objectiveGroup.initiativeGroups.find(group => group.name === row.initiative);
+        if (!initiativeGroup) {
+          initiativeGroup = { name: row.initiative, rows: [] };
+          objectiveGroup.initiativeGroups.push(initiativeGroup);
+        }
+        initiativeGroup.rows.push(row);
+      });
+      return objectiveGroups;
+    }
+
     function render(){
       const query = document.getElementById('searchInput').value.trim().toLowerCase();
       const filterStatus = document.getElementById('statusFilter').value;
@@ -197,16 +224,50 @@
       document.getElementById('sumOverdue').textContent = overdueCount;
 
       const body = document.getElementById('actionsBody');
-      body.innerHTML = rows.map(row => `
-        <tr>
-          <td><div class="objective-name">${escapeHtml(row.objective)}</div></td>
-          <td><div class="initiative-name">${escapeHtml(row.initiative)}</div></td>
-          <td><div class="action-title">${escapeHtml(row.actionTitle)}</div>${row.actionDetail ? `<div class="action-detail">${escapeHtml(row.actionDetail)}</div>` : ''}</td>
-          <td>${escapeHtml(row.responsible)}</td>
-          <td>${formatDate(row.dueDate)}</td>
-          <td><span class="status-badge status-${statusKey(row.status)}">${escapeHtml(row.status)}</span></td>
-        </tr>
-      `).join('');
+      const objectiveGroups = groupRows(rows);
+      const html = [];
+
+      objectiveGroups.forEach(objectiveGroup => {
+        let printedObjective = false;
+        objectiveGroup.initiativeGroups.forEach(initiativeGroup => {
+          let printedInitiative = false;
+          initiativeGroup.rows.forEach(row => {
+            const cells = [];
+            const isObjectiveStart = !printedObjective;
+            const isInitiativeStart = !printedInitiative;
+            if (isObjectiveStart) {
+              cells.push(`
+                <td class="group-cell" rowspan="${objectiveGroup.rows.length}">
+                  <div class="group-box objective-box">
+                    <div class="group-kicker">Objetivo</div>
+                    <div class="objective-name">${escapeHtml(objectiveGroup.name)}</div>
+                    <div class="group-sub">${objectiveGroup.initiativeGroups.length} iniciativa(s) · ${objectiveGroup.rows.filter(item => item.hasAction).length} acción(es)</div>
+                  </div>
+                </td>`);
+              printedObjective = true;
+            }
+            if (isInitiativeStart) {
+              cells.push(`
+                <td class="group-cell" rowspan="${initiativeGroup.rows.length}">
+                  <div class="group-box initiative-box">
+                    <div class="group-kicker">Iniciativa</div>
+                    <div class="initiative-name">${escapeHtml(initiativeGroup.name)}</div>
+                    <div class="group-sub">${initiativeGroup.rows.filter(item => item.hasAction).length || 0} acción(es)</div>
+                  </div>
+                </td>`);
+              printedInitiative = true;
+            }
+            cells.push(`
+              <td><div class="action-stack"><div class="action-title">${escapeHtml(row.actionTitle)}</div>${row.actionDetail ? `<div class="action-detail">${escapeHtml(row.actionDetail)}</div>` : ''}</div></td>
+              <td>${escapeHtml(row.responsible)}</td>
+              <td>${formatDate(row.dueDate)}</td>
+              <td><span class="status-badge status-${statusKey(row.status)}">${escapeHtml(row.status)}</span></td>`);
+            html.push(`<tr class="${isObjectiveStart || isInitiativeStart ? 'group-start' : ''}">${cells.join('')}</tr>`);
+          });
+        });
+      });
+
+      body.innerHTML = html.join('');
       document.getElementById('emptyState').style.display = rows.length ? 'none' : 'block';
     }
 
