@@ -248,10 +248,13 @@
           <h1 id="objectivesTitle">Objetivos</h1>
           <p id="objectivesSubtitle">Objetivos asociados a esta planeación.</p>
         </div>
-        <button id="openFormBtn" class="btn-primary">
-          <span>Nuevo Objetivo</span>
-          <span class="plus">+</span>
-        </button>
+        <div class="modal-actions">
+          <button id="openKpiBoardBtn" class="btn-secondary" type="button">Tablero KPI´s</button>
+          <button id="openFormBtn" class="btn-primary">
+            <span>Nuevo Objetivo</span>
+            <span class="plus">+</span>
+          </button>
+        </div>
       </div>
 
       <div id="planningTechCard" class="planning-tech-card"></div>
@@ -2468,6 +2471,10 @@
     document.getElementById('planningStatusFilter').addEventListener('change', renderPlannings);
 
     document.getElementById('openFormBtn').addEventListener('click', () => { resetForm(); openFormModal(); });
+    document.getElementById('openKpiBoardBtn').addEventListener('click', () => {
+      if (!state.currentPlanningId) return alert('Selecciona una planeación.');
+      window.open(`tablero_kpis.html?planningId=${encodeURIComponent(state.currentPlanningId)}`, '_blank');
+    });
     document.getElementById('closeFormBtn').addEventListener('click', () => { closeFormModal(); resetForm(); });
     document.getElementById('saveObjectiveBtn').addEventListener('click', saveObjective);
     document.getElementById('addIndicatorBtn').addEventListener('click', () => addIndicatorRow());
