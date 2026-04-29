@@ -182,6 +182,15 @@
     .file-upload-wrap input[type="file"]{max-width:100%}
     .pill-action{border:1px solid var(--line-dark);background:#fff;border-radius:999px;padding:4px 8px;font-size:11px;cursor:pointer}
     .activity-modal-form{padding:22px}
+
+    .hidden{display:none !important}
+    .planning-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;padding:18px}
+    .planning-card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:12px}
+    .planning-card h3{margin:0;font-size:18px;color:var(--text)}
+    .planning-card p{margin:0;color:var(--muted);font-size:13px;line-height:1.45}
+    .planning-meta{display:grid;gap:6px;color:#526070;font-size:13px}
+    .planning-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
+    .breadcrumb-btn{border:none;background:transparent;color:var(--green);font-weight:800;cursor:pointer;padding:0;font-size:14px;font-family:inherit}
     @media (max-width:1100px){
       .filters,.grid-2,.grid-3,.grid-4,.three-col,.comment-form,.detail-grid-top,.detail-main,.form-grid{grid-template-columns:1fr}
       .col + .col,.detail-right,.detail-top-box + .detail-top-box{border-left:none;border-top:1px solid var(--line)}
@@ -198,46 +207,127 @@
 </head>
 <body>
   <div class="page">
-    <div class="topbar">
-      <div class="title-wrap">
-        <h1>Objetivos</h1>
-        <p>Primer index funcional para el módulo de seguimiento estratégico de Ximpler.</p>
+    <div id="planningView">
+      <div class="topbar">
+        <div class="title-wrap">
+          <h1>Planeaciones</h1>
+          <p>Crea planes independientes y entra al detalle de cada uno para gestionar sus objetivos.</p>
+        </div>
+        <button id="openPlanningFormBtn" class="btn-primary">
+          <span>Nueva Planeación</span>
+          <span class="plus">+</span>
+        </button>
       </div>
-      <button id="openFormBtn" class="btn-primary">
-        <span>Nuevo Objetivo</span>
-        <span class="plus">+</span>
-      </button>
+
+      <div class="card">
+        <div class="filters">
+          <input id="planningSearchInput" class="input" type="text" placeholder="Buscar planeación" />
+          <select id="planningStatusFilter" class="select">
+            <option value="all">Todos los estatus</option>
+            <option value="activo" selected>Activas</option>
+            <option value="en_riesgo">En riesgo</option>
+            <option value="pausado">Pausadas</option>
+            <option value="cumplido">Cumplidas</option>
+          </select>
+        </div>
+        <div id="planningCards" class="planning-grid"></div>
+        <div id="planningEmptyState" class="empty-state" style="display:none;">No hay planeaciones que coincidan con el filtro.</div>
+      </div>
     </div>
 
-    <div class="card">
-      <div class="filters">
-        <input id="searchInput" class="input" type="text" placeholder="Buscar / Filtrar" />
-        <select id="statusFilter" class="select">
-          <option value="all">Todos los estatus</option>
-          <option value="activo" selected>Activos</option>
-          <option value="en_riesgo">En riesgo</option>
-          <option value="pausado">Pausados</option>
-          <option value="cumplido">Cumplidos</option>
-        </select>
+    <div id="objectivesView" class="hidden">
+      <div class="topbar">
+        <div class="title-wrap">
+          <button id="backToPlanningsBtn" class="breadcrumb-btn" type="button">← Volver a Planeaciones</button>
+          <h1 id="objectivesTitle">Objetivos</h1>
+          <p id="objectivesSubtitle">Objetivos asociados a esta planeación.</p>
+        </div>
+        <button id="openFormBtn" class="btn-primary">
+          <span>Nuevo Objetivo</span>
+          <span class="plus">+</span>
+        </button>
       </div>
 
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Objetivo</th>
-              <th>Avance Cualitativo</th>
-              <th>Avance Cuantitativo</th>
-              <th>Líder Responsable</th>
-              <th>Fecha</th>
-              <th>Estatus</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody id="objectivesBody"></tbody>
-        </table>
+      <div class="card">
+        <div class="filters">
+          <input id="searchInput" class="input" type="text" placeholder="Buscar / Filtrar" />
+          <select id="statusFilter" class="select">
+            <option value="all">Todos los estatus</option>
+            <option value="activo" selected>Activos</option>
+            <option value="en_riesgo">En riesgo</option>
+            <option value="pausado">Pausados</option>
+            <option value="cumplido">Cumplidos</option>
+          </select>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Objetivo</th>
+                <th>Avance Cualitativo</th>
+                <th>Avance Cuantitativo</th>
+                <th>Líder Responsable</th>
+                <th>Fecha</th>
+                <th>Estatus</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="objectivesBody"></tbody>
+          </table>
+        </div>
+        <div id="emptyState" class="empty-state" style="display:none;">No hay objetivos que coincidan con el filtro.</div>
       </div>
-      <div id="emptyState" class="empty-state" style="display:none;">No hay objetivos que coincidan con el filtro.</div>
+    </div>
+  </div>
+
+  <div id="planningModal" class="modal" aria-hidden="true">
+    <div class="modal-card" style="width:min(780px,100%)">
+      <div class="modal-header">
+        <div class="modal-title">
+          <h2 id="planningModalTitle">Nueva Planeación</h2>
+          <p>Registra una planeación para agrupar objetivos, indicadores, actividades y evidencias.</p>
+        </div>
+        <div class="modal-actions">
+          <button id="closePlanningBtn" class="btn-secondary" type="button">Cancelar</button>
+          <button id="savePlanningBtn" class="btn-primary" type="button"><span>Guardar Planeación</span><span>💾</span></button>
+        </div>
+      </div>
+      <form id="planningForm" style="padding:22px">
+        <div class="field">
+          <label class="required" for="planningName">Nombre de la planeación</label>
+          <input id="planningName" class="input" type="text" placeholder="Ej. Planeación Comercial 2026" />
+        </div>
+        <div class="field">
+          <label for="planningDescription">Descripción</label>
+          <textarea id="planningDescription" class="textarea" placeholder="Describe el propósito, alcance o enfoque del plan..."></textarea>
+        </div>
+        <div class="grid-2">
+          <div class="field">
+            <label for="planningOwner">Responsable</label>
+            <input id="planningOwner" class="input" type="text" placeholder="Responsable principal" />
+          </div>
+          <div class="field">
+            <label for="planningStatus">Estatus</label>
+            <select id="planningStatus" class="select">
+              <option value="activo" selected>Activo</option>
+              <option value="en_riesgo">En riesgo</option>
+              <option value="pausado">Pausado</option>
+              <option value="cumplido">Cumplido</option>
+            </select>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="field">
+            <label for="planningStartDate">Fecha inicio</label>
+            <input id="planningStartDate" class="input" type="date" />
+          </div>
+          <div class="field">
+            <label for="planningEndDate">Fecha compromiso</label>
+            <input id="planningEndDate" class="input" type="date" />
+          </div>
+        </div>
+      </form>
     </div>
   </div>
 
@@ -655,12 +745,28 @@
   </template>
 
   <script>
-    const STORAGE_KEYS = ['ximpler_objetivos_demo_v6_3','ximpler_objetivos_demo_v6_1','ximpler_objetivos_demo_v6','ximpler_objetivos_demo_v5','ximpler_objetivos_demo_v4','ximpler_objetivos_demo_v3','ximpler_objetivos_demo_v1'];
-    const SAVE_KEY = 'ximpler_objetivos_demo_v6_3';
+    const STORAGE_KEYS = ['ximpler_objetivos_demo_v7_planes','ximpler_objetivos_demo_v6_3','ximpler_objetivos_demo_v6_1','ximpler_objetivos_demo_v6','ximpler_objetivos_demo_v5','ximpler_objetivos_demo_v4','ximpler_objetivos_demo_v3','ximpler_objetivos_demo_v1'];
+    const SAVE_KEY = 'ximpler_objetivos_demo_v7_planes';
+    const PLANNING_SAVE_KEY = 'ximpler_planeaciones_demo_v1';
+
+    const samplePlannings = [
+      {
+        id: 'plan_demo_2026',
+        name: 'Planeación Estratégica 2026',
+        description: 'Plan base para gestionar objetivos, indicadores, actividades y seguimiento estratégico.',
+        owner: 'Melchor Iván Angulo',
+        startDate: '2026-01-01',
+        endDate: '2026-12-31',
+        status: 'activo',
+        createdAt: new Date().toISOString(),
+        history: ['Planeación demo creada como base inicial.']
+      }
+    ];
 
     const sampleObjectives = [
       {
         id: crypto.randomUUID(),
+        planningId: 'plan_demo_2026',
         name: 'Recuperar Cartera Vencida',
         description: 'Recuperar cartera vencida correspondiente al periodo 2019 y 2020.',
         startDate: '2021-05-13',
@@ -682,6 +788,7 @@
       },
       {
         id: crypto.randomUUID(),
+        planningId: 'plan_demo_2026',
         name: 'Posicionar la marca en redes sociales',
         description: 'Incrementar notoriedad y tracción digital de marca en redes clave.',
         startDate: '2021-05-13',
@@ -703,7 +810,17 @@
       }
     ];
 
-    const state = { objectives: loadObjectives(), formTags: [], editingId: null, detailId: null, detailTab: 'comments', detailIndicatorView: 'active', indicatorModalMode: 'create', editingIndicatorIndex: null, valueHistoryModalIndicatorIndex: null, metaPlanIndicatorIndex: null, activityModalMode: 'create', editingActivityIndex: null };
+    const state = { plannings: loadPlannings(), objectives: [], currentPlanningId: null, editingPlanningId: null, formTags: [], editingId: null, detailId: null, detailTab: 'comments', detailIndicatorView: 'active', indicatorModalMode: 'create', editingIndicatorIndex: null, valueHistoryModalIndicatorIndex: null, metaPlanIndicatorIndex: null, activityModalMode: 'create', editingActivityIndex: null };
+    state.objectives = loadObjectives().map(obj => ({ ...obj, planningId: obj.planningId || state.plannings[0]?.id || 'plan_demo_2026' }));
+    state.objectives = state.objectives.map(obj => state.plannings.some(plan => plan.id === obj.planningId) ? obj : ({ ...obj, planningId: state.plannings[0]?.id || 'plan_demo_2026' }));
+    const planningView = document.getElementById('planningView');
+    const objectivesView = document.getElementById('objectivesView');
+    const planningCards = document.getElementById('planningCards');
+    const planningEmptyState = document.getElementById('planningEmptyState');
+    const planningModal = document.getElementById('planningModal');
+    const planningForm = document.getElementById('planningForm');
+    const objectivesTitle = document.getElementById('objectivesTitle');
+    const objectivesSubtitle = document.getElementById('objectivesSubtitle');
     const objectivesBody = document.getElementById('objectivesBody');
     const emptyState = document.getElementById('emptyState');
     const formModal = document.getElementById('formModal');
@@ -750,6 +867,7 @@
       const activities = obj.activities || obj.initiatives || [];
       return {
         id: obj.id || crypto.randomUUID(),
+        planningId: obj.planningId || 'plan_demo_2026',
         name: obj.name || '',
         description: obj.description || '',
         startDate: obj.startDate || '',
@@ -805,6 +923,38 @@
         comments: Array.isArray(obj.comments) ? obj.comments.map(normalizeComment).filter(c=>c.text) : [],
         history: Array.isArray(obj.history) ? obj.history : []
       };
+    }
+
+
+    function normalizePlanning(plan){
+      return {
+        id: plan.id || crypto.randomUUID(),
+        name: plan.name || '',
+        description: plan.description || '',
+        owner: plan.owner || '',
+        startDate: plan.startDate || '',
+        endDate: plan.endDate || '',
+        status: plan.status || 'activo',
+        createdAt: plan.createdAt || new Date().toISOString(),
+        history: Array.isArray(plan.history) ? plan.history : []
+      };
+    }
+
+    function loadPlannings(){
+      const saved = localStorage.getItem(PLANNING_SAVE_KEY);
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length) return parsed.map(normalizePlanning);
+        } catch(e) {}
+      }
+      return samplePlannings.map(normalizePlanning);
+    }
+
+    function persistPlannings(){ localStorage.setItem(PLANNING_SAVE_KEY, JSON.stringify(state.plannings)); }
+
+    function getCurrentPlanning(){
+      return state.plannings.find(plan => plan.id === state.currentPlanningId) || null;
     }
 
     function loadObjectives(){
@@ -1023,6 +1173,7 @@
       if (!actor) return;
       const objective = normalizeObjective({
         id: state.editingId || crypto.randomUUID(),
+        planningId: previous?.planningId || state.currentPlanningId || state.plannings[0]?.id || 'plan_demo_2026',
         name,
         description: document.getElementById('objectiveDescription').value.trim(),
         startDate: document.getElementById('startDate').value,
@@ -1091,10 +1242,152 @@
       if (state.detailId === id) closeDetailModal();
     }
 
+
+    function showPlanningView(){
+      state.currentPlanningId = null;
+      planningView.classList.remove('hidden');
+      objectivesView.classList.add('hidden');
+      renderPlannings();
+    }
+
+    function openPlanning(id){
+      state.currentPlanningId = id;
+      planningView.classList.add('hidden');
+      objectivesView.classList.remove('hidden');
+      document.getElementById('searchInput').value = '';
+      document.getElementById('statusFilter').value = 'activo';
+      renderObjectives();
+    }
+
+    function resetPlanningForm(){
+      planningForm.reset();
+      state.editingPlanningId = null;
+      document.getElementById('planningModalTitle').textContent = 'Nueva Planeación';
+      document.getElementById('planningStatus').value = 'activo';
+    }
+
+    function openPlanningModal(mode = 'create', planningId = null){
+      resetPlanningForm();
+      if (mode === 'edit') {
+        const plan = state.plannings.find(item => item.id === planningId);
+        if (!plan) return;
+        state.editingPlanningId = planningId;
+        document.getElementById('planningModalTitle').textContent = 'Editar Planeación';
+        document.getElementById('planningName').value = plan.name || '';
+        document.getElementById('planningDescription').value = plan.description || '';
+        document.getElementById('planningOwner').value = plan.owner || '';
+        document.getElementById('planningStartDate').value = plan.startDate || '';
+        document.getElementById('planningEndDate').value = plan.endDate || '';
+        document.getElementById('planningStatus').value = plan.status || 'activo';
+      }
+      planningModal.classList.add('open');
+      planningModal.setAttribute('aria-hidden', 'false');
+      document.getElementById('planningName').focus();
+    }
+
+    function closePlanningModal(){
+      planningModal.classList.remove('open');
+      planningModal.setAttribute('aria-hidden', 'true');
+      resetPlanningForm();
+    }
+
+    function savePlanning(){
+      const name = document.getElementById('planningName').value.trim();
+      if (!name) return alert('Ingresa el nombre de la planeación.');
+      const actor = askActionUser(document.getElementById('planningOwner').value.trim() || 'Sistema');
+      if (!actor) return;
+
+      const previous = state.editingPlanningId ? state.plannings.find(item => item.id === state.editingPlanningId) : null;
+      const planning = normalizePlanning({
+        id: previous?.id || crypto.randomUUID(),
+        name,
+        description: document.getElementById('planningDescription').value.trim(),
+        owner: document.getElementById('planningOwner').value.trim(),
+        startDate: document.getElementById('planningStartDate').value,
+        endDate: document.getElementById('planningEndDate').value,
+        status: document.getElementById('planningStatus').value,
+        createdAt: previous?.createdAt || new Date().toISOString(),
+        history: previous?.history || []
+      });
+      planning.history.unshift(`${previous ? 'Planeación actualizada' : 'Planeación creada'} por ${actor} el ${formatDateTime()}.`);
+
+      if (previous) {
+        const index = state.plannings.findIndex(item => item.id === previous.id);
+        state.plannings[index] = planning;
+      } else {
+        state.plannings.unshift(planning);
+      }
+
+      persistPlannings();
+      closePlanningModal();
+      renderPlannings();
+    }
+
+    function deletePlanning(id){
+      const plan = state.plannings.find(item => item.id === id);
+      if (!plan) return;
+      const relatedCount = state.objectives.filter(obj => obj.planningId === id).length;
+      const message = relatedCount
+        ? `¿Seguro que deseas eliminar la planeación "${plan.name}"? También se eliminarán ${relatedCount} objetivo(s) asociados.`
+        : `¿Seguro que deseas eliminar la planeación "${plan.name}"?`;
+      if (!confirm(message)) return;
+      state.plannings = state.plannings.filter(item => item.id !== id);
+      state.objectives = state.objectives.filter(obj => obj.planningId !== id);
+      persistPlannings();
+      persistObjectives();
+      renderPlannings();
+    }
+
+    function renderPlannings(){
+      const query = document.getElementById('planningSearchInput').value.trim().toLowerCase();
+      const status = document.getElementById('planningStatusFilter').value;
+      const filtered = state.plannings.filter(plan => {
+        const haystack = [plan.name, plan.description, plan.owner].join(' ').toLowerCase();
+        return (!query || haystack.includes(query)) && (status === 'all' || plan.status === status);
+      });
+
+      planningCards.innerHTML = '';
+      planningEmptyState.style.display = filtered.length ? 'none' : 'block';
+
+      filtered.forEach(plan => {
+        const objectives = state.objectives.filter(obj => obj.planningId === plan.id);
+        const ql = objectives.length ? Math.round(objectives.map(obj => calculateQualitativeProgress(obj.activities)).reduce((a,b)=>a+b,0) / objectives.length) : 0;
+        const qt = objectives.length ? Math.round(objectives.map(obj => calculateQuantitativeProgress(obj.indicators)).reduce((a,b)=>a+b,0) / objectives.length) : 0;
+        const card = document.createElement('div');
+        card.className = 'planning-card';
+        card.innerHTML = `
+          <div>
+            <h3>${escapeHtml(plan.name)}</h3>
+            <p>${escapeHtml(plan.description || 'Sin descripción')}</p>
+          </div>
+          <div class="planning-meta">
+            <div><strong>Responsable:</strong> ${escapeHtml(plan.owner || '—')}</div>
+            <div><strong>Fecha:</strong> ${formatDate(plan.startDate)} → ${formatDate(plan.endDate)}</div>
+            <div><strong>Objetivos:</strong> ${objectives.length}</div>
+            <div><strong>Avance promedio:</strong> Cualitativo ${ql}% · Cuantitativo ${qt}%</div>
+            <div><span class="status-badge status-${plan.status}">${statusLabel(plan.status)}</span></div>
+          </div>
+          <div class="planning-actions">
+            <button class="btn-primary small" type="button" data-open-plan="${plan.id}">Entrar</button>
+            <button class="btn-secondary small" type="button" data-edit-plan="${plan.id}">Editar</button>
+            <button class="btn-danger small" type="button" data-delete-plan="${plan.id}">Eliminar</button>
+          </div>
+        `;
+        planningCards.appendChild(card);
+      });
+
+      planningCards.querySelectorAll('[data-open-plan]').forEach(btn => btn.onclick = () => openPlanning(btn.dataset.openPlan));
+      planningCards.querySelectorAll('[data-edit-plan]').forEach(btn => btn.onclick = () => openPlanningModal('edit', btn.dataset.editPlan));
+      planningCards.querySelectorAll('[data-delete-plan]').forEach(btn => btn.onclick = () => deletePlanning(btn.dataset.deletePlan));
+    }
+
     function renderObjectives(){
+      const currentPlanning = getCurrentPlanning();
+      if (objectivesTitle) objectivesTitle.textContent = currentPlanning ? currentPlanning.name : 'Objetivos';
+      if (objectivesSubtitle) objectivesSubtitle.textContent = currentPlanning ? (currentPlanning.description || 'Objetivos asociados a esta planeación.') : 'Objetivos asociados a esta planeación.';
       const query = document.getElementById('searchInput').value.trim().toLowerCase();
       const status = document.getElementById('statusFilter').value;
-      const filtered = state.objectives.filter(obj => {
+      const filtered = state.objectives.filter(obj => obj.planningId === state.currentPlanningId).filter(obj => {
         const haystack = [obj.name, obj.description, obj.leader, obj.createdBy, ...(obj.tags || []), ...(obj.areas || []), ...(obj.linkedProjects || []), ...(obj.invited || []), ...((obj.reminders || []).map(x => x.text || '')), ...((obj.checklist || []).flatMap(x => [x.text || '', x.dueDate || ''])), ...((obj.links || []).flatMap(x => [x.title || '', x.url || ''])), ...((obj.attachments || []).map(x => x.name || ''))].join(' ').toLowerCase();
         return (!query || haystack.includes(query)) && (status === 'all' || obj.status === status);
       });
@@ -2137,6 +2430,13 @@
       renderObjectives();
     }
 
+    document.getElementById('openPlanningFormBtn').addEventListener('click', () => openPlanningModal('create'));
+    document.getElementById('closePlanningBtn').addEventListener('click', closePlanningModal);
+    document.getElementById('savePlanningBtn').addEventListener('click', savePlanning);
+    document.getElementById('backToPlanningsBtn').addEventListener('click', showPlanningView);
+    document.getElementById('planningSearchInput').addEventListener('input', renderPlannings);
+    document.getElementById('planningStatusFilter').addEventListener('change', renderPlannings);
+
     document.getElementById('openFormBtn').addEventListener('click', () => { resetForm(); openFormModal(); });
     document.getElementById('closeFormBtn').addEventListener('click', () => { closeFormModal(); resetForm(); });
     document.getElementById('saveObjectiveBtn').addEventListener('click', saveObjective);
@@ -2155,8 +2455,9 @@
     document.getElementById('searchInput').addEventListener('input', renderObjectives);
     document.getElementById('statusFilter').addEventListener('change', renderObjectives);
 
-    [formModal, detailModal, indicatorModal, valueHistoryModal, metaPlanModal, activityModal].forEach(modal => modal.addEventListener('click', (e) => {
+    [planningModal, formModal, detailModal, indicatorModal, valueHistoryModal, metaPlanModal, activityModal].forEach(modal => modal.addEventListener('click', (e) => {
       if (e.target === modal){
+        if (modal === planningModal) closePlanningModal();
         if (modal === formModal){ closeFormModal(); resetForm(); }
         if (modal === detailModal) closeDetailModal();
         if (modal === indicatorModal) closeIndicatorModal();
@@ -2181,6 +2482,7 @@
 
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape'){
+        closePlanningModal();
         closeFormModal();
         closeDetailModal();
         closeIndicatorModal();
@@ -2191,7 +2493,7 @@
     });
 
     resetForm();
-    renderObjectives();
+    renderPlannings();
   </script>
 </body>
 </html>
