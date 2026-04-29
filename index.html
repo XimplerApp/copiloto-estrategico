@@ -49,7 +49,17 @@
     th,td{padding:16px 14px;border-bottom:1px solid var(--line);font-size:14px;vertical-align:middle}
     th{text-align:left;color:var(--muted);font-weight:700;background:#fbfcfd}
     tbody tr:hover{background:#fcfdfd}
-    .objective-link{color:var(--green);font-weight:700;text-decoration:none;cursor:pointer}
+    .objective-link{color:var(--green);font-weight:700;text-decoration:none;cursor:pointer;display:inline-flex;align-items:center;gap:8px}
+    .objective-chevron{font-size:12px;color:var(--muted);transition:.2s ease}
+    .objective-cascade-row td{background:#fbfcfd;padding:0 32px 18px 72px}
+    .initiative-cascade{border:1px solid var(--line);border-radius:14px;background:#fff;margin-top:10px;overflow:hidden}
+    .initiative-cascade-head{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-bottom:1px solid var(--line);font-weight:700}
+    .initiative-cascade-list{display:flex;flex-direction:column}
+    .initiative-cascade-item{display:grid;grid-template-columns:1.2fr .8fr .7fr .6fr;gap:12px;padding:12px 14px;border-bottom:1px solid var(--line);font-size:13px;align-items:center}
+    .initiative-cascade-item:last-child{border-bottom:none}
+    .initiative-cascade-title{font-weight:700;color:var(--text)}
+    .initiative-cascade-meta{color:var(--muted);font-size:12px}
+    .initiative-empty{padding:14px;color:var(--muted);font-size:13px}
     .actions-inline{display:flex;flex-wrap:wrap;gap:8px}
     .progress-bar{width:120px;height:10px;background:#edf1f5;border-radius:999px;overflow:hidden;margin-bottom:6px}
     .progress-fill{height:100%;border-radius:999px}
@@ -429,11 +439,11 @@
 
             <div class="section">
               <h3>
-                <span>Actividades alineadas al objetivo</span>
+                <span>Iniciativas alineadas al objetivo</span>
                 <button id="addActivityBtn" class="small-btn" type="button">+ Agregar</button>
               </h3>
               <div id="activitiesList" class="repeat-list"></div>
-              <div class="hint">El promedio de cumplimiento de estas actividades impacta el Avance Cualitativo del objetivo.</div>
+              <div class="hint">El promedio de cumplimiento de estas iniciativas impacta el Avance Cualitativo del objetivo.</div>
             </div>
           </div>
 
@@ -611,18 +621,18 @@
     <div class="modal-card" style="width:min(760px,100%)">
       <div class="modal-header">
         <div class="modal-title">
-          <h2 id="activityModalTitle">Nueva Actividad</h2>
-          <p id="activityModalSubtitle">Agrega o edita una actividad desde la tarjeta del objetivo.</p>
+          <h2 id="activityModalTitle">Nueva Iniciativa</h2>
+          <p id="activityModalSubtitle">Agrega o edita una iniciativa desde la tarjeta del objetivo.</p>
         </div>
         <div class="modal-actions">
           <button id="closeActivityBtn" class="btn-secondary" type="button">Cancelar</button>
-          <button id="saveActivityBtn" class="btn-primary" type="button"><span id="saveActivityBtnLabel">Guardar Actividad</span><span>💾</span></button>
+          <button id="saveActivityBtn" class="btn-primary" type="button"><span id="saveActivityBtnLabel">Guardar Iniciativa</span><span>💾</span></button>
         </div>
       </div>
       <form id="activityModalForm" class="activity-modal-form">
         <div class="grid-2">
           <div class="field">
-            <label class="required" for="modalActivityName">Actividad</label>
+            <label class="required" for="modalActivityName">Iniciativa</label>
             <input id="modalActivityName" class="input" type="text" placeholder="Ej. Seguimiento a cartera crítica" />
           </div>
           <div class="field">
@@ -731,8 +741,8 @@
       <button class="remove-row" type="button">Eliminar</button>
       <div class="grid-2">
         <div class="field">
-          <label>Actividad</label>
-          <input class="input activity-name" type="text" placeholder="Ej. Actualizar CxC" />
+          <label>Iniciativa</label>
+          <input class="input activity-name" type="text" placeholder="Ej. Seguimiento a cartera crítica" />
         </div>
         <div class="field">
           <label>Responsable</label>
@@ -827,7 +837,7 @@
       }
     ];
 
-    const state = { plannings: loadPlannings(), objectives: [], currentPlanningId: null, editingPlanningId: null, formTags: [], editingId: null, detailId: null, detailTab: 'comments', detailIndicatorView: 'active', indicatorModalMode: 'create', editingIndicatorIndex: null, valueHistoryModalIndicatorIndex: null, metaPlanIndicatorIndex: null, activityModalMode: 'create', editingActivityIndex: null };
+    const state = { plannings: loadPlannings(), objectives: [], currentPlanningId: null, editingPlanningId: null, expandedObjectiveIds: new Set(), formTags: [], editingId: null, detailId: null, detailTab: 'comments', detailIndicatorView: 'active', indicatorModalMode: 'create', editingIndicatorIndex: null, valueHistoryModalIndicatorIndex: null, metaPlanIndicatorIndex: null, activityModalMode: 'create', editingActivityIndex: null };
     state.objectives = loadObjectives().map(obj => ({ ...obj, planningId: obj.planningId || state.plannings[0]?.id || 'plan_demo_2026' }));
     state.objectives = state.objectives.map(obj => state.plannings.some(plan => plan.id === obj.planningId) ? obj : ({ ...obj, planningId: state.plannings[0]?.id || 'plan_demo_2026' }));
     const planningView = document.getElementById('planningView');
@@ -1421,7 +1431,7 @@
       const query = document.getElementById('searchInput').value.trim().toLowerCase();
       const status = document.getElementById('statusFilter').value;
       const filtered = state.objectives.filter(obj => obj.planningId === state.currentPlanningId).filter(obj => {
-        const haystack = [obj.name, obj.description, obj.leader, obj.createdBy, ...(obj.tags || []), ...(obj.areas || []), ...(obj.linkedProjects || []), ...(obj.invited || []), ...((obj.reminders || []).map(x => x.text || '')), ...((obj.checklist || []).flatMap(x => [x.text || '', x.dueDate || ''])), ...((obj.links || []).flatMap(x => [x.title || '', x.url || ''])), ...((obj.attachments || []).map(x => x.name || ''))].join(' ').toLowerCase();
+        const haystack = [obj.name, obj.description, obj.leader, obj.createdBy, ...(obj.tags || []), ...(obj.areas || []), ...(obj.linkedProjects || []), ...(obj.invited || []), ...((obj.reminders || []).map(x => x.text || '')), ...((obj.activities || []).flatMap(x => [x.name || '', x.owner || '', x.status || '', x.dueDate || ''])), ...((obj.checklist || []).flatMap(x => [x.text || '', x.dueDate || ''])), ...((obj.links || []).flatMap(x => [x.title || '', x.url || ''])), ...((obj.attachments || []).map(x => x.name || ''))].join(' ').toLowerCase();
         return (!query || haystack.includes(query)) && (status === 'all' || obj.status === status);
       });
 
@@ -1432,8 +1442,9 @@
         const ql = calculateQualitativeProgress(obj.activities);
         const qt = calculateQuantitativeProgress(obj.indicators);
         const tr = document.createElement('tr');
+        const isExpanded = state.expandedObjectiveIds.has(obj.id);
         tr.innerHTML = `
-          <td><a class="objective-link" data-view-id="${obj.id}">${escapeHtml(obj.name)}</a></td>
+          <td><a class="objective-link" data-toggle-objective="${obj.id}"><span class="objective-chevron">${isExpanded ? '▼' : '▶'}</span>${escapeHtml(obj.name)}</a></td>
           <td><div class="progress-bar"><div class="progress-fill" style="width:${ql}%; background:${getProgressColor(ql)};"></div></div><div class="progress-label">${ql}%</div></td>
           <td><div class="ring" style="--val:${qt}; --ring-color:${getProgressColor(qt)};"><span>${qt}%</span></div></td>
           <td>${escapeHtml(obj.leader || '—')}</td>
@@ -1448,8 +1459,48 @@
           </td>
         `;
         objectivesBody.appendChild(tr);
+
+        if (isExpanded) {
+          const cascadeTr = document.createElement('tr');
+          cascadeTr.className = 'objective-cascade-row';
+          cascadeTr.innerHTML = `
+            <td colspan="7">
+              <div class="initiative-cascade">
+                <div class="initiative-cascade-head">
+                  <span>Iniciativas del objetivo</span>
+                  <span class="muted">${obj.activities.length} iniciativa(s)</span>
+                </div>
+                ${obj.activities.length ? `
+                  <div class="initiative-cascade-list">
+                    ${obj.activities.map(item => `
+                      <div class="initiative-cascade-item">
+                        <div>
+                          <div class="initiative-cascade-title">${escapeHtml(item.name)}</div>
+                          <div class="initiative-cascade-meta">Responsable: ${escapeHtml(item.owner || '—')}</div>
+                        </div>
+                        <div><strong>Estatus:</strong> ${escapeHtml(item.status || '—')}</div>
+                        <div><strong>Fecha:</strong> ${formatDate(item.dueDate)}</div>
+                        <div>
+                          <div><strong>Avance:</strong> ${Number(item.progress || 0)}%</div>
+                          <div class="tiny-progress"><div style="width:${Number(item.progress || 0)}%; background:${getProgressColor(Number(item.progress || 0))};"></div></div>
+                        </div>
+                      </div>
+                    `).join('')}
+                  </div>
+                ` : '<div class="initiative-empty">Sin iniciativas registradas para este objetivo.</div>'}
+              </div>
+            </td>
+          `;
+          objectivesBody.appendChild(cascadeTr);
+        }
       });
 
+      document.querySelectorAll('[data-toggle-objective]').forEach(btn => btn.onclick = () => {
+        const id = btn.dataset.toggleObjective;
+        if (state.expandedObjectiveIds.has(id)) state.expandedObjectiveIds.delete(id);
+        else state.expandedObjectiveIds.add(id);
+        renderObjectives();
+      });
       document.querySelectorAll('[data-view-id]').forEach(btn => btn.onclick = () => openDetailModal(btn.dataset.viewId));
       document.querySelectorAll('[data-edit-id]').forEach(btn => btn.onclick = () => startEdit(btn.dataset.editId));
       document.querySelectorAll('[data-delete-id]').forEach(btn => btn.onclick = () => deleteObjective(btn.dataset.deleteId));
@@ -1664,9 +1715,9 @@
       const obj = state.objectives.find(item => item.id === state.detailId);
       if (obj?.leader) document.getElementById('modalActivityOwner').value = obj.leader;
       document.getElementById('modalActivityStatus').value = 'en progreso';
-      document.getElementById('activityModalTitle').textContent = 'Nueva Actividad';
-      document.getElementById('activityModalSubtitle').textContent = 'Agrega o edita una actividad desde la tarjeta del objetivo.';
-      document.getElementById('saveActivityBtnLabel').textContent = 'Guardar Actividad';
+      document.getElementById('activityModalTitle').textContent = 'Nueva Iniciativa';
+      document.getElementById('activityModalSubtitle').textContent = 'Agrega o edita una iniciativa desde la tarjeta del objetivo.';
+      document.getElementById('saveActivityBtnLabel').textContent = 'Guardar Iniciativa';
     }
 
     function openActivityModal(mode = 'create', activityIndex = null){
@@ -1676,9 +1727,9 @@
       const obj = state.objectives.find(item => item.id === state.detailId);
       if (mode === 'edit' && obj && activityIndex !== null && obj.activities[activityIndex]) {
         const activity = obj.activities[activityIndex];
-        document.getElementById('activityModalTitle').textContent = 'Editar Actividad';
-        document.getElementById('activityModalSubtitle').textContent = 'Actualiza la información de la actividad seleccionada.';
-        document.getElementById('saveActivityBtnLabel').textContent = 'Actualizar Actividad';
+        document.getElementById('activityModalTitle').textContent = 'Editar Iniciativa';
+        document.getElementById('activityModalSubtitle').textContent = 'Actualiza la información de la iniciativa seleccionada.';
+        document.getElementById('saveActivityBtnLabel').textContent = 'Actualizar Iniciativa';
         document.getElementById('modalActivityName').value = activity.name || '';
         document.getElementById('modalActivityOwner').value = activity.owner || '';
         document.getElementById('modalActivityDate').value = activity.dueDate || '';
@@ -1700,7 +1751,7 @@
       const obj = state.objectives.find(item => item.id === state.detailId);
       if (!obj) return;
       const name = document.getElementById('modalActivityName').value.trim();
-      if (!name) return alert('Escribe el nombre de la actividad.');
+      if (!name) return alert('Escribe el nombre de la iniciativa.');
       const actor = askActionUser(obj.leader);
       if (!actor) return;
 
@@ -1714,10 +1765,10 @@
 
       if (state.activityModalMode === 'edit' && state.editingActivityIndex !== null && obj.activities[state.editingActivityIndex]) {
         obj.activities[state.editingActivityIndex] = activity;
-        addHistoryEntry(obj, `Actividad "${activity.name}" actualizada`, actor);
+        addHistoryEntry(obj, `Iniciativa "${activity.name}" actualizada`, actor);
       } else {
         obj.activities.push(activity);
-        addHistoryEntry(obj, `Actividad "${activity.name}" agregada`, actor);
+        addHistoryEntry(obj, `Iniciativa "${activity.name}" agregada`, actor);
       }
 
       persistObjectives();
@@ -1890,11 +1941,11 @@
             <div class="detail-right">
               <div class="detail-panel">
                 <div class="right-section-title">
-                  <h3 style="margin:0">Agrega Actividades</h3>
+                  <h3 style="margin:0">Iniciativas</h3>
                   <button class="btn-secondary small" type="button" id="detailAddActivityBtn">Agregar +</button>
                 </div>
                 <div class="activity-list-scroll">
-                  ${obj.activities.length ? obj.activities.map((item, index) => `<div class="activity-card"><div class="head"><span>${escapeHtml(item.name)}</span><div class="activity-header-right"><span>${Number(item.progress || 0)}%</span><button class="btn-secondary small btn-tight" type="button" data-edit-activity-index="${index}">Editar</button></div></div><div class="tiny-progress"><div style="width:${Number(item.progress || 0)}%; background:${getProgressColor(Number(item.progress || 0))};"></div></div><div class="activity-meta"><div><strong>Responsable:</strong> ${escapeHtml(item.owner || '—')}</div><div><strong>Estatus:</strong> ${escapeHtml(item.status || '—')}</div><div><strong>Fecha:</strong> ${formatDate(item.dueDate)}</div></div></div>`).join('') : '<div class="simple-card muted">Sin actividades registradas.</div>'}
+                  ${obj.activities.length ? obj.activities.map((item, index) => `<div class="activity-card"><div class="head"><span>${escapeHtml(item.name)}</span><div class="activity-header-right"><span>${Number(item.progress || 0)}%</span><button class="btn-secondary small btn-tight" type="button" data-edit-activity-index="${index}">Editar</button></div></div><div class="tiny-progress"><div style="width:${Number(item.progress || 0)}%; background:${getProgressColor(Number(item.progress || 0))};"></div></div><div class="activity-meta"><div><strong>Responsable:</strong> ${escapeHtml(item.owner || '—')}</div><div><strong>Estatus:</strong> ${escapeHtml(item.status || '—')}</div><div><strong>Fecha:</strong> ${formatDate(item.dueDate)}</div></div></div>`).join('') : '<div class="simple-card muted">Sin iniciativas registradas.</div>'}
                 </div>
               </div>
 
