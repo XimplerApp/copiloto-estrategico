@@ -207,6 +207,20 @@
     .planning-tech-label{font-size:11px;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:5px}
     .planning-tech-value{font-size:14px;font-weight:700;color:var(--text)}
     .breadcrumb-btn{border:none;background:transparent;color:var(--green);font-weight:800;cursor:pointer;padding:0;font-size:14px;font-family:inherit}
+
+    .initiative-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px}
+    .action-list{display:flex;flex-direction:column;gap:10px;padding:22px}
+    .action-row{border:1px solid var(--line-dark);border-radius:14px;padding:14px;background:#fff;display:grid;grid-template-columns:1.2fr .9fr .8fr auto;gap:12px;align-items:center}
+    .action-title{font-weight:800;color:var(--text)}
+    .action-detail-layout{display:grid;grid-template-columns:1.25fr .9fr;min-height:560px}
+    .action-detail-left{border-right:1px solid var(--line)}
+    .action-detail-section{padding:18px 22px;border-bottom:1px solid var(--line)}
+    .action-mini-bar{display:grid;grid-template-columns:120px 1fr 120px 1fr;align-items:center;background:#f2f4f7;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+    .action-mini-bar > div{padding:12px 16px}
+    .action-side-block{padding:16px;border-bottom:1px solid var(--line)}
+    .action-side-title{font-size:12px;font-weight:800;text-transform:uppercase;color:#667085;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
+    @media (max-width:900px){.action-detail-layout,.action-row{grid-template-columns:1fr}.action-detail-left{border-right:none}.action-mini-bar{grid-template-columns:1fr}}
+
     @media (max-width:1100px){
       .filters,.grid-2,.grid-3,.grid-4,.three-col,.comment-form,.detail-grid-top,.detail-main,.form-grid,.planning-tech-grid{grid-template-columns:1fr}
       .col + .col,.detail-right,.detail-top-box + .detail-top-box{border-left:none;border-top:1px solid var(--line)}
@@ -662,6 +676,63 @@
     </div>
   </div>
 
+
+
+  <div id="initiativeActionsModal" class="modal" aria-hidden="true">
+    <div class="modal-card" style="width:min(980px,100%)">
+      <div class="modal-header">
+        <div class="modal-title">
+          <h2 id="initiativeActionsTitle">Acciones de la Iniciativa</h2>
+          <p id="initiativeActionsSubtitle">Listado de acciones asignadas.</p>
+        </div>
+        <div class="modal-actions">
+          <button id="closeInitiativeActionsBtn" class="btn-secondary" type="button">Cerrar</button>
+          <button id="newActionBtn" class="btn-primary" type="button"><span>Nueva Acción</span><span>+</span></button>
+        </div>
+      </div>
+      <div id="initiativeActionsContent" class="action-list"></div>
+    </div>
+  </div>
+
+  <div id="actionDetailModal" class="modal" aria-hidden="true">
+    <div class="modal-card" style="width:min(1120px,100%)">
+      <div class="modal-header">
+        <div class="modal-title">
+          <h2 id="actionDetailTitle">Nueva Acción</h2>
+          <p id="actionDetailSubtitle">Registra el detalle general de la acción.</p>
+        </div>
+        <div class="modal-actions">
+          <button id="closeActionDetailBtn" class="btn-secondary" type="button">Cancelar</button>
+          <button id="saveActionDetailBtn" class="btn-primary" type="button"><span>Guardar Acción</span><span>💾</span></button>
+        </div>
+      </div>
+      <div class="action-detail-layout">
+        <div class="action-detail-left">
+          <div class="action-detail-section">
+            <label class="required" for="actionTitleInput">Título de la Acción</label>
+            <input id="actionTitleInput" class="input" type="text" placeholder="Ej. Enviar seguimiento a clientes críticos" />
+            <div class="field" style="margin-top:14px"><label for="actionDetailInput">Detalle de la Acción</label><textarea id="actionDetailInput" class="textarea" placeholder="Describe el alcance, entregable o contexto de esta acción..."></textarea></div>
+          </div>
+          <div class="action-detail-section">
+            <div class="grid-2"><div><div class="subtle-label">Creada por</div><input id="actionCreatedByInput" class="input" type="text" placeholder="Creador" /></div><div><label for="actionStatusInput">Estado</label><select id="actionStatusInput" class="select"><option>Por hacer</option><option>En progreso</option><option>Terminada</option><option>Pausada</option></select></div></div>
+            <div class="grid-2" style="margin-top:14px"><div><label for="actionResponsibleInput">Responsable</label><input id="actionResponsibleInput" class="input" type="text" placeholder="Responsable" /></div><div><label for="actionInvitedInput">Invitados</label><input id="actionInvitedInput" class="input" type="text" placeholder="Separar por coma" /></div></div>
+          </div>
+          <div class="action-detail-section"><div class="tabs"><button class="tab-btn active" type="button">Comentarios</button><button class="tab-btn" type="button">Historial</button><button class="tab-btn" type="button">Tiempos</button></div><textarea id="actionCommentInput" class="textarea" placeholder="Añadir comentario..."></textarea></div>
+        </div>
+        <div class="action-detail-right">
+          <div class="action-side-block"><div class="action-side-title">Fechas</div><div class="grid-2"><div><label for="actionStartInput">Inicio</label><input id="actionStartInput" class="input" type="date" /></div><div><label for="actionDueInput">Fecha compromiso</label><input id="actionDueInput" class="input" type="date" /></div></div></div>
+          <div class="action-mini-bar"><div><strong>Gastado</strong></div><div><input id="actionSpentInput" class="input" type="number" step="0.01" placeholder="$ 0" /></div><div><strong>Meta</strong></div><div><input id="actionBudgetInput" class="input" type="number" step="0.01" placeholder="$ 0" /></div></div>
+          <div class="action-side-block"><div class="action-side-title">Tiempo invertido</div><input id="actionTimeInput" class="input" type="text" placeholder="Ej. 2 h 30 min" /></div>
+          <div class="action-side-block"><div class="action-side-title">Recordatorios</div><input id="actionRemindersInput" class="input" type="text" placeholder="Separar por coma" /></div>
+          <div class="action-side-block"><div class="action-side-title">Etiquetas</div><input id="actionTagsInput" class="input" type="text" placeholder="Separar por coma" /></div>
+          <div class="action-side-block"><div class="action-side-title">Check List</div><textarea id="actionChecklistInput" class="textarea" placeholder="Un punto por línea"></textarea></div>
+          <div class="action-side-block"><div class="action-side-title">Enlaces</div><textarea id="actionLinksInput" class="textarea" placeholder="Un enlace por línea"></textarea></div>
+          <div class="action-side-block"><div class="action-side-title">Archivos Adjuntos</div><input id="actionAttachmentsInput" type="file" multiple /><div class="hint">Se registra el nombre del archivo.</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <template id="metaPlanRowTemplate">
     <div class="repeat-item meta-plan-row">
       <button class="remove-row" type="button">Eliminar</button>
@@ -837,7 +908,7 @@
       }
     ];
 
-    const state = { plannings: loadPlannings(), objectives: [], currentPlanningId: null, editingPlanningId: null, expandedObjectiveIds: new Set(), formTags: [], editingId: null, detailId: null, detailTab: 'comments', detailIndicatorView: 'active', indicatorModalMode: 'create', editingIndicatorIndex: null, valueHistoryModalIndicatorIndex: null, metaPlanIndicatorIndex: null, activityModalMode: 'create', editingActivityIndex: null };
+    const state = { plannings: loadPlannings(), objectives: [], currentPlanningId: null, editingPlanningId: null, expandedObjectiveIds: new Set(), formTags: [], editingId: null, detailId: null, detailTab: 'comments', detailIndicatorView: 'active', indicatorModalMode: 'create', editingIndicatorIndex: null, valueHistoryModalIndicatorIndex: null, metaPlanIndicatorIndex: null, activityModalMode: 'create', editingActivityIndex: null, actionObjectiveId: null, actionActivityIndex: null, editingActionIndex: null };
     state.objectives = loadObjectives().map(obj => ({ ...obj, planningId: obj.planningId || state.plannings[0]?.id || 'plan_demo_2026' }));
     state.objectives = state.objectives.map(obj => state.plannings.some(plan => plan.id === obj.planningId) ? obj : ({ ...obj, planningId: state.plannings[0]?.id || 'plan_demo_2026' }));
     const planningView = document.getElementById('planningView');
@@ -866,6 +937,9 @@
     const metaPlanRows = document.getElementById('metaPlanRows');
     const activityModal = document.getElementById('activityModal');
     const activityModalForm = document.getElementById('activityModalForm');
+    const initiativeActionsModal = document.getElementById('initiativeActionsModal');
+    const initiativeActionsContent = document.getElementById('initiativeActionsContent');
+    const actionDetailModal = document.getElementById('actionDetailModal');
 
     function normalizeComment(comment){
       if (typeof comment === 'string') return { author:'Sistema', text:comment, date:new Date().toISOString().slice(0,10) };
@@ -886,6 +960,32 @@
         frequency: entry?.frequency || 'Mensual',
         plannedDate: entry?.plannedDate || entry?.date || '',
         quantity: Number(entry?.quantity ?? entry?.target ?? fallbackQuantity ?? 0)
+      };
+    }
+
+
+
+    function normalizeInitiativeAction(action = {}){
+      return {
+        id: action.id || crypto.randomUUID(),
+        title: action.title || action.name || '',
+        responsible: action.responsible || action.owner || '',
+        dueDate: action.dueDate || action.date || '',
+        detail: action.detail || action.description || '',
+        status: action.status || 'Por hacer',
+        createdBy: action.createdBy || '',
+        invited: Array.isArray(action.invited) ? action.invited : (typeof action.invited === 'string' ? action.invited.split(',').map(x=>x.trim()).filter(Boolean) : []),
+        startDate: action.startDate || '',
+        spent: Number(action.spent || 0),
+        budget: Number(action.budget || 0),
+        timeInvested: action.timeInvested || '',
+        reminders: Array.isArray(action.reminders) ? action.reminders : [],
+        tags: Array.isArray(action.tags) ? action.tags : [],
+        checklist: Array.isArray(action.checklist) ? action.checklist : [],
+        links: Array.isArray(action.links) ? action.links : [],
+        attachments: Array.isArray(action.attachments) ? action.attachments : [],
+        comment: action.comment || '',
+        history: Array.isArray(action.history) ? action.history : []
       };
     }
 
@@ -920,7 +1020,8 @@
           owner: act.owner || '',
           dueDate: act.dueDate || '',
           status: act.status || 'pendiente',
-          progress: Number(act.progress ?? 0)
+          progress: Number(act.progress ?? 0),
+          actions: Array.isArray(act.actions) ? act.actions.map(normalizeInitiativeAction) : []
         })),
         reminders: Array.isArray(obj.reminders) ? obj.reminders.map(item => ({
           text: item?.text || item?.title || '',
@@ -1147,7 +1248,8 @@
         owner: item.querySelector('.activity-owner').value.trim(),
         dueDate: item.querySelector('.activity-date').value,
         status: item.querySelector('.activity-status').value,
-        progress: Number(item.querySelector('.activity-progress').value || 0)
+        progress: Number(item.querySelector('.activity-progress').value || 0),
+        actions: []
       })).filter(item => item.name);
     }
 
@@ -1483,6 +1585,7 @@
                         <div>
                           <div><strong>Avance:</strong> ${Number(item.progress || 0)}%</div>
                           <div class="tiny-progress"><div style="width:${Number(item.progress || 0)}%; background:${getProgressColor(Number(item.progress || 0))};"></div></div>
+                          <div class="initiative-actions"><button class="btn-secondary small btn-tight" type="button" data-open-actions-objective="${obj.id}" data-open-actions-activity="${obj.activities.indexOf(item)}">Asignar Acción</button><span class="muted">${(item.actions || []).length} acción(es)</span></div>
                         </div>
                       </div>
                     `).join('')}
@@ -1501,6 +1604,7 @@
         else state.expandedObjectiveIds.add(id);
         renderObjectives();
       });
+      document.querySelectorAll('[data-open-actions-objective]').forEach(btn => btn.onclick = () => openInitiativeActionsModal(btn.dataset.openActionsObjective, btn.dataset.openActionsActivity));
       document.querySelectorAll('[data-view-id]').forEach(btn => btn.onclick = () => openDetailModal(btn.dataset.viewId));
       document.querySelectorAll('[data-edit-id]').forEach(btn => btn.onclick = () => startEdit(btn.dataset.editId));
       document.querySelectorAll('[data-delete-id]').forEach(btn => btn.onclick = () => deleteObjective(btn.dataset.deleteId));
@@ -1760,10 +1864,12 @@
         owner: document.getElementById('modalActivityOwner').value.trim(),
         dueDate: document.getElementById('modalActivityDate').value,
         status: document.getElementById('modalActivityStatus').value,
-        progress: Number(document.getElementById('modalActivityProgress').value || 0)
+        progress: Number(document.getElementById('modalActivityProgress').value || 0),
+        actions: []
       };
 
       if (state.activityModalMode === 'edit' && state.editingActivityIndex !== null && obj.activities[state.editingActivityIndex]) {
+        activity.actions = Array.isArray(obj.activities[state.editingActivityIndex].actions) ? obj.activities[state.editingActivityIndex].actions : [];
         obj.activities[state.editingActivityIndex] = activity;
         addHistoryEntry(obj, `Iniciativa "${activity.name}" actualizada`, actor);
       } else {
@@ -1775,6 +1881,132 @@
       closeActivityModal();
       renderDetailModal();
       renderObjectives();
+    }
+
+
+    function getActionContext(){
+      const obj = state.objectives.find(item => item.id === (state.actionObjectiveId || state.detailId));
+      const activity = obj?.activities?.[state.actionActivityIndex];
+      return { obj, activity };
+    }
+
+    function openInitiativeActionsModal(objectiveId, activityIndex){
+      state.actionObjectiveId = objectiveId || state.detailId;
+      state.actionActivityIndex = Number(activityIndex);
+      state.editingActionIndex = null;
+      renderInitiativeActionsModal();
+      initiativeActionsModal.classList.add('open');
+      initiativeActionsModal.setAttribute('aria-hidden','false');
+    }
+
+    function closeInitiativeActionsModal(){
+      initiativeActionsModal.classList.remove('open');
+      initiativeActionsModal.setAttribute('aria-hidden','true');
+    }
+
+    function renderInitiativeActionsModal(){
+      const { obj, activity } = getActionContext();
+      document.getElementById('initiativeActionsTitle').textContent = activity ? `Acciones · ${activity.name}` : 'Acciones de la Iniciativa';
+      document.getElementById('initiativeActionsSubtitle').textContent = obj ? `Objetivo: ${obj.name}` : 'Listado de acciones asignadas.';
+      const actions = Array.isArray(activity?.actions) ? activity.actions : [];
+      initiativeActionsContent.innerHTML = actions.length ? actions.map((action, index) => `
+        <div class="action-row">
+          <div><div class="action-title">${escapeHtml(action.title || 'Sin título')}</div><div class="mini-item-sub">${escapeHtml(action.detail || 'Sin detalle')}</div></div>
+          <div><strong>Responsable:</strong> ${escapeHtml(action.responsible || '—')}</div>
+          <div><strong>Fecha compromiso:</strong> ${formatDate(action.dueDate)}</div>
+          <div class="actions-inline"><button class="btn-secondary small" type="button" data-open-action-detail="${index}">Detalle</button></div>
+        </div>
+      `).join('') : '<div class="simple-card muted">Sin acciones asignadas. Usa “Nueva Acción” para crear la primera.</div>';
+      initiativeActionsContent.querySelectorAll('[data-open-action-detail]').forEach(btn => btn.onclick = () => openActionDetailModal(Number(btn.dataset.openActionDetail)));
+    }
+
+    function resetActionDetailForm(){
+      ['actionTitleInput','actionDetailInput','actionCreatedByInput','actionResponsibleInput','actionInvitedInput','actionStartInput','actionDueInput','actionSpentInput','actionBudgetInput','actionTimeInput','actionRemindersInput','actionTagsInput','actionChecklistInput','actionLinksInput','actionCommentInput'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+      document.getElementById('actionStatusInput').value = 'Por hacer';
+      const fileInput = document.getElementById('actionAttachmentsInput');
+      if (fileInput) fileInput.value = '';
+    }
+
+    function openActionDetailModal(actionIndex = null){
+      const { obj, activity } = getActionContext();
+      if (!obj || !activity) return;
+      resetActionDetailForm();
+      state.editingActionIndex = actionIndex;
+      const action = actionIndex === null ? null : activity.actions?.[actionIndex];
+      document.getElementById('actionDetailTitle').textContent = action ? 'Detalle de Acción' : 'Nueva Acción';
+      document.getElementById('actionDetailSubtitle').textContent = `Iniciativa: ${activity.name}`;
+      document.getElementById('actionCreatedByInput').value = action?.createdBy || obj.leader || '';
+      document.getElementById('actionResponsibleInput').value = action?.responsible || activity.owner || obj.leader || '';
+      if (action) {
+        document.getElementById('actionTitleInput').value = action.title || '';
+        document.getElementById('actionDetailInput').value = action.detail || '';
+        document.getElementById('actionStatusInput').value = action.status || 'Por hacer';
+        document.getElementById('actionInvitedInput').value = (action.invited || []).join(', ');
+        document.getElementById('actionStartInput').value = action.startDate || '';
+        document.getElementById('actionDueInput').value = action.dueDate || '';
+        document.getElementById('actionSpentInput').value = action.spent || '';
+        document.getElementById('actionBudgetInput').value = action.budget || '';
+        document.getElementById('actionTimeInput').value = action.timeInvested || '';
+        document.getElementById('actionRemindersInput').value = (action.reminders || []).join(', ');
+        document.getElementById('actionTagsInput').value = (action.tags || []).join(', ');
+        document.getElementById('actionChecklistInput').value = (action.checklist || []).join('\n');
+        document.getElementById('actionLinksInput').value = (action.links || []).join('\n');
+        document.getElementById('actionCommentInput').value = action.comment || '';
+      }
+      actionDetailModal.classList.add('open');
+      actionDetailModal.setAttribute('aria-hidden','false');
+      document.getElementById('actionTitleInput').focus();
+    }
+
+    function closeActionDetailModal(){
+      actionDetailModal.classList.remove('open');
+      actionDetailModal.setAttribute('aria-hidden','true');
+      state.editingActionIndex = null;
+    }
+
+    function splitComma(value){ return String(value || '').split(',').map(x => x.trim()).filter(Boolean); }
+    function splitLines(value){ return String(value || '').split(/\n+/).map(x => x.trim()).filter(Boolean); }
+
+    function saveActionDetail(){
+      const { obj, activity } = getActionContext();
+      if (!obj || !activity) return;
+      const title = document.getElementById('actionTitleInput').value.trim();
+      if (!title) return alert('Escribe el título de la acción.');
+      const actor = askActionUser(obj.leader);
+      if (!actor) return;
+      const files = Array.from(document.getElementById('actionAttachmentsInput').files || []).map(file => ({ name: file.name, size: file.size, type: file.type || '', addedAt: new Date().toISOString() }));
+      const previous = state.editingActionIndex === null ? null : activity.actions?.[state.editingActionIndex];
+      const action = normalizeInitiativeAction({
+        id: previous?.id,
+        title,
+        responsible: document.getElementById('actionResponsibleInput').value.trim(),
+        dueDate: document.getElementById('actionDueInput').value,
+        detail: document.getElementById('actionDetailInput').value.trim(),
+        status: document.getElementById('actionStatusInput').value,
+        createdBy: document.getElementById('actionCreatedByInput').value.trim() || actor,
+        invited: splitComma(document.getElementById('actionInvitedInput').value),
+        startDate: document.getElementById('actionStartInput').value,
+        spent: Number(document.getElementById('actionSpentInput').value || 0),
+        budget: Number(document.getElementById('actionBudgetInput').value || 0),
+        timeInvested: document.getElementById('actionTimeInput').value.trim(),
+        reminders: splitComma(document.getElementById('actionRemindersInput').value),
+        tags: splitComma(document.getElementById('actionTagsInput').value),
+        checklist: splitLines(document.getElementById('actionChecklistInput').value),
+        links: splitLines(document.getElementById('actionLinksInput').value),
+        attachments: [...(previous?.attachments || []), ...files],
+        comment: document.getElementById('actionCommentInput').value.trim(),
+        history: previous?.history || []
+      });
+      action.history.unshift(buildHistoryMessage(previous ? 'Acción actualizada' : 'Acción creada', actor));
+      if (!Array.isArray(activity.actions)) activity.actions = [];
+      if (previous) activity.actions[state.editingActionIndex] = action;
+      else activity.actions.push(action);
+      addHistoryEntry(obj, `${previous ? 'Acción actualizada' : 'Acción asignada'} en iniciativa "${activity.name}": ${title}`, actor);
+      persistObjectives();
+      closeActionDetailModal();
+      renderInitiativeActionsModal();
+      renderObjectives();
+      if (state.detailId) renderDetailModal();
     }
 
     function openDetailModal(id){
@@ -1945,7 +2177,7 @@
                   <button class="btn-secondary small" type="button" id="detailAddActivityBtn">Agregar +</button>
                 </div>
                 <div class="activity-list-scroll">
-                  ${obj.activities.length ? obj.activities.map((item, index) => `<div class="activity-card"><div class="head"><span>${escapeHtml(item.name)}</span><div class="activity-header-right"><span>${Number(item.progress || 0)}%</span><button class="btn-secondary small btn-tight" type="button" data-edit-activity-index="${index}">Editar</button></div></div><div class="tiny-progress"><div style="width:${Number(item.progress || 0)}%; background:${getProgressColor(Number(item.progress || 0))};"></div></div><div class="activity-meta"><div><strong>Responsable:</strong> ${escapeHtml(item.owner || '—')}</div><div><strong>Estatus:</strong> ${escapeHtml(item.status || '—')}</div><div><strong>Fecha:</strong> ${formatDate(item.dueDate)}</div></div></div>`).join('') : '<div class="simple-card muted">Sin iniciativas registradas.</div>'}
+                  ${obj.activities.length ? obj.activities.map((item, index) => `<div class="activity-card"><div class="head"><span>${escapeHtml(item.name)}</span><div class="activity-header-right"><span>${Number(item.progress || 0)}%</span><button class="btn-secondary small btn-tight" type="button" data-edit-activity-index="${index}">Editar</button></div></div><div class="tiny-progress"><div style="width:${Number(item.progress || 0)}%; background:${getProgressColor(Number(item.progress || 0))};"></div></div><div class="activity-meta"><div><strong>Responsable:</strong> ${escapeHtml(item.owner || '—')}</div><div><strong>Estatus:</strong> ${escapeHtml(item.status || '—')}</div><div><strong>Fecha:</strong> ${formatDate(item.dueDate)}</div><div class="initiative-actions"><button class="btn-secondary small btn-tight" type="button" data-open-actions-detail-index="${index}">Asignar Acción</button><span>${(item.actions || []).length} acción(es)</span></div></div></div>`).join('') : '<div class="simple-card muted">Sin iniciativas registradas.</div>'}
                 </div>
               </div>
 
@@ -2111,6 +2343,10 @@
 
       detailContent.querySelectorAll('[data-edit-activity-index]').forEach(btn => {
         btn.onclick = () => openActivityModal('edit', Number(btn.dataset.editActivityIndex));
+      });
+
+      detailContent.querySelectorAll('[data-open-actions-detail-index]').forEach(btn => {
+        btn.onclick = () => openInitiativeActionsModal(obj.id, Number(btn.dataset.openActionsDetailIndex));
       });
 
       const addCommentBtn = document.getElementById('addCommentBtn');
@@ -2539,6 +2775,10 @@
     document.getElementById('addMetaPlanRowBtn').addEventListener('click', () => addMetaPlanRow());
     document.getElementById('closeActivityBtn').addEventListener('click', closeActivityModal);
     document.getElementById('saveActivityBtn').addEventListener('click', saveActivityFromModal);
+    document.getElementById('closeInitiativeActionsBtn').addEventListener('click', closeInitiativeActionsModal);
+    document.getElementById('newActionBtn').addEventListener('click', () => openActionDetailModal(null));
+    document.getElementById('closeActionDetailBtn').addEventListener('click', closeActionDetailModal);
+    document.getElementById('saveActionDetailBtn').addEventListener('click', saveActionDetail);
     document.getElementById('tagInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addFormTag(); } });
     document.getElementById('searchInput').addEventListener('input', renderObjectives);
     document.getElementById('statusFilter').addEventListener('change', renderObjectives);
@@ -2552,6 +2792,8 @@
         if (modal === valueHistoryModal) closeValueHistoryModal();
         if (modal === metaPlanModal) closeMetaPlanModal();
         if (modal === activityModal) closeActivityModal();
+        if (modal === initiativeActionsModal) closeInitiativeActionsModal();
+        if (modal === actionDetailModal) closeActionDetailModal();
       }
     }));
 
@@ -2577,6 +2819,8 @@
         closeValueHistoryModal();
         closeMetaPlanModal();
         closeActivityModal();
+        closeInitiativeActionsModal();
+        closeActionDetailModal();
       }
     });
 
