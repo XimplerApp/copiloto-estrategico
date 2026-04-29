@@ -22,7 +22,7 @@
     .input,.select{width:100%;border:1px solid var(--line-dark);background:#fff;border-radius:10px;padding:12px 14px;font-size:14px;color:var(--text);outline:none;font-family:inherit}
     .input:focus,.select:focus{border-color:#7bb7ff;box-shadow:0 0 0 3px rgba(69,137,255,.12)}
     .table-wrap{overflow-x:auto}
-    table{width:100%;border-collapse:collapse;min-width:980px}
+    table{width:100%;border-collapse:collapse;min-width:1180px}
     th,td{padding:16px 14px;border-bottom:1px solid var(--line);font-size:14px;vertical-align:top}
     th{text-align:left;color:var(--muted);font-weight:700;background:#fbfcfd}
     tbody tr:hover{background:#fcfdfd}
@@ -46,10 +46,16 @@
     .status-en_riesgo{background:var(--yellow-soft);color:var(--yellow)}
     .status-vencida{background:var(--red-soft);color:var(--red)}
     .empty-state{padding:22px;text-align:center;color:var(--muted);font-size:14px}
-    .summary{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
+    .summary{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:18px}
     .summary-item{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px 16px;box-shadow:var(--shadow)}
     .summary-label{font-size:12px;color:var(--muted);font-weight:800;text-transform:uppercase;margin-bottom:6px}
     .summary-value{font-size:24px;font-weight:800}
+    .advance-cell{text-align:center;vertical-align:middle;background:#fff}
+    .advance-box{display:inline-flex;flex-direction:column;align-items:center;gap:6px;min-width:94px}
+    .advance-ring{--size:58px;width:var(--size);height:var(--size);border-radius:50%;display:grid;place-items:center;font-size:13px;font-weight:800;color:var(--text);position:relative;background:conic-gradient(var(--advance-color) calc(var(--advance)*1%), #edf1f5 0)}
+    .advance-ring::after{content:"";width:44px;height:44px;background:#fff;border-radius:50%;position:absolute}
+    .advance-ring span{position:relative;z-index:1}
+    .advance-label{font-size:11px;color:var(--muted);font-weight:800;text-transform:uppercase}
     @media (max-width:900px){.filters,.summary{grid-template-columns:1fr}.topbar{flex-direction:column;align-items:stretch}.page{padding:18px}}
   </style>
 </head>
@@ -69,6 +75,7 @@
       <div class="summary-item"><div class="summary-label">Iniciativas</div><div id="sumInitiatives" class="summary-value">0</div></div>
       <div class="summary-item"><div class="summary-label">Acciones</div><div id="sumActions" class="summary-value">0</div></div>
       <div class="summary-item"><div class="summary-label">Vencidas</div><div id="sumOverdue" class="summary-value">0</div></div>
+      <div class="summary-item"><div class="summary-label">% Operativo</div><div id="sumOperational" class="summary-value">0%</div></div>
     </div>
 
     <div class="card">
@@ -87,7 +94,9 @@
         <table>
           <thead>
             <tr>
+              <th>% Avance Operativo Obj.</th>
               <th>Objetivo</th>
+              <th>% Avance Operativo Inic.</th>
               <th>Iniciativa(s)</th>
               <th>Acciones</th>
               <th>Responsable</th>
@@ -111,6 +120,23 @@
     function formatDate(dateString){ if (!dateString) return '—'; const date = new Date(dateString + 'T00:00:00'); return new Intl.DateTimeFormat('es-MX', { day:'2-digit', month:'short', year:'numeric' }).format(date); }
     function statusKey(status){ return String(status || 'Por hacer').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,'_'); }
     function isOverdue(dueDate, status){ if (!dueDate) return false; if (String(status).toLowerCase() === 'terminada') return false; const today = new Date(); today.setHours(0,0,0,0); return new Date(dueDate + 'T00:00:00') < today; }
+    function isDoneStatus(status){ return ['terminada','terminado','completada','completado','cumplida','cumplido'].includes(statusKey(status)); }
+    function actionAdvance(action){ return isDoneStatus(action?.status) ? 100 : 0; }
+    function initiativeOperationalAdvance(activity = {}){
+      const actions = Array.isArray(activity.actions) ? activity.actions.map(normalizeAction) : [];
+      if (!actions.length) return 0;
+      return Math.round(actions.reduce((acc, action) => acc + actionAdvance(action), 0) / actions.length);
+    }
+    function objectiveOperationalAdvance(obj = {}){
+      const activities = Array.isArray(obj.activities) ? obj.activities : [];
+      if (!activities.length) return 0;
+      return Math.round(activities.reduce((acc, activity) => acc + initiativeOperationalAdvance(activity), 0) / activities.length);
+    }
+    function getAdvanceColor(value){ if (value >= 80) return 'var(--green)'; if (value >= 50) return 'var(--yellow)'; return 'var(--red)'; }
+    function advanceRing(value, label){
+      const val = Math.max(0, Math.min(100, Number(value || 0)));
+      return '<div class="advance-box"><div class="advance-ring" style="--advance:' + val + '; --advance-color:' + getAdvanceColor(val) + ';"><span>' + val + '%</span></div>' + (label ? '<div class="advance-label">' + escapeHtml(label) + '</div>' : '') + '</div>';
+    }
 
     function normalizeAction(action = {}){
       return {
@@ -158,7 +184,9 @@
           if (!actions.length) {
             rows.push({
               objective: obj.name || '—',
+              objectiveAdvance: objectiveOperationalAdvance(obj),
               initiative: activity.name || '—',
+              initiativeAdvance: initiativeOperationalAdvance(activity),
               actionTitle: 'Sin acciones asignadas',
               actionDetail: 'Esta iniciativa todavía no tiene acciones registradas.',
               responsible: activity.owner || obj.leader || '—',
@@ -172,7 +200,9 @@
             const overdue = isOverdue(action.dueDate, action.status);
             rows.push({
               objective: obj.name || '—',
+              objectiveAdvance: objectiveOperationalAdvance(obj),
               initiative: activity.name || '—',
+              initiativeAdvance: initiativeOperationalAdvance(activity),
               actionTitle: action.title || 'Sin título',
               actionDetail: action.detail || '',
               responsible: action.responsible || activity.owner || obj.leader || '—',
@@ -222,6 +252,8 @@
       document.getElementById('sumInitiatives').textContent = initiativeCount;
       document.getElementById('sumActions').textContent = actionCount;
       document.getElementById('sumOverdue').textContent = overdueCount;
+      const operationalTotal = objectives.length ? Math.round(objectives.reduce((acc, obj) => acc + objectiveOperationalAdvance(obj), 0) / objectives.length) : 0;
+      document.getElementById('sumOperational').textContent = operationalTotal + '%';
 
       const body = document.getElementById('actionsBody');
       const objectiveGroups = groupRows(rows);
@@ -236,7 +268,9 @@
             const isObjectiveStart = !printedObjective;
             const isInitiativeStart = !printedInitiative;
             if (isObjectiveStart) {
+              const objAdvance = objectiveGroup.rows[0]?.objectiveAdvance ?? 0;
               cells.push(`
+                <td class="advance-cell" rowspan="${objectiveGroup.rows.length}">${advanceRing(objAdvance, 'Objetivo')}</td>
                 <td class="group-cell" rowspan="${objectiveGroup.rows.length}">
                   <div class="group-box objective-box">
                     <div class="group-kicker">Objetivo</div>
@@ -247,7 +281,9 @@
               printedObjective = true;
             }
             if (isInitiativeStart) {
+              const initAdvance = initiativeGroup.rows[0]?.initiativeAdvance ?? 0;
               cells.push(`
+                <td class="advance-cell" rowspan="${initiativeGroup.rows.length}">${advanceRing(initAdvance, 'Iniciativa')}</td>
                 <td class="group-cell" rowspan="${initiativeGroup.rows.length}">
                   <div class="group-box initiative-box">
                     <div class="group-kicker">Iniciativa</div>
