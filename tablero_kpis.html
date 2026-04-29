@@ -80,19 +80,124 @@
     function normalizeObjective(obj={}){return{...obj,id:obj.id||'',planningId:obj.planningId||'',name:obj.name||'',description:obj.description||'',leader:obj.leader||'',areas:Array.isArray(obj.areas)?obj.areas:[],endDate:obj.endDate||'',status:obj.status||'activo',kpiWeight:obj.kpiWeight!==undefined?Number(obj.kpiWeight):undefined,indicators:Array.isArray(obj.indicators)?obj.indicators.map(normalizeIndicator):[]}}
     function normalizePlanning(plan={}){return{id:plan.id||'',name:plan.name||'',description:plan.description||'',map:plan.map||'',owner:plan.owner||'',startDate:plan.startDate||'',endDate:plan.endDate||'',status:plan.status||'activo'}}
     function getEffectiveTarget(indicator={},referenceDate=new Date()){const base=Number(indicator.target??0);const plans=Array.isArray(indicator.metaPlan)?indicator.metaPlan.filter(x=>x&&x.plannedDate).sort((a,b)=>String(a.plannedDate).localeCompare(String(b.plannedDate))):[];if(!plans.length)return base;const key=referenceDate.toISOString().slice(0,10);const app=plans.filter(x=>x.plannedDate<=key);return app.length?Number(app[app.length-1].quantity??base):base}
-    function calculateIndicatorAdvance(ind={},allowNegative=true){const action=String(ind.action||'Incrementar').toLowerCase();const initial=Number(ind.initialValue??0);const target=Number(getEffectiveTarget(ind)??ind.target??0);const current=Number(ind.current??0);const norm=v=>allowNegative?Math.round(Math.min(100,v)):Math.round(Math.max(0,Math.min(100,v)));if(action==='reducir'){const need=initial-target;if(need<=0)return current<=target?100:(allowNegative?-100:0);return norm(((initial-current)/need)*100)}if(action==='mantener'){if(current===target)return 100;const base=Math.abs(initial)||Math.abs(target)||1;return norm((-Math.abs(current-target)/base)*100)}const need=target-initial;if(need<=0)return current>=target?100:(allowNegative?-100:0);return norm(((current-initial)/need)*100)}
+    
+    function calculateIndicatorAdvance(ind={},allowNegative=true){
+      const action=String(ind.action||'Incrementar').toLowerCase();
+      const initial=Number(ind.initialValue??0);
+      const target=Number(getEffectiveTarget(ind)??ind.target??0);
+      const current=Number(ind.current??0);
+      const norm=v=>allowNegative?Math.round(Math.min(100,v)):Math.round(Math.max(0,Math.min(100,v)));
+
+      if(action==='reducir'){
+        const need=initial-target;
+        if(need<=0)return current<=target?100:(allowNegative?-100:0);
+        return norm(((initial-current)/need)*100);
+      }
+
+      if(action==='mantener'){
+        if(current===target)return 100;
+        const base=Math.abs(initial)||Math.abs(target)||1;
+        return norm((-Math.abs(current-target)/base)*100);
+      }
+
+      const need=target-initial;
+      if(need<=0)return current>=target?100:(allowNegative?-100:0);
+      return norm(((current-initial)/need)*100);
+    }
+
     function getState(score){if(score>=80)return{key:'green',label:'En meta',cls:'state-green',arrow:'▲'};if(score>=50)return{key:'yellow',label:'Atención',cls:'state-yellow',arrow:'▬'};return{key:'red',label:'Crítico',cls:'state-red',arrow:'▼'}}
     function getAdvanceClass(score){if(score>=80)return'advance-green';if(score>=50)return'advance-yellow';return'advance-red'}
     function loadData(){plannings=loadJson(PLANNINGS_KEY).map(normalizePlanning);objectives=loadJson(OBJECTIVES_KEY).map(normalizeObjective);if(!currentPlanningId&&plannings.length)currentPlanningId=plannings[0].id;if(currentPlanningId)localStorage.setItem('ximpler_current_planning_id',currentPlanningId)}
     function visibleObjectives(){return objectives.filter(o=>o.planningId===currentPlanningId)}
-    function objectiveAvg(obj){const inds=(obj.indicators||[]).filter(i=>!i.hidden);if(!inds.length)return 0;const scores=inds.map(i=>calculateIndicatorAdvance(i,false));return Math.round(scores.reduce((a,b)=>a+b,0)/scores.length)}
+    
+    function objectiveAvg(obj){
+      const inds=(obj.indicators||[]).filter(i=>!i.hidden);
+      if(!inds.length)return 0;
+      const scores=inds.map(i=>calculateIndicatorAdvance(i,true));
+      return Math.round(scores.reduce((a,b)=>a+b,0)/scores.length);
+    }
+
     function defaultObjectiveWeight(){const objs=visibleObjectives();return objs.length?Math.round(100/objs.length):0}
     function defaultIndicatorWeight(obj){const inds=(obj.indicators||[]).filter(i=>!i.hidden);return inds.length?Math.round(100/inds.length):0}
     function populateObjectiveFilter(){const sel=document.getElementById('objectiveFilter');const selected=sel.value;const objs=visibleObjectives();sel.innerHTML='<option value="all">Todos los objetivos</option>'+objs.map(o=>`<option value="${escapeHtml(o.id)}">${escapeHtml(o.name)}</option>`).join('');if([...sel.options].some(o=>o.value===selected))sel.value=selected;}
-    function filteredGroups(){const query=document.getElementById('searchInput').value.trim().toLowerCase();const stateFilter=document.getElementById('stateFilter').value;const objectiveFilter=document.getElementById('objectiveFilter').value;return visibleObjectives().map(obj=>{const inds=(obj.indicators||[]).filter(i=>!i.hidden).map((ind,indicatorIndex)=>{const score=calculateIndicatorAdvance(ind,false);const st=getState(score);const hay=[obj.name,obj.description,obj.leader,...(obj.areas||[]),ind.name,ind.owner,ind.unit,ind.action].join(' ').toLowerCase();if(query&&!hay.includes(query))return null;if(stateFilter!=='all'&&st.key!==stateFilter)return null;if(objectiveFilter!=='all'&&obj.id!==objectiveFilter)return null;return{ind,indicatorIndex,score,state:st};}).filter(Boolean);return{obj,inds};}).filter(group=>group.inds.length)}
+    
+    function filteredGroups(){
+      const query=document.getElementById('searchInput').value.trim().toLowerCase();
+      const stateFilter=document.getElementById('stateFilter').value;
+      const objectiveFilter=document.getElementById('objectiveFilter').value;
+
+      return visibleObjectives().map(obj=>{
+        const inds=(obj.indicators||[]).filter(i=>!i.hidden).map((ind,indicatorIndex)=>{
+          const score=calculateIndicatorAdvance(ind,true);
+          const st=getState(score);
+          const hay=[obj.name,obj.description,obj.leader,...(obj.areas||[]),ind.name,ind.owner,ind.unit,ind.action].join(' ').toLowerCase();
+
+          if(query&&!hay.includes(query))return null;
+          if(stateFilter!=='all'&&st.key!==stateFilter)return null;
+          if(objectiveFilter!=='all'&&obj.id!==objectiveFilter)return null;
+
+          return{ind,indicatorIndex,score,state:st};
+        }).filter(Boolean);
+
+        return{obj,inds};
+      }).filter(group=>group.inds.length);
+    }
+
     function updateObjectiveWeight(objectiveId,value){const obj=objectives.find(o=>o.id===objectiveId);if(!obj)return;obj.kpiWeight=Number(value||0);saveObjectives();render(false)}
     function updateIndicatorWeight(objectiveId,indicatorIndex,value){const obj=objectives.find(o=>o.id===objectiveId);if(!obj||!obj.indicators[indicatorIndex])return;obj.indicators[indicatorIndex].kpiWeight=Number(value||0);saveObjectives();render(false)}
-    function render(shouldLoad=true){if(shouldLoad)loadData();populateObjectiveFilter();const plan=plannings.find(p=>p.id===currentPlanningId)||{};const planObjectives=visibleObjectives();const indicators=planObjectives.flatMap(o=>(o.indicators||[]).filter(i=>!i.hidden));const scores=indicators.map(i=>calculateIndicatorAdvance(i,false));const avg=scores.length?Math.round(scores.reduce((a,b)=>a+b,0)/scores.length):0;const general=getState(avg);document.getElementById('subtitle').textContent=`${plan.description||'Vista ejecutiva de objetivos e indicadores.'} · Periodo: ${formatDate(plan.startDate)} → ${formatDate(plan.endDate)}`;document.getElementById('planName').textContent=plan.name||'—';document.getElementById('planMap').textContent=`Mapa: ${plan.map||'—'}`;document.getElementById('totalObjectives').textContent=planObjectives.length;document.getElementById('totalIndicators').textContent=indicators.length;document.getElementById('avgAdvance').textContent=`${avg}%`;document.getElementById('generalState').innerHTML=`<span class="state ${general.cls}">${general.arrow} ${general.label}</span>`;const groups=filteredGroups();const body=document.getElementById('kpiBody');const empty=document.getElementById('emptyState');body.innerHTML='';empty.style.display=groups.length?'none':'block';const objDefault=defaultObjectiveWeight();groups.forEach(group=>{const objScore=objectiveAvg(group.obj);const indDefault=defaultIndicatorWeight(group.obj);group.inds.forEach((row,idx)=>{const tr=document.createElement('tr');const first=idx===0;const objWeight=group.obj.kpiWeight!==undefined?group.obj.kpiWeight:objDefault;const indWeight=row.ind.kpiWeight!==undefined?row.ind.kpiWeight:indDefault;tr.innerHTML=`${first?`<td rowspan="${group.inds.length}"><div class="gauge" style="--score:${objScore}"><div class="needle"></div><div class="score-text">${objScore}%</div></div></td><td rowspan="${group.inds.length}" class="objective-cell">${escapeHtml(group.obj.name)}<div class="muted" style="font-weight:400;margin-top:4px">${escapeHtml(group.obj.leader||'—')}</div></td><td rowspan="${group.inds.length}"><div class="weight-wrap"><input class="weight-input" type="number" min="0" max="100" step="1" value="${escapeHtml(objWeight)}" data-objective-weight="${escapeHtml(group.obj.id)}"><span>%</span></div></td>`:''}<td class="indicator-cell">${escapeHtml(row.ind.name||'—')}</td><td><div class="weight-wrap"><input class="weight-input" type="number" min="0" max="100" step="1" value="${escapeHtml(indWeight)}" data-indicator-weight="${escapeHtml(group.obj.id)}" data-indicator-index="${row.indicatorIndex}"><span>%</span></div></td><td>${escapeHtml(row.ind.owner||group.obj.areas.join(', ')||group.obj.leader||'—')}</td><td>${escapeHtml(row.ind.current)} ${escapeHtml(row.ind.unit||'')}</td><td>${escapeHtml(getEffectiveTarget(row.ind))} ${escapeHtml(row.ind.unit||'')}</td><td><span class="advance-pill ${getAdvanceClass(row.score)}">${row.score}%</span></td><td><span class="state ${row.state.cls}"><span class="arrow">${row.state.arrow}</span>${row.state.label}</span></td><td><button class="edit-btn" title="La edición detallada se realiza en el index principal" onclick="alert('Edita el valor actual, meta y datos completos desde el detalle del objetivo en el index principal.')">✎</button></td>`;body.appendChild(tr);});});document.querySelectorAll('[data-objective-weight]').forEach(input=>{input.addEventListener('change',()=>updateObjectiveWeight(input.dataset.objectiveWeight,input.value));});document.querySelectorAll('[data-indicator-weight]').forEach(input=>{input.addEventListener('change',()=>updateIndicatorWeight(input.dataset.indicatorWeight,Number(input.dataset.indicatorIndex),input.value));});}
+    
+    function render(shouldLoad=true){
+      if(shouldLoad)loadData();
+      populateObjectiveFilter();
+
+      const plan=plannings.find(p=>p.id===currentPlanningId)||{};
+      const planObjectives=visibleObjectives();
+      const indicators=planObjectives.flatMap(o=>(o.indicators||[]).filter(i=>!i.hidden));
+      const scores=indicators.map(i=>calculateIndicatorAdvance(i,true));
+      const avg=scores.length?Math.round(scores.reduce((a,b)=>a+b,0)/scores.length):0;
+      const general=getState(avg);
+
+      document.getElementById('subtitle').textContent=`${plan.description||'Vista ejecutiva de objetivos e indicadores.'} · Periodo: ${formatDate(plan.startDate)} → ${formatDate(plan.endDate)}`;
+      document.getElementById('planName').textContent=plan.name||'—';
+      document.getElementById('planMap').textContent=`Mapa: ${plan.map||'—'}`;
+      document.getElementById('totalObjectives').textContent=planObjectives.length;
+      document.getElementById('totalIndicators').textContent=indicators.length;
+      document.getElementById('avgAdvance').textContent=`${avg}%`;
+      document.getElementById('generalState').innerHTML=`<span class="state ${general.cls}">${general.arrow} ${general.label}</span>`;
+
+      const groups=filteredGroups();
+      const body=document.getElementById('kpiBody');
+      const empty=document.getElementById('emptyState');
+
+      body.innerHTML='';
+      empty.style.display=groups.length?'none':'block';
+
+      const objDefault=defaultObjectiveWeight();
+
+      groups.forEach(group=>{
+        const objScore=objectiveAvg(group.obj);
+        const indDefault=defaultIndicatorWeight(group.obj);
+
+        group.inds.forEach((row,idx)=>{
+          const tr=document.createElement('tr');
+          const first=idx===0;
+          const objWeight=group.obj.kpiWeight!==undefined?group.obj.kpiWeight:objDefault;
+          const indWeight=row.ind.kpiWeight!==undefined?row.ind.kpiWeight:indDefault;
+
+          tr.innerHTML=`${first?`<td rowspan="${group.inds.length}"><div class="gauge" style="--score:${Math.max(0,Math.min(100,objScore))}"><div class="needle"></div><div class="score-text">${objScore}%</div></div></td><td rowspan="${group.inds.length}" class="objective-cell">${escapeHtml(group.obj.name)}<div class="muted" style="font-weight:400;margin-top:4px">${escapeHtml(group.obj.leader||'—')}</div></td><td rowspan="${group.inds.length}"><div class="weight-wrap"><input class="weight-input" type="number" min="0" max="100" step="1" value="${escapeHtml(objWeight)}" data-objective-weight="${escapeHtml(group.obj.id)}"><span>%</span></div></td>`:''}<td class="indicator-cell">${escapeHtml(row.ind.name||'—')}</td><td><div class="weight-wrap"><input class="weight-input" type="number" min="0" max="100" step="1" value="${escapeHtml(indWeight)}" data-indicator-weight="${escapeHtml(group.obj.id)}" data-indicator-index="${row.indicatorIndex}"><span>%</span></div></td><td>${escapeHtml(row.ind.owner||group.obj.areas.join(', ')||group.obj.leader||'—')}</td><td>${escapeHtml(row.ind.current)} ${escapeHtml(row.ind.unit||'')}</td><td>${escapeHtml(getEffectiveTarget(row.ind))} ${escapeHtml(row.ind.unit||'')}</td><td><span class="advance-pill ${getAdvanceClass(row.score)}">${row.score}%</span></td><td><span class="state ${row.state.cls}"><span class="arrow">${row.state.arrow}</span>${row.state.label}</span></td><td><button class="edit-btn" title="La edición detallada se realiza en el index principal" onclick="alert('Edita el valor actual, meta y datos completos desde el detalle del objetivo en el index principal.')">✎</button></td>`;
+
+          body.appendChild(tr);
+        });
+      });
+
+      document.querySelectorAll('[data-objective-weight]').forEach(input=>{
+        input.addEventListener('change',()=>updateObjectiveWeight(input.dataset.objectiveWeight,input.value));
+      });
+
+      document.querySelectorAll('[data-indicator-weight]').forEach(input=>{
+        input.addEventListener('change',()=>updateIndicatorWeight(input.dataset.indicatorWeight,Number(input.dataset.indicatorIndex),input.value));
+      });
+    }
 
     document.getElementById('refreshBtn').addEventListener('click',()=>render(true));
     document.getElementById('searchInput').addEventListener('input',()=>render(false));
