@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Ximpler - Tablero de Acciones</title>
+  <title>Ximpler - Tablero Operativo</title>
   <style>
     :root{
       --bg:#f5f7fa;--card:#fff;--line:#e6ebf0;--line-dark:#d5dde7;--text:#243041;--muted:#6b7280;
@@ -64,7 +64,7 @@
     <div class="topbar">
       <div class="title-wrap">
         <button class="breadcrumb-btn" type="button" onclick="history.back()">← Volver a Objetivos</button>
-        <h1>Tablero de Acciones</h1>
+        <h1>Tablero Operativo</h1>
         <p id="subtitle">Concentrado de acciones por objetivo e iniciativa.</p>
       </div>
       <a class="btn-secondary" href="objetivos_actualizado.html">Volver al inicio</a>
@@ -138,10 +138,20 @@
     function isDoneStatus(status){ return ['terminada','terminado','completada','completado','cumplida','cumplido'].includes(statusKey(status)); }
     function actionAdvance(action){ return isDoneStatus(action?.status) ? 100 : 0; }
     function initiativeOperationalAdvance(activity = {}){
-      const actions = Array.isArray(activity.actions) ? activity.actions.map(normalizeAction) : [];
-      if (!actions.length) return 0;
-      return Math.round(actions.reduce((acc, action) => acc + actionAdvance(action), 0) / actions.length);
-    }
+  const actions = Array.isArray(activity.actions) ? activity.actions.map(normalizeAction) : [];
+
+  // Si NO tiene acciones asignadas, usa el estatus de la iniciativa:
+  // Terminada = 100%, cualquier otro estatus = 0%
+  if (!actions.length) {
+    return isDoneStatus(activity.status) ? 100 : 0;
+  }
+
+  // Si SÍ tiene acciones, promedia el avance real de sus acciones:
+  // Terminada = 100%, cualquier otro estatus = 0%
+  return Math.round(
+    actions.reduce((acc, action) => acc + actionAdvance(action), 0) / actions.length
+  );
+}
     function objectiveOperationalAdvance(obj = {}){
       const activities = Array.isArray(obj.activities) ? obj.activities : [];
       if (!activities.length) return 0;
