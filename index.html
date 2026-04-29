@@ -219,6 +219,10 @@
     .action-mini-bar > div{padding:12px 16px}
     .action-side-block{padding:16px;border-bottom:1px solid var(--line)}
     .action-side-title{font-size:12px;font-weight:800;text-transform:uppercase;color:#667085;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
+    .objective-mini-links{margin-top:6px;font-size:12px;color:var(--muted);line-height:1.35;max-width:300px}
+    .mapping-canvas-wrap{border:1px solid var(--line);border-radius:16px;background:linear-gradient(180deg,#fbfcfe 0%,#ffffff 100%);overflow:auto;min-height:360px;padding:14px}
+    .mapping-canvas-wrap svg{display:block;min-width:100%}
+    .mapping-empty{padding:40px 18px;text-align:center;color:var(--muted);font-size:14px}
     @media (max-width:900px){.action-detail-layout,.action-row{grid-template-columns:1fr}.action-detail-left{border-right:none}.action-mini-bar{grid-template-columns:1fr}}
 
     @media (max-width:1100px){
@@ -274,7 +278,8 @@
         </div>
         <div class="modal-actions">
           <button id="openKpiBoardBtn" class="btn-secondary" type="button">Tablero KPI´s</button>
-          <button id="openActionsBoardBtn" class="btn-secondary" type="button">TOP</button>
+          <button id="openMapBtn" class="btn-secondary" type="button">Mapeo</button>
+          <button id="openActionsBoardBtn" class="btn-secondary" type="button">Tablero de Acciones</button>
           <button id="openFormBtn" class="btn-primary">
             <span>Nuevo Objetivo</span>
             <span class="plus">+</span>
@@ -313,6 +318,24 @@
           </table>
         </div>
         <div id="emptyState" class="empty-state" style="display:none;">No hay objetivos que coincidan con el filtro.</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="mappingModal" class="modal" aria-hidden="true">
+    <div class="modal-card detail-card">
+      <div class="modal-header">
+        <div class="modal-title">
+          <h2>Mapeo de Objetivos</h2>
+          <p>Apoyo visual para identificar relaciones, codependencias e impactos entre objetivos.</p>
+        </div>
+        <div class="modal-actions">
+          <button id="closeMappingBtn" class="btn-secondary" type="button">Cerrar</button>
+        </div>
+      </div>
+      <div class="modal-body-pad">
+        <div id="mappingSummary" class="meta-plan-note">Sin relaciones registradas.</div>
+        <div id="mappingCanvasWrap" class="mapping-canvas-wrap"></div>
       </div>
     </div>
   </div>
@@ -505,6 +528,14 @@
                   <option>Atención a Clientes Premium</option>
                 </select>
                 <div class="hint">Relaciona el objetivo con proyectos ya existentes dentro de Ximpler.</div>
+              </div>
+            </div>
+
+            <div class="section">
+              <div class="field">
+                <label for="relatedObjectives">Codependencia / Relación con otros objetivos</label>
+                <select id="relatedObjectives" class="select" multiple size="8"></select>
+                <div class="hint">Selecciona uno o varios objetivos ya creados dentro de esta misma planeación para indicar si este objetivo se relaciona, depende o impacta a otro.</div>
               </div>
             </div>
 
@@ -938,6 +969,7 @@
     const metaPlanRows = document.getElementById('metaPlanRows');
     const activityModal = document.getElementById('activityModal');
     const activityModalForm = document.getElementById('activityModalForm');
+    const mappingModal = document.getElementById('mappingModal');
     const initiativeActionsModal = document.getElementById('initiativeActionsModal');
     const initiativeActionsContent = document.getElementById('initiativeActionsContent');
     const actionDetailModal = document.getElementById('actionDetailModal');
@@ -1048,6 +1080,7 @@
         tags: Array.isArray(obj.tags) ? obj.tags : [],
         areas: Array.isArray(obj.areas) ? obj.areas : [],
         linkedProjects: Array.isArray(obj.linkedProjects) ? obj.linkedProjects : [],
+        relatedObjectives: Array.isArray(obj.relatedObjectives) ? obj.relatedObjectives.filter(Boolean) : [],
         status: obj.status || 'activo',
         comments: Array.isArray(obj.comments) ? obj.comments.map(normalizeComment).filter(c=>c.text) : [],
         history: Array.isArray(obj.history) ? obj.history : []
@@ -1202,6 +1235,161 @@
     function clearMultiSelect(id){ Array.from(document.getElementById(id).options).forEach(opt => opt.selected = false); }
     function setMultiSelectValues(id, values=[]){ const set = new Set(values); Array.from(document.getElementById(id).options).forEach(opt => { const val = opt.value || opt.textContent; opt.selected = set.has(val); }); }
     function getMultiSelectValues(selectEl){ return Array.from(selectEl.selectedOptions).map(opt => opt.value || opt.textContent).filter(Boolean); }
+    function getPlanningObjectives(planningId = state.currentPlanningId){ return state.objectives.filter(obj => obj.planningId === planningId); }
+    function getRelatedObjectivesFor(obj){ return (obj.relatedObjectives || []).map(id => state.objectives.find(item => item.id === id && item.planningId === obj.planningId)).filter(Boolean); }
+    function renderRelatedObjectivesOptions(selectedValues = []){
+      const select = document.getElementById('relatedObjectives');
+      if (!select) return;
+      const options = getPlanningObjectives().filter(obj => obj.id !== state.editingId);
+      const selectedSet = new Set(selectedValues || []);
+      if (!options.length) {
+        select.innerHTML = '<option value="">No hay otros objetivos disponibles</option>';
+        select.disabled = true;
+        return;
+      }
+      select.disabled = false;
+      select.innerHTML = options.map(obj => `<option value="${obj.id}">${escapeHtml(obj.name)}</option>`).join('');
+      Array.from(select.options).forEach(opt => { opt.selected = selectedSet.has(opt.value); });
+    }
+    function wrapSvgLabel(text, maxChars = 20){
+      const words = String(text || '').split(/\s+/).filter(Boolean);
+      const lines = [];
+      let current = '';
+      words.forEach(word => {
+        const probe = current ? `${current} ${word}` : word;
+        if (probe.length <= maxChars) current = probe;
+        else {
+          if (current) lines.push(current);
+          current = word;
+        }
+      });
+      if (current) lines.push(current);
+      if (lines.length <= 3) return lines;
+      const trimmed = lines.slice(0, 2);
+      let last = lines.slice(2).join(' ');
+      if (last.length > maxChars) last = `${last.slice(0, maxChars - 1)}…`;
+      trimmed.push(last);
+      return trimmed;
+    }
+    function buildObjectiveMapData(objectives){
+      const byId = new Map(objectives.map(obj => [obj.id, obj]));
+      const indegree = new Map();
+      const outgoing = new Map();
+      objectives.forEach(obj => { indegree.set(obj.id, 0); outgoing.set(obj.id, []); });
+      objectives.forEach(obj => {
+        (obj.relatedObjectives || []).forEach(relId => {
+          if (!byId.has(relId) || relId === obj.id) return;
+          outgoing.get(obj.id).push(relId);
+          indegree.set(relId, (indegree.get(relId) || 0) + 1);
+        });
+      });
+      const queue = [];
+      const level = new Map();
+      objectives.forEach(obj => {
+        if ((indegree.get(obj.id) || 0) === 0) {
+          queue.push(obj.id);
+          level.set(obj.id, 0);
+        }
+      });
+      if (!queue.length && objectives[0]) {
+        queue.push(objectives[0].id);
+        level.set(objectives[0].id, 0);
+      }
+      const visited = new Set();
+      while (queue.length) {
+        const current = queue.shift();
+        visited.add(current);
+        const currentLevel = level.get(current) || 0;
+        (outgoing.get(current) || []).forEach(child => {
+          if (!level.has(child)) level.set(child, currentLevel + 1);
+          indegree.set(child, (indegree.get(child) || 0) - 1);
+          if ((indegree.get(child) || 0) <= 0 && !visited.has(child)) queue.push(child);
+        });
+      }
+      objectives.forEach(obj => { if (!level.has(obj.id)) level.set(obj.id, 0); });
+      return { level, outgoing };
+    }
+    function renderObjectiveMapping(){
+      const canvas = document.getElementById('mappingCanvasWrap');
+      const summary = document.getElementById('mappingSummary');
+      if (!canvas || !summary) return;
+      const objectives = getPlanningObjectives();
+      if (!objectives.length) {
+        summary.textContent = 'No hay objetivos para mapear.';
+        canvas.innerHTML = '<div class="mapping-empty">Primero crea objetivos para poder visualizar su relación.</div>';
+        return;
+      }
+      const { level } = buildObjectiveMapData(objectives);
+      const groups = {};
+      objectives.forEach(obj => {
+        const key = level.get(obj.id) || 0;
+        if (!groups[key]) groups[key] = [];
+        groups[key].push(obj);
+      });
+      const levels = Object.keys(groups).map(Number).sort((a,b) => a - b);
+      const width = Math.max(1000, ...levels.map(key => Math.max(groups[key].length, 1) * 260));
+      const rowGap = 170;
+      const topPad = 70;
+      const nodeW = 220;
+      const nodeH = 76;
+      const positions = new Map();
+      levels.forEach(levelKey => {
+        const row = groups[levelKey];
+        const leftPad = 90;
+        const usableWidth = width - leftPad * 2;
+        const step = row.length <= 1 ? 0 : usableWidth / (row.length - 1);
+        row.forEach((obj, index) => {
+          const x = row.length === 1 ? width / 2 : leftPad + step * index;
+          const y = topPad + levelKey * rowGap;
+          positions.set(obj.id, { x, y });
+        });
+      });
+      const maxLevel = levels.length ? Math.max(...levels) : 0;
+      const height = topPad + (maxLevel * rowGap) + 140;
+      const edges = [];
+      objectives.forEach(obj => {
+        (obj.relatedObjectives || []).forEach(relId => {
+          if (positions.has(obj.id) && positions.has(relId) && relId !== obj.id) edges.push([obj.id, relId]);
+        });
+      });
+      summary.textContent = `${objectives.length} objetivo(s) mapeado(s) · ${edges.length} relación(es) detectada(s).`;
+      let svg = `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Mapeo de objetivos"><defs><marker id="arrowHead" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#5c8fd1"></path></marker></defs>`;
+      levels.forEach(levelKey => {
+        const guideY = topPad + levelKey * rowGap + (nodeH / 2) + 34;
+        svg += `<line x1="35" y1="${guideY}" x2="${width - 35}" y2="${guideY}" stroke="#d9e1ea" stroke-width="1" />`;
+      });
+      edges.forEach(([fromId, toId]) => {
+        const from = positions.get(fromId);
+        const to = positions.get(toId);
+        const startX = from.x;
+        const startY = from.y + nodeH / 2;
+        const endX = to.x;
+        const endY = to.y - nodeH / 2;
+        const controlY = startY + (endY - startY) / 2;
+        const d = `M ${startX} ${startY} C ${startX} ${controlY}, ${endX} ${controlY}, ${endX} ${endY}`;
+        svg += `<path d="${d}" fill="none" stroke="#5c8fd1" stroke-width="2.1" marker-end="url(#arrowHead)" />`;
+      });
+      objectives.forEach(obj => {
+        const pos = positions.get(obj.id);
+        const lines = wrapSvgLabel(obj.name, 19);
+        svg += `<ellipse cx="${pos.x}" cy="${pos.y}" rx="${nodeW/2}" ry="${nodeH/2}" fill="#5c86c4" stroke="#3f6ea8" stroke-width="2" />`;
+        lines.forEach((line, idx) => {
+          const y = pos.y - ((lines.length - 1) * 14) / 2 + idx * 16 + 5;
+          svg += `<text x="${pos.x}" y="${y}" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="700" fill="#ffffff">${escapeHtml(line)}</text>`;
+        });
+      });
+      svg += '</svg>';
+      canvas.innerHTML = svg;
+    }
+    function openMappingModal(){
+      renderObjectiveMapping();
+      mappingModal.classList.add('open');
+      mappingModal.setAttribute('aria-hidden', 'false');
+    }
+    function closeMappingModal(){
+      mappingModal.classList.remove('open');
+      mappingModal.setAttribute('aria-hidden', 'true');
+    }
 
     function addIndicatorRow(data={}){
       const tpl = document.getElementById('indicatorTemplate');
@@ -1281,9 +1469,10 @@
       clearMultiSelect('invited');
       clearMultiSelect('areas');
       clearMultiSelect('linkedProjects');
+      renderRelatedObjectivesOptions([]);
     }
 
-    function openFormModal(){ formModal.classList.add('open'); formModal.setAttribute('aria-hidden', 'false'); }
+    function openFormModal(){ renderRelatedObjectivesOptions(state.editingId ? (state.objectives.find(item => item.id === state.editingId)?.relatedObjectives || []) : []); formModal.classList.add('open'); formModal.setAttribute('aria-hidden', 'false'); }
     function closeFormModal(){ formModal.classList.remove('open'); formModal.setAttribute('aria-hidden', 'true'); }
 
     function buildHistory(previous, name, actor){
@@ -1317,6 +1506,7 @@
         tags: [...state.formTags],
         areas: getMultiSelectValues(document.getElementById('areas')),
         linkedProjects: getMultiSelectValues(document.getElementById('linkedProjects')),
+        relatedObjectives: getMultiSelectValues(document.getElementById('relatedObjectives')).filter(id => id && id !== (state.editingId || '')),
         status: document.getElementById('objectiveStatus').value,
         comments: previous?.comments || [],
         reminders: previous?.reminders || [],
@@ -1354,6 +1544,7 @@
       setMultiSelectValues('invited', obj.invited);
       setMultiSelectValues('areas', obj.areas);
       setMultiSelectValues('linkedProjects', obj.linkedProjects);
+      renderRelatedObjectivesOptions(obj.relatedObjectives || []);
       indicatorsList.innerHTML = '';
       activitiesList.innerHTML = '';
       (obj.indicators.length ? obj.indicators : [{}]).forEach(addIndicatorRow);
@@ -1367,7 +1558,9 @@
       const obj = state.objectives.find(item => item.id === id);
       if (!obj) return;
       if (!confirm(`¿Seguro que deseas eliminar el objetivo "${obj.name}"?`)) return;
-      state.objectives = state.objectives.filter(item => item.id !== id);
+      state.objectives = state.objectives
+        .filter(item => item.id !== id)
+        .map(item => ({ ...item, relatedObjectives: (item.relatedObjectives || []).filter(relId => relId !== id) }));
       persistObjectives();
       renderObjectives();
       if (state.detailId === id) closeDetailModal();
@@ -1544,10 +1737,11 @@
       filtered.forEach(obj => {
         const ql = calculateQualitativeProgress(obj.activities);
         const qt = calculateQuantitativeProgress(obj.indicators);
+        const relatedObjectives = getRelatedObjectivesFor(obj);
         const tr = document.createElement('tr');
         const isExpanded = state.expandedObjectiveIds.has(obj.id);
         tr.innerHTML = `
-          <td><a class="objective-link" data-toggle-objective="${obj.id}"><span class="objective-chevron">${isExpanded ? '▼' : '▶'}</span>${escapeHtml(obj.name)}</a></td>
+          <td><div><a class="objective-link" data-toggle-objective="${obj.id}"><span class="objective-chevron">${isExpanded ? '▼' : '▶'}</span>${escapeHtml(obj.name)}</a><div class="objective-mini-links">${relatedObjectives.length ? `↔ Relacionado con: ${escapeHtml(relatedObjectives.map(item => item.name).join(', '))}` : '<span class="muted">Sin relación registrada</span>'}</div></div></td>
           <td><div class="progress-bar"><div class="progress-fill" style="width:${ql}%; background:${getProgressColor(ql)};"></div></div><div class="progress-label">${ql}%</div></td>
           <td><div class="ring" style="--val:${qt}; --ring-color:${getProgressColor(qt)};"><span>${qt}%</span></div></td>
           <td>${escapeHtml(obj.leader || '—')}</td>
@@ -2091,6 +2285,10 @@
                   <div><div class="subtle-label">Creador</div><div class="meta-value">${escapeHtml(obj.createdBy || '—')}</div></div>
                   <div><div class="subtle-label">Líder Responsable</div><div class="meta-value">${escapeHtml(obj.leader || '—')}</div></div>
                   <div><div class="subtle-label">Invitados</div><div class="meta-value">${escapeHtml((obj.invited || []).join(', ') || '—')}</div></div>
+                </div>
+                <div style="margin-top:14px">
+                  <div class="subtle-label">Objetivos relacionados</div>
+                  <div class="meta-value">${escapeHtml(getRelatedObjectivesFor(obj).map(item => item.name).join(', ') || '—')}</div>
                 </div>
               </div>
 
@@ -2759,6 +2957,8 @@
     document.getElementById('planningStatusFilter').addEventListener('change', renderPlannings);
 
     document.getElementById('openFormBtn').addEventListener('click', () => { resetForm(); openFormModal(); });
+    document.getElementById('openMapBtn').addEventListener('click', openMappingModal);
+    document.getElementById('closeMappingBtn').addEventListener('click', closeMappingModal);
     document.getElementById('openKpiBoardBtn').addEventListener('click', () => {
       if (!state.currentPlanningId) return alert('Selecciona una planeación.');
       window.location.href = `tablero_kpis.html?planningId=${encodeURIComponent(state.currentPlanningId)}`;
@@ -2788,7 +2988,7 @@
     document.getElementById('searchInput').addEventListener('input', renderObjectives);
     document.getElementById('statusFilter').addEventListener('change', renderObjectives);
 
-    [planningModal, formModal, detailModal, indicatorModal, valueHistoryModal, metaPlanModal, activityModal, initiativeActionsModal, actionDetailModal].forEach(modal => modal.addEventListener('click', (e) => {
+    [planningModal, formModal, detailModal, indicatorModal, valueHistoryModal, metaPlanModal, activityModal, initiativeActionsModal, actionDetailModal, mappingModal].forEach(modal => modal.addEventListener('click', (e) => {
       if (e.target === modal){
         if (modal === planningModal) closePlanningModal();
         if (modal === formModal){ closeFormModal(); resetForm(); }
@@ -2799,6 +2999,7 @@
         if (modal === activityModal) closeActivityModal();
         if (modal === initiativeActionsModal) closeInitiativeActionsModal();
         if (modal === actionDetailModal) closeActionDetailModal();
+        if (modal === mappingModal) closeMappingModal();
       }
     }));
 
@@ -2826,6 +3027,7 @@
         closeActivityModal();
         closeInitiativeActionsModal();
         closeActionDetailModal();
+        closeMappingModal();
       }
     });
 
