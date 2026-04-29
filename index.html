@@ -2473,7 +2473,7 @@
     document.getElementById('openFormBtn').addEventListener('click', () => { resetForm(); openFormModal(); });
     document.getElementById('openKpiBoardBtn').addEventListener('click', () => {
       if (!state.currentPlanningId) return alert('Selecciona una planeación.');
-      window.open(`tablero_kpis.html?planningId=${encodeURIComponent(state.currentPlanningId)}`, '_blank');
+      window.location.href = `tablero_kpis.html?planningId=${encodeURIComponent(state.currentPlanningId)}`;
     });
     document.getElementById('closeFormBtn').addEventListener('click', () => { closeFormModal(); resetForm(); });
     document.getElementById('saveObjectiveBtn').addEventListener('click', saveObjective);
