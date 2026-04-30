@@ -231,8 +231,7 @@
     <div class="topbar">
       <div><button id="backToPlansBtn" class="btn-ghost">← Volver a Planeaciones</button><h1 id="workspaceTitle">Planeación</h1><p id="workspaceSubtitle" class="subtitle">Sistema vivo de gestión estratégica.</p></div>
       <div class="actions">
-        <button id="newObjectiveQuickBtn" class="btn btn-exec">+ Objetivo Rápido</button>
-        <button id="newObjectiveBtn" class="btn btn-primary">Nuevo Objetivo Completo +</button>
+        <button id="newObjectiveBtn" class="btn btn-primary">Nuevo Objetivo +</button>
         <a id="basicLink" class="btn btn-basic" href="#">Versión Básica</a>
       </div>
     </div>
@@ -254,9 +253,6 @@
 
 <!-- MODALES -->
 <div id="planningModal" class="modal"><div class="modal-card" style="width:min(820px,100%)"><div class="modal-header"><div class="modal-title"><h2 id="planningModalTitle">Nueva Planeación</h2><p>Define visión, periodo y gobierno estratégico.</p></div><div class="actions"><button id="closePlanningModal" class="btn btn-secondary">Cancelar</button><button id="savePlanning" class="btn btn-primary">Guardar</button></div></div><div class="form-body"><div class="field"><label class="required">Nombre</label><input id="pName" class="input" placeholder="Ej. Planeación Estratégica 2026"></div><div class="field"><label>Visión estratégica al año</label><input id="pVision" class="input" placeholder="Ej. Ser el operador logístico más confiable de la región"></div><div class="field"><label>Descripción</label><textarea id="pDesc" class="textarea"></textarea></div><div class="grid-2"><div class="field"><label>Mapa / Jerarquía</label><input id="pMap" class="input" placeholder="Corporativo / Unidad / Área"></div><div class="field"><label>Responsable</label><input id="pOwner" class="input"></div></div><div class="grid-3"><div class="field"><label>Inicio</label><input id="pStart" class="input" type="date"></div><div class="field"><label>Fecha compromiso</label><input id="pEnd" class="input" type="date"></div><div class="field"><label>Estatus</label><select id="pStatus" class="select"><option value="activo">Activo</option><option value="en_riesgo">En riesgo</option><option value="pausado">Pausado</option><option value="cumplido">Cumplido</option></select></div></div><div class="grid-2"><div class="field"><label>Cadencia de gobernanza</label><select id="pCadence" class="select"><option>Semanal</option><option selected>Mensual</option><option>Trimestral</option></select></div><div class="field"><label>Comité responsable</label><input id="pCommittee" class="input" placeholder="Comité Estratégico / Alta Dirección"></div></div></div></div></div>
-
-<!-- MODAL OBJETIVO RÁPIDO -->
-<div id="quickObjectiveModal" class="modal"><div class="modal-card modal-compact"><div class="modal-header"><div class="modal-title"><h2>Objetivo Rápido</h2><p>Captura lo esencial en menos de 60 segundos. Podrás completar el resto después.</p></div><div class="actions"><button id="closeQuickObjectiveModal" class="btn btn-secondary">Cancelar</button><button id="saveQuickObjective" class="btn btn-primary">Crear Objetivo</button></div></div><div class="form-body"><div class="grid-2"><div class="field"><label class="required">Nombre del objetivo</label><input id="qoName" class="input" placeholder="Ej. Reducir tiempo de entrega"></div><div class="field"><label class="required">Líder responsable</label><input id="qoLeader" class="input" placeholder="Nombre del responsable"></div></div><div class="grid-2"><div class="field"><label class="required">Fecha compromiso</label><input id="qoEnd" class="input" type="date"></div><div class="field"><label>Estatus</label><select id="qoStatus" class="select"><option value="activo">Activo</option><option value="en_riesgo">En riesgo</option><option value="pausado">Pausado</option></select></div></div><div class="grid-3"><div class="field"><label>Indicador principal</label><input id="qoKpiName" class="input" placeholder="Ej. Entregas a tiempo"></div><div class="field"><label>Meta</label><input id="qoKpiTarget" class="input" type="number" placeholder="92"></div><div class="field"><label>Unidad</label><input id="qoKpiUnit" class="input" placeholder="% / días / $"></div></div><div class="field"><label>Primera iniciativa</label><input id="qoInitiative" class="input" placeholder="Ej. Implementar sistema de ruteo"></div><div style="background:#eef5ff;border-radius:12px;padding:12px;margin-top:6px;font-size:12px;color:#0f5ea9;"><strong>Tip:</strong> Después podrás agregar más indicadores, iniciativas, brechas y TOM desde "Editar Objetivo".</div></div></div></div>
 
 <!-- MODAL OBJETIVO COMPLETO -->
 <div id="objectiveModal" class="modal"><div class="modal-card"><div class="modal-header"><div class="modal-title"><h2 id="objectiveModalTitle">Nuevo Objetivo</h2><p>Captura arquitectura, indicadores, iniciativas, brechas, TOM y relaciones.</p></div><div class="actions"><button id="closeObjectiveModal" class="btn btn-secondary">Cancelar</button><button id="saveObjective" class="btn btn-primary">Guardar Objetivo</button></div></div><div class="form-body">
@@ -578,11 +574,8 @@ function bindBaseEvents(){
   $('planningSort').onchange=renderPlanningView;
   $('backToPlansBtn').onclick=()=>{state.currentPlanningId=null;$('workspaceView').classList.add('hidden');$('planningView').classList.remove('hidden');renderPlanningView()};
   $('newObjectiveBtn').onclick=()=>openObjectiveModal();
-  $('newObjectiveQuickBtn').onclick=()=>openQuickObjectiveModal();
   $('closeObjectiveModal').onclick=()=>closeModal('objectiveModal');
   $('saveObjective').onclick=saveObjective;
-  $('closeQuickObjectiveModal').onclick=()=>closeModal('quickObjectiveModal');
-  $('saveQuickObjective').onclick=saveQuickObjective;
   $('addIndicator').onclick=()=>addIndicatorRow();
   $('addInitiative').onclick=()=>addInitiativeRow();
   $('addRelation').onclick=()=>addRelationRow();
@@ -976,23 +969,6 @@ function deleteInitiative(objectiveId,initiativeId){
 }
 
 // ─── OBJETIVO RÁPIDO ──────────────────────────────────────────────────
-function openQuickObjectiveModal(){
-  $('qoName').value='';$('qoLeader').value='';$('qoEnd').value='';$('qoStatus').value='activo';
-  $('qoKpiName').value='';$('qoKpiTarget').value='';$('qoKpiUnit').value='';$('qoInitiative').value='';
-  openModal('quickObjectiveModal');
-}
-function saveQuickObjective(){
-  const name=$('qoName').value.trim(),leader=$('qoLeader').value.trim(),endDate=$('qoEnd').value;
-  if(!name)return alert('Ingresa el nombre del objetivo.');
-  if(!leader)return alert('Ingresa el líder responsable.');
-  if(!endDate)return alert('Ingresa la fecha compromiso.');
-  const kpiName=$('qoKpiName').value.trim(),kpiTarget=$('qoKpiTarget').value,kpiUnit=$('qoKpiUnit').value.trim();
-  const initName=$('qoInitiative').value.trim();
-  const indicators=kpiName?[{id:uid(),name:kpiName,action:'Incrementar',unit:kpiUnit,initialValue:0,current:0,target:Number(kpiTarget||0),kpiWeight:100,hidden:false,metaPlan:[],valueHistory:[]}]:[];
-  const initiatives=initName?[normalizeInitiative({name:initName,owner:leader,status:'Pendiente',priority:'Alta'})]:[];
-  const o=normalizeObjective({planningId:state.currentPlanningId,name,leader,endDate,status:$('qoStatus').value,objectiveType:'resultado',indicators,initiatives});
-  state.objectives.unshift(o);saveRaw();closeModal('quickObjectiveModal');renderWorkspace();
-}
 
 // ─── BADGE & HELPERS ──────────────────────────────────────────────────
 function badge(text,color){return'<span class="badge b-'+(color||'blue')+'">'+esc(text)+'</span>'}
