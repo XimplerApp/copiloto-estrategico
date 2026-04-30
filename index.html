@@ -855,4 +855,969 @@ tbody tr:hover td{background:#fafbfc}
       <div class="field"><label>Modo</label><button type="button" class="btn btn-secondary btn-sm rel-suggest">Sugerir automáticamente</button><div class="hint rel-mode-hint rel-mode-note">Modo: sugerido</div></div>
     </div>
   </div>
-</template>
+</template><script>
+(function(){
+  'use strict';
+
+  const STORAGE_KEY = 'ximpler_edge_v3_state_corregido';
+  let state = { plannings: [], activePlanningId: null };
+  let activeTab = 'objetivos';
+  let editingPlanningId = null;
+  let editingObjectiveId = null;
+  let currentStep = 0;
+  let expandedObjectives = new Set();
+  let initiativeContext = { objectiveId: null, initiativeId: null };
+  let actionContext = { objectiveId: null, initiativeId: null, actionId: null };
+  let manualAgendaEditingId = null;
+
+  const TABS = [
+    { id:'objetivos', label:'Objetivos', panel:'viewObjetivos' },
+    { id:'kpi', label:'Tablero KPIs', panel:'viewKPI' },
+    { id:'operativo', label:'Tablero Operativo', panel:'viewOperativo' },
+    { id:'mapa', label:'Mapeo', panel:'viewMapa' },
+    { id:'alineacion', label:'Alineación', panel:'viewAlineacion' },
+    { id:'impacto', label:'Impacto', panel:'viewImpacto' },
+    { id:'brechas', label:'Brechas', panel:'viewBrechas' },
+    { id:'tom', label:'TOM', panel:'viewTOM' },
+    { id:'beneficios', label:'Beneficios', panel:'viewBeneficios' },
+    { id:'alertas', label:'Alertas', panel:'viewAlertas' },
+    { id:'cadencia', label:'Cadencia', panel:'viewCadencia' }
+  ];
+
+  const $ = (id) => document.getElementById(id);
+  const qsa = (sel, root=document) => Array.from(root.querySelectorAll(sel));
+  const todayISO = () => new Date().toISOString().slice(0,10);
+  const uid = (prefix='id') => `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,8)}`;
+  const clamp = (n,min=0,max=100) => Math.max(min, Math.min(max, Number.isFinite(n) ? n : 0));
+  const num = (v, d=0) => { const n = Number(v); return Number.isFinite(n) ? n : d; };
+  const text = (v, d='') => (v === null || v === undefined) ? d : String(v);
+  const esc = (v) => text(v).replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+  const fmtPct = (v) => `${Math.round(num(v))}%`;
+  const fmtMoney = (v) => num(v).toLocaleString('es-MX',{style:'currency',currency:'MXN',maximumFractionDigits:0});
+  const fmtNum = (v, dec=1) => num(v).toLocaleString('es-MX',{maximumFractionDigits:dec});
+
+  function asArray(v){
+    if(Array.isArray(v)) return v;
+    if(v === null || v === undefined || v === '') return [];
+    if(typeof v === 'string') return v.split(',').map(s=>s.trim()).filter(Boolean);
+    return [v];
+  }
+  function csvToArray(v){ return asArray(v); }
+  function arrayToCsv(v){ return asArray(v).join(', '); }
+  function first(...vals){ return vals.find(v => v !== undefined && v !== null && v !== '') ?? ''; }
+
+  function toast(message, type='info'){
+    const box = $('toastContainer');
+    if(!box) return alert(message);
+    const div = document.createElement('div');
+    div.className = `toast toast-${type}`;
+    div.textContent = message;
+    box.appendChild(div);
+    requestAnimationFrame(()=>div.classList.add('show'));
+    setTimeout(()=>{ div.classList.remove('show'); setTimeout(()=>div.remove(), 260); }, 3400);
+  }
+
+  function openModal(id){ const m=$(id); if(m) m.classList.add('open'); }
+  function closeModal(id){ const m=$(id); if(m) m.classList.remove('open'); }
+
+  function storagePercent(){
+    try{
+      let used = 0;
+      for(let k in localStorage){ if(Object.prototype.hasOwnProperty.call(localStorage,k)) used += (localStorage[k].length + k.length) * 2; }
+      return Math.min(100, Math.round((used / (5 * 1024 * 1024)) * 100));
+    }catch(e){ return 0; }
+  }
+  function updateStorageBar(){
+    const p = storagePercent();
+    if($('storageFill')) $('storageFill').style.width = `${p}%`;
+    if($('storageLabel')) $('storageLabel').textContent = `${p}%`;
+  }
+
+  function saveState(){
+    try{
+      state.updatedAt = new Date().toISOString();
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      updateStorageBar();
+    }catch(err){
+      console.error(err);
+      toast('No se pudo guardar. Puede que el almacenamiento local esté lleno.', 'error');
+    }
+  }
+
+  function loadState(){
+    try{
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if(raw){ state = normalizeBackup(JSON.parse(raw)); }
+    }catch(err){
+      console.warn('No se pudo cargar estado local', err);
+      state = { plannings: [], activePlanningId: null };
+    }
+    if(!state.plannings) state.plannings = [];
+    if(!state.activePlanningId && state.plannings[0]) state.activePlanningId = state.plannings[0].id;
+  }
+
+  function normalizeBackup(raw){
+    if(!raw || typeof raw !== 'object') return { plannings: [], activePlanningId: null };
+    const list = raw.plannings || raw.plans || raw.planeaciones || raw.data?.plannings || raw.data?.plans || (raw.objectives ? [raw] : []);
+    const plannings = asArray(list).map(normalizePlan).filter(p=>p.name || p.objectives.length);
+    return {
+      version: raw.version || 'ximpler-edge-v3-corregido',
+      schema: 'planning-backup',
+      activePlanningId: raw.activePlanningId || raw.currentPlanningId || raw.activePlanId || plannings[0]?.id || null,
+      currentPlanningId: raw.currentPlanningId || raw.activePlanningId || plannings[0]?.id || null,
+      plannings
+    };
+  }
+
+  function normalizePlan(p){
+    p = p || {};
+    const id = text(first(p.id, p.planId, p.key, uid('plan')));
+    const objectives = asArray(first(p.objectives, p.objetivos, p.goals)).map(o => normalizeObjective(o, id));
+    const agenda = asArray(first(p.agenda, p.manualAgenda, p.cadenceItems, p.puntosAgenda)).map(normalizeAgendaItem);
+    return {
+      ...p,
+      id,
+      name: first(p.name, p.title, p.nombre, 'Planeación sin nombre'),
+      title: first(p.title, p.name, p.nombre, 'Planeación sin nombre'),
+      vision: first(p.vision, p.visionEstrategica, ''),
+      desc: first(p.desc, p.description, p.descripcion, ''),
+      description: first(p.description, p.desc, p.descripcion, ''),
+      map: first(p.map, p.mapa, p.hierarchy, ''),
+      owner: first(p.owner, p.responsible, p.responsable, ''),
+      start: first(p.start, p.startDate, p.inicio, ''),
+      startDate: first(p.startDate, p.start, p.inicio, ''),
+      end: first(p.end, p.endDate, p.fechaCompromiso, p.compromiso, ''),
+      endDate: first(p.endDate, p.end, p.fechaCompromiso, p.compromiso, ''),
+      status: normalizeStatus(first(p.status, p.estatus, 'activo')),
+      cadence: first(p.cadence, p.cadencia, 'Mensual'),
+      committee: first(p.committee, p.comite, p.comité, ''),
+      createdAt: first(p.createdAt, new Date().toISOString()),
+      updatedAt: first(p.updatedAt, new Date().toISOString()),
+      objectives,
+      agenda,
+      manualAgenda: agenda
+    };
+  }
+
+  function normalizeObjective(o, planningId){
+    o = o || {};
+    const id = text(first(o.id, o.objectiveId, o.key, uid('obj')));
+    const indicators = asArray(first(o.indicators, o.kpis, o.KPIs, o.indicadores)).map(normalizeIndicator);
+    const initiatives = asArray(first(o.initiatives, o.iniciativas, o.projects)).map(i => normalizeInitiative(i));
+    const relations = asArray(first(o.relations, o.relaciones, o.relatedObjectives)).map(normalizeRelation);
+    return {
+      ...o,
+      id,
+      planningId: first(o.planningId, planningId),
+      code: first(o.code, o.codigo, ''),
+      name: first(o.name, o.title, o.nombre, 'Objetivo sin nombre'),
+      title: first(o.title, o.name, o.nombre, 'Objetivo sin nombre'),
+      desc: first(o.desc, o.description, o.descripcion, ''),
+      description: first(o.description, o.desc, o.descripcion, ''),
+      leader: first(o.leader, o.owner, o.responsable, o.lider, ''),
+      owner: first(o.owner, o.leader, o.responsable, ''),
+      start: first(o.start, o.startDate, o.inicio, ''),
+      startDate: first(o.startDate, o.start, o.inicio, ''),
+      end: first(o.end, o.endDate, o.fechaCompromiso, o.compromiso, ''),
+      endDate: first(o.endDate, o.end, o.fechaCompromiso, o.compromiso, ''),
+      status: normalizeStatus(first(o.status, o.estatus, 'activo')),
+      areas: csvToArray(first(o.areas, o.areasInvolucradas, [])),
+      tags: csvToArray(first(o.tags, o.etiquetas, [])),
+      projects: csvToArray(first(o.projects, o.proyectos, o.linkedProjects, [])),
+      type: first(o.type, o.tipo, 'resultado'),
+      perspective: first(o.perspective, o.perspectiva, 'procesos'),
+      level: first(o.level, o.nivel, 'Corporativo'),
+      parentId: first(o.parentId, o.parent, o.objetivoPadre, ''),
+      theme: first(o.theme, o.tema, o.temaEstrategico, ''),
+      expectedResult: first(o.expectedResult, o.resultadoEsperado, ''),
+      budget: num(first(o.budget, o.presupuesto, 0)),
+      budgetAlignment: first(o.budgetAlignment, o.alineacionPresupuesto, 'Medio'),
+      processAlignment: first(o.processAlignment, o.alineacionProcesos, 'Medio'),
+      structureAlignment: first(o.structureAlignment, o.alineacionEstructura, 'Medio'),
+      indicatorAlignment: first(o.indicatorAlignment, o.alineacionIndicadores, 'Medio'),
+      evidenceLevel: first(o.evidenceLevel, o.nivelEvidencia, 'Parcial'),
+      alignmentEvidence: first(o.alignmentEvidence, o.evidencia, ''),
+      correctionAction: first(o.correctionAction, o.accionCorrectiva, ''),
+      currentState: first(o.currentState, o.estadoActual, ''),
+      targetState: first(o.targetState, o.estadoObjetivo, ''),
+      gap: first(o.gap, o.brecha, ''),
+      gapRisk: first(o.gapRisk, o.riesgoGap, 'Medio'),
+      breakpoint: first(o.breakpoint, o.puntoRuptura, ''),
+      tomType: first(o.tomType, o.tipoTOM, 'Central'),
+      tomRole: first(o.tomRole, o.ownerEndToEnd, o.duenoEndToEnd, ''),
+      tomProcess: first(o.tomProcess, o.procesoTOM, ''),
+      tomCapabilities: first(o.tomCapabilities, o.capacidadesTOM, ''),
+      tomTech: first(o.tomTech, o.tecnologiaTOM, ''),
+      tomGovernance: first(o.tomGovernance, o.gobernanzaTOM, ''),
+      decisionFlow: first(o.decisionFlow, o.flujoDecisiones, ''),
+      indicators,
+      kpis: indicators,
+      initiatives,
+      relations
+    };
+  }
+
+  function normalizeIndicator(k){
+    k = k || {};
+    return {
+      ...k,
+      id: text(first(k.id, k.kpiId, uid('kpi'))),
+      name: first(k.name, k.title, k.indicator, k.indicador, k.kpi, 'KPI sin nombre'),
+      action: first(k.action, k.accion, k.trend, k.sentido, 'Incrementar'),
+      unit: first(k.unit, k.unidad, ''),
+      owner: first(k.owner, k.responsible, k.responsableDato, ''),
+      initial: num(first(k.initial, k.initialValue, k.valorInicial, k.base, 0)),
+      current: num(first(k.current, k.currentValue, k.valorActual, k.real, 0)),
+      target: num(first(k.target, k.meta, k.goal, 0)),
+      weight: num(first(k.weight, k.peso, 100)),
+      history: asArray(first(k.history, k.historial, []))
+    };
+  }
+
+  function normalizeInitiative(i){
+    i = i || {};
+    let actions = asArray(first(i.actions, i.acciones, []));
+    if(!actions.length){
+      const lines = text(first(i.actionsText, i.accionesTexto, i.tacticalActions, '')).split('\n').map(s=>s.trim()).filter(Boolean);
+      actions = lines.map(t => ({ title:t, status:'Por hacer' }));
+    }
+    actions = actions.map(normalizeAction);
+    const progress = first(i.progress, i.avance, i.progressPct, '');
+    return {
+      ...i,
+      id: text(first(i.id, i.initiativeId, uid('init'))),
+      name: first(i.name, i.title, i.iniciativa, 'Iniciativa sin nombre'),
+      title: first(i.title, i.name, i.iniciativa, 'Iniciativa sin nombre'),
+      owner: first(i.owner, i.responsible, i.responsable, ''),
+      dueDate: first(i.dueDate, i.end, i.fechaCompromiso, i.compromiso, ''),
+      status: first(i.status, i.estatus, 'En progreso'),
+      priority: first(i.priority, i.prioridad, 'Alta'),
+      progress: progress === '' ? calcActionsProgress(actions) : normalizePercent(progress),
+      expectedImpact: num(first(i.expectedImpact, i.impactExpected, i.impactoEsperado, 0)),
+      realImpact: num(first(i.realImpact, i.impactReal, i.impactoReal, 0)),
+      redundant: first(i.redundant, i.reduntante, i.redundante, 'No'),
+      competes: first(i.competes, i.compite, 'No'),
+      impactKpi: first(i.impactKpi, i.kpiImpactado, i.kpi, ''),
+      budget: num(first(i.budget, i.presupuesto, 0)),
+      spent: num(first(i.spent, i.gastado, 0)),
+      benefitExpected: first(i.benefitExpected, i.beneficioEsperado, ''),
+      benefitReal: first(i.benefitReal, i.beneficioReal, ''),
+      benefitOwner: first(i.benefitOwner, i.duenoBeneficio, ''),
+      benefitDate: first(i.benefitDate, i.fechaBeneficio, ''),
+      detail: first(i.detail, i.description, i.evidence, i.detalle, ''),
+      actions
+    };
+  }
+
+  function normalizeAction(a){
+    a = a || {};
+    return {
+      ...a,
+      id: text(first(a.id, a.actionId, uid('act'))),
+      title: first(a.title, a.name, a.titulo, a.accion, 'Acción sin título'),
+      responsible: first(a.responsible, a.owner, a.responsable, ''),
+      dueDate: first(a.dueDate, a.end, a.fechaCompromiso, a.compromiso, ''),
+      status: first(a.status, a.estatus, 'Por hacer'),
+      detail: first(a.detail, a.description, a.detalle, '')
+    };
+  }
+
+  function normalizeRelation(r){
+    r = r || {};
+    return {
+      ...r,
+      id: text(first(r.id, r.relationId, uid('rel'))),
+      targetId: first(r.targetId, r.target, r.objetivoRelacionado, r.objectiveId, ''),
+      type: first(r.type, r.tipo, 'Impacta a'),
+      intensity: first(r.intensity, r.intensidad, 'Media'),
+      risk: first(r.risk, r.riesgo, 'Medio'),
+      time: first(r.time, r.tiempoImpacto, '90 días'),
+      owner: first(r.owner, r.responsable, ''),
+      evidence: first(r.evidence, r.justification, r.justificacion, '')
+    };
+  }
+
+  function normalizeAgendaItem(a){
+    a = a || {};
+    return {
+      ...a,
+      id: text(first(a.id, uid('agenda'))),
+      type: first(a.type, a.tipo, 'Tema libre'),
+      priority: first(a.priority, a.prioridad, 'Media'),
+      status: first(a.status, a.estatus, 'Pendiente'),
+      title: first(a.title, a.titulo, 'Punto de agenda'),
+      owner: first(a.owner, a.responsable, ''),
+      dueDate: first(a.dueDate, a.fechaCompromiso, ''),
+      duration: first(a.duration, a.duracion, '10 min'),
+      linkedObjective: first(a.linkedObjective, a.objectiveId, ''),
+      linkedInitiative: first(a.linkedInitiative, a.initiativeId, ''),
+      context: first(a.context, a.contexto, ''),
+      decision: first(a.decision, a.decisionEsperada, ''),
+      notes: first(a.notes, a.notas, '')
+    };
+  }
+
+  function normalizeStatus(s){
+    s = text(s,'activo').toLowerCase().trim();
+    if(['active','activo','activa'].includes(s)) return 'activo';
+    if(['risk','en riesgo','en_riesgo','riesgo'].includes(s)) return 'en_riesgo';
+    if(['paused','pausado','pausada'].includes(s)) return 'pausado';
+    if(['done','cumplido','cumplida','terminado'].includes(s)) return 'cumplido';
+    return s || 'activo';
+  }
+
+  function normalizePercent(v){
+    const n = num(v);
+    return n > 0 && n <= 1 ? n*100 : n;
+  }
+
+  function currentPlan(){ return state.plannings.find(p => p.id === state.activePlanningId) || state.plannings[0] || null; }
+  function findObjective(id){ const p=currentPlan(); return p?.objectives.find(o=>o.id===id) || null; }
+  function findInitiative(objId, initId){ return findObjective(objId)?.initiatives.find(i=>i.id===initId) || null; }
+  function findAction(objId, initId, actionId){ return findInitiative(objId, initId)?.actions.find(a=>a.id===actionId) || null; }
+
+  function calcActionsProgress(actions){
+    actions = asArray(actions);
+    if(!actions.length) return 0;
+    const done = actions.filter(a => ['terminada','finalizada','completada','done','cumplido'].includes(text(a.status).toLowerCase())).length;
+    return Math.round((done / actions.length) * 100);
+  }
+
+  function calcIndicatorScore(k){
+    const initial = num(k.initial), current = num(k.current), target = num(k.target);
+    const action = text(k.action).toLowerCase();
+    let score = 0;
+    if(action.includes('reduc')){
+      const denom = initial - target;
+      score = denom === 0 ? (current <= target ? 100 : 0) : ((initial - current) / denom) * 100;
+    }else if(action.includes('mant')){
+      const tolerance = Math.max(Math.abs(target) * 0.05, Math.abs(initial-target), 1);
+      score = 100 - (Math.abs(current - target) / tolerance) * 100;
+    }else{
+      const denom = target - initial;
+      score = denom === 0 ? (current >= target ? 100 : 0) : ((current - initial) / denom) * 100;
+    }
+    return clamp(score, 0, 150);
+  }
+
+  function calcObjectiveScore(obj){
+    const kpis = asArray(obj.indicators || obj.kpis);
+    if(kpis.length){
+      const totalWeight = kpis.reduce((a,k)=>a + Math.max(0,num(k.weight,100)),0) || kpis.length;
+      return clamp(kpis.reduce((a,k)=> a + calcIndicatorScore(k) * (Math.max(0,num(k.weight,100)) || 1),0) / totalWeight, 0, 150);
+    }
+    const inits = asArray(obj.initiatives);
+    if(inits.length) return clamp(inits.reduce((a,i)=>a+calcActionsProgress(i.actions),0) / inits.length, 0, 100);
+    return 0;
+  }
+
+  function calcPlanScore(plan){
+    const objs = asArray(plan.objectives);
+    if(!objs.length) return 0;
+    return clamp(objs.reduce((a,o)=>a+calcObjectiveScore(o),0)/objs.length,0,150);
+  }
+
+  function scoreClass(score){
+    if(score >= 80) return 'igee-ok';
+    if(score >= 55) return 'igee-risk';
+    return 'igee-critical';
+  }
+  function kpiState(score){
+    if(score >= 85) return {label:'Verde', cls:'kpi-state-green'};
+    if(score >= 60) return {label:'Amarillo', cls:'kpi-state-yellow'};
+    return {label:'Rojo', cls:'kpi-state-red'};
+  }
+
+  function statusBadge(status){
+    const s = normalizeStatus(status);
+    const map = { activo:['Activo','b-green'], en_riesgo:['En riesgo','b-yellow'], pausado:['Pausado','b-gray'], cumplido:['Cumplido','b-blue'] };
+    const [label, cls] = map[s] || [text(status), 'b-gray'];
+    return `<span class="badge ${cls}">${esc(label)}</span>`;
+  }
+
+  function daysText(dateStr){
+    if(!dateStr) return 'Sin fecha';
+    const due = new Date(dateStr + 'T00:00:00');
+    if(Number.isNaN(due.getTime())) return 'Sin fecha';
+    const now = new Date(todayISO() + 'T00:00:00');
+    const diff = Math.round((due - now) / 86400000);
+    if(diff === 0) return 'Hoy';
+    if(diff > 0) return `En ${diff} día${diff===1?'':'s'}`;
+    return `Hace ${Math.abs(diff)} día${Math.abs(diff)===1?'':'s'}`;
+  }
+
+  function init(){
+    loadState();
+    bindStaticEvents();
+    renderPlanningCards();
+    updateStorageBar();
+    if(!document.body.dataset.edgeReady){
+      document.body.dataset.edgeReady = 'true';
+      console.info('Ximpler EDGE v3 corregido: JS cargado correctamente');
+    }
+  }
+
+  function bindStaticEvents(){
+    $('newPlanningBtn')?.addEventListener('click', () => openPlanningModal());
+    $('closePlanningModal')?.addEventListener('click', () => closeModal('planningModal'));
+    $('savePlanning')?.addEventListener('click', savePlanningFromModal);
+    $('exportBackupBtn')?.addEventListener('click', exportBackupJSON);
+    $('importBackupInput')?.addEventListener('change', importBackupJSON);
+    $('planningSearch')?.addEventListener('input', renderPlanningCards);
+    $('planningStatus')?.addEventListener('change', renderPlanningCards);
+    $('planningSort')?.addEventListener('change', renderPlanningCards);
+    $('backToPlansBtn')?.addEventListener('click', () => { $('workspaceView')?.classList.add('hidden'); $('planningView')?.classList.remove('hidden'); renderPlanningCards(); });
+    $('newObjectiveBtn')?.addEventListener('click', () => openObjectiveModal());
+    $('closeObjectiveModal')?.addEventListener('click', () => closeModal('objectiveModal'));
+    $('saveObjective')?.addEventListener('click', saveObjectiveFromModal);
+    $('addIndicator')?.addEventListener('click', () => addIndicatorRow());
+    $('addInitiative')?.addEventListener('click', () => addInitiativeRow());
+    $('addRelation')?.addEventListener('click', () => addRelationRow());
+    $('stepNextBtn')?.addEventListener('click', () => setStep(currentStep + 1));
+    $('stepPrevBtn')?.addEventListener('click', () => setStep(currentStep - 1));
+    qsa('.step-btn').forEach(btn => btn.addEventListener('click', () => setStep(num(btn.dataset.step))));
+    $('closeDetail')?.addEventListener('click', () => closeModal('detailModal'));
+    $('editDetail')?.addEventListener('click', () => { closeModal('detailModal'); const id=$('editDetail')?.dataset.objId; if(id) openObjectiveModal(findObjective(id)); });
+    $('closeInitiativeActions')?.addEventListener('click', () => closeModal('initiativeActionsModal'));
+    $('newInitiativeActionBtn')?.addEventListener('click', () => openActionEditor());
+    $('closeActionEditor')?.addEventListener('click', () => closeModal('actionEditorModal'));
+    $('saveActionEditor')?.addEventListener('click', saveActionEditor);
+    $('closeInitiativeEditor')?.addEventListener('click', () => closeModal('initiativeEditorModal'));
+    $('saveInitiativeEditor')?.addEventListener('click', saveInitiativeEditor);
+    $('closeInitiativeView')?.addEventListener('click', () => closeModal('initiativeViewModal'));
+    $('editInitiativeFromView')?.addEventListener('click', () => { closeModal('initiativeViewModal'); openInitiativeEditor(initiativeContext.objectiveId, initiativeContext.initiativeId); });
+    $('closeActionView')?.addEventListener('click', () => closeModal('actionViewModal'));
+    $('editActionFromView')?.addEventListener('click', () => { closeModal('actionViewModal'); openActionEditor(actionContext.actionId); });
+    $('closeManualAgendaModal')?.addEventListener('click', () => closeModal('manualAgendaModal'));
+    $('saveManualAgenda')?.addEventListener('click', saveManualAgenda);
+    $('exportReportBtn')?.addEventListener('click', exportReportXLS);
+
+    document.addEventListener('click', handleDynamicClick);
+    document.addEventListener('input', handleDynamicInput);
+    qsa('.modal').forEach(m => m.addEventListener('click', e => { if(e.target === m) m.classList.remove('open'); }));
+  }
+
+  function handleDynamicClick(e){
+    const remove = e.target.closest('.remove-btn');
+    if(remove){ remove.closest('.repeat-item')?.remove(); return; }
+    const relSuggest = e.target.closest('.rel-suggest');
+    if(relSuggest){ suggestRelation(relSuggest.closest('.relation-row')); return; }
+    const action = e.target.closest('[data-action]');
+    if(!action) return;
+    const a = action.dataset.action;
+    const planId = action.dataset.planId;
+    const objId = action.dataset.objId;
+    const initId = action.dataset.initId;
+    const actId = action.dataset.actId;
+    const agendaId = action.dataset.agendaId;
+
+    if(a === 'openPlan') openWorkspace(planId);
+    if(a === 'editPlan') openPlanningModal(state.plannings.find(p=>p.id===planId));
+    if(a === 'deletePlan') deletePlanning(planId);
+    if(a === 'toggleObjective') toggleObjective(objId);
+    if(a === 'viewObjective') viewObjective(objId);
+    if(a === 'editObjective') openObjectiveModal(findObjective(objId));
+    if(a === 'deleteObjective') deleteObjective(objId);
+    if(a === 'newInitiative') openInitiativeEditor(objId);
+    if(a === 'viewInitiative') viewInitiative(objId, initId);
+    if(a === 'editInitiative') openInitiativeEditor(objId, initId);
+    if(a === 'deleteInitiative') deleteInitiative(objId, initId);
+    if(a === 'initiativeActions') openInitiativeActions(objId, initId);
+    if(a === 'viewAction') viewAction(objId, initId, actId);
+    if(a === 'editAction') { actionContext = { objectiveId:objId, initiativeId:initId, actionId:actId }; openActionEditor(actId); }
+    if(a === 'deleteAction') deleteAction(objId, initId, actId);
+    if(a === 'completeAction') completeAction(objId, initId, actId);
+    if(a === 'addAgenda') openManualAgendaModal();
+    if(a === 'editAgenda') openManualAgendaModal(agendaId);
+    if(a === 'deleteAgenda') deleteAgenda(agendaId);
+  }
+
+  function handleDynamicInput(e){
+    if(e.target.matches('.ind-initial,.ind-current,.ind-target,.ind-action,.ind-weight')) updateIndicatorRowScore(e.target.closest('.indicator-row'));
+  }
+
+  function renderPlanningCards(){
+    const wrap = $('planningCards');
+    const empty = $('planningEmpty');
+    if(!wrap) return;
+    const q = text($('planningSearch')?.value).toLowerCase();
+    const status = $('planningStatus')?.value || 'activo';
+    const sort = $('planningSort')?.value || 'recent';
+    let plans = [...state.plannings];
+    if(q) plans = plans.filter(p => [p.name,p.desc,p.owner,p.vision,p.committee].join(' ').toLowerCase().includes(q));
+    if(status !== 'all') plans = plans.filter(p => normalizeStatus(p.status) === status);
+    if(sort === 'name') plans.sort((a,b)=>a.name.localeCompare(b.name));
+    else if(sort === 'score') plans.sort((a,b)=>calcPlanScore(b)-calcPlanScore(a));
+    else plans.sort((a,b)=> new Date(b.updatedAt||b.createdAt||0) - new Date(a.updatedAt||a.createdAt||0));
+
+    wrap.innerHTML = plans.map(plan => {
+      const score = Math.round(calcPlanScore(plan));
+      const objCount = plan.objectives.length;
+      const initCount = plan.objectives.reduce((a,o)=>a+o.initiatives.length,0);
+      const actionCount = plan.objectives.reduce((a,o)=>a+o.initiatives.reduce((s,i)=>s+i.actions.length,0),0);
+      return `<div class="plan-card">
+        <div>
+          <div class="plan-card-title">${esc(plan.name)}</div>
+          <div class="plan-card-desc">${esc(plan.desc || plan.vision || 'Sin descripción')}</div>
+        </div>
+        <div class="plan-card-meta">
+          <span>👤 ${esc(plan.owner || 'Sin responsable')}</span>
+          <span>📅 ${esc(plan.start || 's/f')} → ${esc(plan.end || 's/f')} · ${daysText(plan.end)}</span>
+          <span>🧭 ${objCount} objetivos · ${initCount} iniciativas · ${actionCount} acciones</span>
+          <span>🏛️ ${esc(plan.committee || 'Sin comité')}</span>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+          <span class="igee-pill ${scoreClass(score)}">IGEE ${score}%</span>
+          ${statusBadge(plan.status)}
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-primary btn-sm" data-action="openPlan" data-plan-id="${esc(plan.id)}">Abrir</button>
+          <button class="btn btn-secondary btn-sm" data-action="editPlan" data-plan-id="${esc(plan.id)}">Editar</button>
+          <button class="btn btn-danger btn-sm" data-action="deletePlan" data-plan-id="${esc(plan.id)}">Eliminar</button>
+        </div>
+      </div>`;
+    }).join('');
+    empty?.classList.toggle('hidden', plans.length > 0);
+  }
+
+  function openPlanningModal(plan=null){
+    editingPlanningId = plan?.id || null;
+    $('planningModalTitle').textContent = plan ? 'Editar Planeación' : 'Nueva Planeación';
+    $('pName').value = plan?.name || '';
+    $('pVision').value = plan?.vision || '';
+    $('pDesc').value = plan?.desc || '';
+    $('pMap').value = plan?.map || '';
+    $('pOwner').value = plan?.owner || '';
+    $('pStart').value = plan?.start || '';
+    $('pEnd').value = plan?.end || '';
+    $('pStatus').value = normalizeStatus(plan?.status || 'activo');
+    $('pCadence').value = plan?.cadence || 'Mensual';
+    $('pCommittee').value = plan?.committee || '';
+    openModal('planningModal');
+  }
+
+  function savePlanningFromModal(){
+    const name = $('pName').value.trim();
+    if(!name) return toast('Captura el nombre de la planeación.', 'warn');
+    const existing = state.plannings.find(p=>p.id===editingPlanningId);
+    const plan = existing || { id: uid('plan'), objectives: [], agenda: [] };
+    Object.assign(plan, {
+      name, title:name,
+      vision:$('pVision').value.trim(),
+      desc:$('pDesc').value.trim(), description:$('pDesc').value.trim(),
+      map:$('pMap').value.trim(), owner:$('pOwner').value.trim(),
+      start:$('pStart').value, startDate:$('pStart').value,
+      end:$('pEnd').value, endDate:$('pEnd').value,
+      status:$('pStatus').value, cadence:$('pCadence').value, committee:$('pCommittee').value.trim(),
+      updatedAt:new Date().toISOString()
+    });
+    if(!existing){ plan.createdAt = new Date().toISOString(); state.plannings.unshift(plan); state.activePlanningId = plan.id; }
+    saveState();
+    closeModal('planningModal');
+    renderPlanningCards();
+    toast(existing ? 'Planeación actualizada.' : 'Planeación creada.', 'success');
+  }
+
+  function deletePlanning(id){
+    if(!confirm('¿Eliminar esta planeación?')) return;
+    state.plannings = state.plannings.filter(p=>p.id!==id);
+    if(state.activePlanningId===id) state.activePlanningId = state.plannings[0]?.id || null;
+    saveState(); renderPlanningCards(); toast('Planeación eliminada.', 'success');
+  }
+
+  function openWorkspace(planId){
+    state.activePlanningId = planId;
+    saveState();
+    $('planningView')?.classList.add('hidden');
+    $('workspaceView')?.classList.remove('hidden');
+    activeTab = 'objetivos';
+    renderWorkspace();
+  }
+
+  function renderWorkspace(){
+    const plan = currentPlan();
+    if(!plan) return;
+    $('workspaceTitle').textContent = plan.name;
+    $('workspaceSubtitle').textContent = `${plan.vision || plan.desc || ''} · ${plan.owner || 'Sin responsable'} · ${plan.cadence || 'Sin cadencia'}`;
+    renderSummaryStrip(plan);
+    renderTabs();
+    renderActiveTab();
+  }
+
+  function renderSummaryStrip(plan){
+    const objs = plan.objectives;
+    const inits = objs.flatMap(o=>o.initiatives);
+    const actions = inits.flatMap(i=>i.actions);
+    const score = Math.round(calcPlanScore(plan));
+    const doneActions = actions.filter(a=>['terminada','finalizada','completada','done'].includes(text(a.status).toLowerCase())).length;
+    const overdue = actions.filter(a=>a.dueDate && new Date(a.dueDate) < new Date(todayISO()) && !['terminada','finalizada','completada','done'].includes(text(a.status).toLowerCase())).length;
+    const budget = inits.reduce((a,i)=>a+num(i.budget),0) + objs.reduce((a,o)=>a+num(o.budget),0);
+    const spent = inits.reduce((a,i)=>a+num(i.spent),0);
+    $('summaryStrip').innerHTML = [
+      ['IGEE', `${score}%`, score>=80?'Salud estratégica alta':score>=55?'Requiere seguimiento':'Riesgo ejecutivo'],
+      ['Objetivos', objs.length, 'Registrados'],
+      ['Iniciativas', inits.length, 'En cascada'],
+      ['Acciones', actions.length, `${doneActions} terminadas`],
+      ['Atrasos', overdue, 'Acciones vencidas'],
+      ['Presupuesto', fmtMoney(budget), 'Objetivos + iniciativas'],
+      ['Gastado', fmtMoney(spent), `${budget?Math.round((spent/budget)*100):0}% usado`]
+    ].map(([l,v,n])=>`<div class="summary-card"><div class="summary-label">${esc(l)}</div><div class="summary-value">${esc(v)}</div><div class="summary-note">${esc(n)}</div></div>`).join('');
+  }
+
+  function renderTabs(){
+    $('mainTabs').innerHTML = TABS.map(t=>`<button class="nav-tab ${t.id===activeTab?'active':''}" data-tab="${t.id}">${esc(t.label)}</button>`).join('');
+    qsa('#mainTabs .nav-tab').forEach(btn => btn.addEventListener('click', () => { activeTab = btn.dataset.tab; renderActiveTab(); }));
+  }
+
+  function renderActiveTab(){
+    TABS.forEach(t => {
+      $(t.panel)?.classList.toggle('hidden', t.id !== activeTab);
+      const tab = qsa('#mainTabs .nav-tab').find(b=>b.dataset.tab===t.id);
+      tab?.classList.toggle('active', t.id===activeTab);
+    });
+    const map = { objetivos:renderObjetivos, kpi:renderKPI, operativo:renderOperativo, mapa:renderMapa, alineacion:renderAlineacion, impacto:renderImpacto, brechas:renderBrechas, tom:renderTOM, beneficios:renderBeneficios, alertas:renderAlertas, cadencia:renderCadencia };
+    (map[activeTab] || renderObjetivos)();
+  }
+
+  function toggleObjective(id){
+    expandedObjectives.has(id) ? expandedObjectives.delete(id) : expandedObjectives.add(id);
+    renderObjetivos();
+  }
+
+  function renderObjetivos(){
+    const plan = currentPlan();
+    const rows = plan.objectives.map(obj => {
+      const score = Math.round(calcObjectiveScore(obj));
+      const expanded = expandedObjectives.has(obj.id);
+      const inits = obj.initiatives || [];
+      const initHtml = inits.length ? `<div class="cascade-zone"><div class="cascade-header"><div class="cascade-title">Iniciativas de ${esc(obj.name)}</div><button class="btn btn-primary btn-sm" data-action="newInitiative" data-obj-id="${esc(obj.id)}">+ Iniciativa</button></div><div class="init-list">${inits.map(initCard(obj)).join('')}</div></div>` : `<div class="cascade-zone"><div class="empty-box"><div class="empty-box-title">Sin iniciativas</div><button class="btn btn-primary btn-sm" data-action="newInitiative" data-obj-id="${esc(obj.id)}">+ Crear iniciativa</button></div></div>`;
+      const relNames = obj.relations.map(r=> objectiveName(r.targetId)).filter(Boolean).slice(0,3).join(', ');
+      return `<tr>
+        <td><div class="obj-cell"><button class="obj-toggle" data-action="toggleObjective" data-obj-id="${esc(obj.id)}">${expanded?'▾':'▸'}</button><div><div class="obj-name" data-action="viewObjective" data-obj-id="${esc(obj.id)}">${esc(obj.code ? obj.code + ' · ' : '')}${esc(obj.name)}</div><div class="obj-sub">${esc(obj.leader || 'Sin líder')} · ${esc(obj.perspective)} · ${esc(obj.level)}</div>${relNames?`<div class="obj-related">Relaciona con: ${esc(relNames)}</div>`:''}</div></div></td>
+        <td>${statusBadge(obj.status)}</td>
+        <td><div class="ring" style="--val:${clamp(score)};--color:${score>=80?'var(--emerald-light)':score>=55?'var(--amber)':'var(--rose)'}"><span>${score}%</span></div></td>
+        <td>${esc(obj.end || 's/f')}<div class="obj-sub">${daysText(obj.end)}</div></td>
+        <td>${obj.indicators.length} KPIs<br><span class="obj-sub">${inits.length} iniciativas</span></td>
+        <td><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn btn-secondary btn-xs" data-action="viewObjective" data-obj-id="${esc(obj.id)}">Ver</button><button class="btn btn-secondary btn-xs" data-action="editObjective" data-obj-id="${esc(obj.id)}">Editar</button><button class="btn btn-danger btn-xs" data-action="deleteObjective" data-obj-id="${esc(obj.id)}">Eliminar</button></div></td>
+      </tr><tr class="${expanded?'':'hidden'}"><td colspan="6" style="padding:0">${initHtml}</td></tr>`;
+    }).join('');
+    $('viewObjetivos').innerHTML = `<div class="section-hero"><h2>Objetivos estratégicos</h2><p>Vista principal con cascada de iniciativas, KPIs, avance y fechas compromiso.</p></div><div class="card table-wrap"><table><thead><tr><th>Objetivo</th><th>Estatus</th><th>IGEE</th><th>Fecha compromiso</th><th>Alcance</th><th>Acciones</th></tr></thead><tbody>${rows || `<tr><td colspan="6"><div class="empty-box">No hay objetivos. Usa “Nuevo Objetivo”.</div></td></tr>`}</tbody></table></div>`;
+  }
+
+  function initCard(obj){
+    return (init) => {
+      const progress = Math.round(calcActionsProgress(init.actions));
+      const overdue = init.actions.some(a=>a.dueDate && new Date(a.dueDate) < new Date(todayISO()) && !['terminada','finalizada'].includes(text(a.status).toLowerCase()));
+      const disconnected = !init.impactKpi;
+      return `<div class="init-card ${disconnected?'disc':''} ${overdue?'overdue-card':''}">
+        <div><div class="init-name-strong">${esc(init.name)}</div><div class="init-meta">${esc(init.owner || 'Sin responsable')} · ${esc(init.priority)} · ${esc(init.status)}</div>${disconnected?'<span class="disc-badge">Sin KPI impactado</span>':''}</div>
+        <div><div class="op-label">Fecha</div><div class="op-name">${esc(init.dueDate || 's/f')}</div><div class="init-meta">${daysText(init.dueDate)}</div></div>
+        <div><div class="progress-bar-wrap"><div class="progress-bar-top"><span>Avance</span><span>${progress}%</span></div><div class="progress-bar"><div class="progress-bar-fill" style="width:${clamp(progress)}%;background:${progress>=80?'var(--emerald-light)':progress>=50?'var(--amber)':'var(--rose)'}"></div></div></div></div>
+        <div><div class="op-label">Beneficio</div><div class="op-name">${esc(init.benefitReal || init.benefitExpected || 'Sin registro')}</div><div class="init-meta">${init.actions.length} acciones</div></div>
+        <div class="init-actions-row"><button class="btn btn-secondary btn-xs" data-action="viewInitiative" data-obj-id="${esc(obj.id)}" data-init-id="${esc(init.id)}">Ver</button><button class="btn btn-secondary btn-xs" data-action="editInitiative" data-obj-id="${esc(obj.id)}" data-init-id="${esc(init.id)}">Editar</button><button class="btn btn-primary btn-xs" data-action="initiativeActions" data-obj-id="${esc(obj.id)}" data-init-id="${esc(init.id)}">Acciones</button><button class="btn btn-danger btn-xs" data-action="deleteInitiative" data-obj-id="${esc(obj.id)}" data-init-id="${esc(init.id)}">Eliminar</button></div>
+      </div>`;
+    };
+  }
+
+  function renderKPI(){
+    const plan = currentPlan();
+    const rows = plan.objectives.flatMap(obj => obj.indicators.map(k => ({obj,k}))).map(({obj,k}) => {
+      const score = Math.round(calcIndicatorScore(k));
+      const st = kpiState(score);
+      return `<tr><td><strong>${esc(obj.code||'')}</strong> ${esc(obj.name)}</td><td>${esc(k.name)}<div class="obj-sub">${esc(k.owner || 'Sin dueño dato')}</div></td><td>${esc(k.action)}</td><td class="mono">${fmtNum(k.initial)} → ${fmtNum(k.current)} / ${fmtNum(k.target)} ${esc(k.unit)}</td><td><div class="kpi-gauge" style="--score:${clamp(score)}"><div class="kpi-needle"></div><div class="kpi-score-text">${score}%</div></div></td><td><span class="kpi-state-pill ${st.cls}">${st.label}</span></td><td>${num(k.weight,100)}%</td><td>${esc(obj.end || 's/f')}<div class="obj-sub">${daysText(obj.end)}</div></td></tr>`;
+    }).join('');
+    $('viewKPI').innerHTML = `<div class="section-hero"><h2>Tablero de KPIs</h2><p>Consolida los indicadores por objetivo, compara valor inicial, valor actual y meta, y calcula semáforo de avance.</p></div><div class="card table-wrap"><table><thead><tr><th>Objetivo</th><th>KPI</th><th>Sentido</th><th>Inicial → Actual / Meta</th><th>Avance</th><th>Estado</th><th>Peso</th><th>Compromiso</th></tr></thead><tbody>${rows || `<tr><td colspan="8"><div class="empty-box">No hay KPIs registrados.</div></td></tr>`}</tbody></table></div>`;
+  }
+
+  function renderOperativo(){
+    const plan = currentPlan();
+    const rows=[];
+    plan.objectives.forEach(obj => {
+      let objPrinted=false;
+      obj.initiatives.forEach(init => {
+        let initPrinted=false;
+        const acts = init.actions.length ? init.actions : [{id:'', title:'Sin acciones registradas', responsible:'', dueDate:init.dueDate, status:init.status, detail:''}];
+        acts.forEach(act => {
+          rows.push(`<tr>
+            <td>${objPrinted?'':`<div class="op-obj-cell"><div class="op-label">Objetivo</div><div class="op-name">${esc(obj.name)}</div><div class="op-sub">${esc(obj.leader || '')}</div></div>`}</td>
+            <td>${initPrinted?'':`<div class="op-init-cell"><div class="op-label">Iniciativa</div><div class="op-name">${esc(init.name)}</div><div class="op-sub">${esc(init.owner || '')}</div></div>`}</td>
+            <td><strong>${esc(act.title)}</strong><div class="op-sub">${esc(act.detail || '')}</div></td>
+            <td>${esc(act.responsible || init.owner || '')}</td><td>${esc(act.status)}</td><td>${esc(act.dueDate || init.dueDate || 's/f')}<div class="op-sub">${daysText(act.dueDate || init.dueDate)}</div></td>
+            <td class="op-money">${fmtMoney(init.budget)}</td><td class="op-money">${fmtMoney(init.spent)}</td>
+          </tr>`);
+          objPrinted=true; initPrinted=true;
+        });
+      });
+    });
+    $('viewOperativo').innerHTML = `<div class="section-hero"><h2>Tablero Operativo</h2><p>Vista de ejecución objetivo → iniciativa → acción. Cuando se repite el objetivo o iniciativa, se muestra una sola vez para evitar redundancia visual.</p></div><div class="card table-wrap"><table><thead><tr><th>Objetivo</th><th>Iniciativa</th><th>Acción</th><th>Responsable</th><th>Estatus</th><th>Compromiso</th><th>Presupuesto</th><th>Gastado</th></tr></thead><tbody>${rows.join('') || `<tr><td colspan="8"><div class="empty-box">No hay acciones registradas.</div></td></tr>`}</tbody></table></div>`;
+  }
+
+  function renderMapa(){
+    const plan = currentPlan();
+    const byType = {};
+    plan.objectives.forEach(obj => obj.relations.forEach(r => {
+      const key = r.type || 'Relación';
+      byType[key] = byType[key] || [];
+      byType[key].push({obj,r});
+    }));
+    const layers = plan.objectives.length ? `<div class="map-layer"><div class="map-layer-title">Objetivos por perspectiva</div><div class="map-nodes">${plan.objectives.map(o=>`<div class="map-node"><div class="map-node-title">${esc(o.code?o.code+' · ':'')}${esc(o.name)}</div><div class="map-node-meta">${esc(o.perspective)} · IGEE ${Math.round(calcObjectiveScore(o))}%</div></div>`).join('')}</div></div>` : '';
+    const rels = Object.entries(byType).map(([type,items])=>`<div class="map-layer"><div class="map-layer-title">${esc(type)}</div><div class="rel-grid">${items.map(({obj,r})=>`<div class="rel-card"><strong>${esc(obj.name)}</strong><div class="obj-sub">→ ${esc(objectiveName(r.targetId) || r.targetId || 'Sin objetivo seleccionado')}</div><div class="chip-row"><span class="chip">${esc(r.intensity)}</span><span class="chip">Riesgo ${esc(r.risk)}</span><span class="chip">${esc(r.time)}</span></div><div class="obj-sub">${esc(r.evidence)}</div></div>`).join('')}</div></div>`).join('');
+    $('viewMapa').innerHTML = `<div class="section-hero"><h2>Mapa de relaciones estratégicas</h2><p>Permite identificar dependencias, impactos, bloqueos, duplicidades y tensiones entre objetivos.</p></div><div class="map-layers">${layers}${rels || '<div class="empty-box">No hay relaciones registradas.</div>'}</div>`;
+  }
+
+  function renderAlineacion(){
+    const plan = currentPlan();
+    const rows = plan.objectives.map(o=>{
+      const levels = [o.budgetAlignment,o.processAlignment,o.structureAlignment,o.indicatorAlignment];
+      const high = levels.filter(x=>text(x).toLowerCase()==='alto').length;
+      const low = levels.filter(x=>text(x).toLowerCase()==='bajo').length;
+      const reco = low ? 'Requiere intervención ejecutiva para cerrar alineación crítica.' : high>=3 ? 'Alineación sólida; mantener seguimiento.' : 'Alineación parcial; revisar en comité.';
+      return `<tr><td><strong>${esc(o.name)}</strong><div class="align-dim-note">${esc(o.theme || o.perspective)}</div></td><td>${esc(o.budgetAlignment)}</td><td>${esc(o.processAlignment)}</td><td>${esc(o.structureAlignment)}</td><td>${esc(o.indicatorAlignment)}</td><td>${esc(o.evidenceLevel)}</td><td class="align-reco">${esc(reco)}<div class="align-dim-note">${esc(o.alignmentEvidence || o.correctionAction)}</div></td></tr>`;
+    }).join('');
+    $('viewAlineacion').innerHTML = `<div class="section-hero"><h2>Alineación estratégica</h2><p>Evalúa coherencia entre presupuesto, procesos, estructura, indicadores y evidencia disponible.</p></div><div class="card table-wrap"><table><thead><tr><th>Objetivo</th><th>Presupuesto</th><th>Procesos</th><th>Estructura</th><th>Indicadores</th><th>Evidencia</th><th>Lectura ejecutiva</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  }
+
+  function renderImpacto(){
+    const plan = currentPlan();
+    $('viewImpacto').innerHTML = `<div class="section-hero"><h2>Impacto estratégico</h2><p>Contrasta avance, impacto esperado, impacto real, presupuesto y ejecución por objetivo.</p></div>${plan.objectives.map(o=>{
+      const exp = o.initiatives.reduce((a,i)=>a+num(i.expectedImpact),0);
+      const real = o.initiatives.reduce((a,i)=>a+num(i.realImpact),0);
+      const prog = o.initiatives.length ? Math.round(o.initiatives.reduce((a,i)=>a+calcActionsProgress(i.actions),0)/o.initiatives.length) : 0;
+      const cls = real>=exp && exp>0 ? 'impact-status-ok' : prog<50 ? 'impact-status-risk' : 'impact-status-watch';
+      return `<div class="impact-obj-card"><div class="impact-obj-head"><div><div class="impact-obj-title">${esc(o.name)}</div><div class="impact-obj-meta"><span>${esc(o.leader)}</span><span>${esc(o.perspective)}</span><span>${esc(o.end || 's/f')}</span></div><div class="impact-pills"><span class="impact-pill ${cls}">Avance ${prog}%</span><span class="impact-pill">Impacto esperado ${fmtNum(exp,0)}%</span><span class="impact-pill">Impacto real ${fmtNum(real,0)}%</span><span class="impact-pill">IGEE ${Math.round(calcObjectiveScore(o))}%</span></div></div></div></div>`;
+    }).join('') || '<div class="empty-box">No hay objetivos.</div>'}`;
+  }
+
+  function renderBrechas(){
+    const plan = currentPlan();
+    const rows = plan.objectives.map(o=>`<tr><td><strong>${esc(o.name)}</strong><div class="obj-sub">${esc(o.breakpoint || 'Sin punto de ruptura')}</div></td><td>${esc(o.currentState)}</td><td>${esc(o.targetState)}</td><td>${esc(o.gap)}</td><td><span class="badge ${gapClass(o.gapRisk)}">${esc(o.gapRisk)}</span></td><td><div class="brecha-signals"><span>${o.initiatives.length} iniciativas</span><span>${o.relations.length} relaciones</span><span>IGEE ${Math.round(calcObjectiveScore(o))}%</span></div></td></tr>`).join('');
+    $('viewBrechas').innerHTML = `<div class="section-hero"><h2>Brechas estratégicas</h2><p>Identifica el estado actual, estado objetivo, riesgo del gap y señales de intervención.</p></div><div class="card table-wrap"><table><thead><tr><th>Objetivo</th><th>Estado actual</th><th>Estado objetivo</th><th>Brecha</th><th>Riesgo</th><th>Señales</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  }
+  function gapClass(r){ r=text(r).toLowerCase(); if(r.includes('crítico')||r.includes('critico')||r.includes('alto')) return 'b-red'; if(r.includes('medio')) return 'b-yellow'; return 'b-green'; }
+
+  function renderTOM(){
+    const plan = currentPlan();
+    const rows = plan.objectives.map(o=>{
+      const score = tomScore(o);
+      return `<tr><td><strong>${esc(o.name)}</strong><div class="obj-sub">${esc(o.tomType)} · ${esc(o.tomRole || 'Sin dueño E2E')}</div></td><td><div class="tom-mini-box"><div class="tom-mini-label">Proceso</div><div class="tom-mini-value">${esc(o.tomProcess)}</div></div></td><td><div class="tom-mini-box"><div class="tom-mini-label">Capacidades</div><div class="tom-mini-value">${esc(o.tomCapabilities)}</div></div></td><td><div class="tom-mini-box"><div class="tom-mini-label">Tecnología</div><div class="tom-mini-value">${esc(o.tomTech)}</div></div></td><td><div class="tom-mini-box"><div class="tom-mini-label">Gobernanza</div><div class="tom-mini-value">${esc(o.tomGovernance)}</div></div></td><td><div class="tom-score-box"><span class="tom-score-pill ${score>=80?'tom-ok':score>=50?'tom-mid':'tom-bad'}">${score}%</span><span class="tom-read-text">Madurez TOM</span></div></td></tr>`;
+    }).join('');
+    $('viewTOM').innerHTML = `<div class="section-hero"><h2>Modelo Operativo Objetivo TOM</h2><p>Revisa proceso, capacidades, tecnología, gobernanza y flujo de decisión por objetivo.</p></div><div class="card table-wrap"><table><thead><tr><th>Objetivo</th><th>Proceso</th><th>Capacidades</th><th>Tecnología</th><th>Gobernanza</th><th>Score</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  }
+  function tomScore(o){
+    const fields=[o.tomProcess,o.tomCapabilities,o.tomTech,o.tomGovernance,o.decisionFlow,o.tomRole];
+    return Math.round((fields.filter(f=>text(f).trim().length>10).length / fields.length) * 100);
+  }
+
+  function renderBeneficios(){
+    const plan = currentPlan();
+    const rows = plan.objectives.flatMap(o=>o.initiatives.map(i=>({o,i}))).map(({o,i})=>{
+      const spent = num(i.spent), budget=num(i.budget);
+      const real = text(i.benefitReal).trim();
+      const cls = real ? 'benefit-real-ok' : calcActionsProgress(i.actions) > 50 ? 'benefit-real-partial' : 'benefit-real-pending';
+      const label = real ? 'Realizado' : calcActionsProgress(i.actions) > 50 ? 'Parcial' : 'Pendiente';
+      return `<tr><td><strong>${esc(o.name)}</strong></td><td>${esc(i.name)}<div class="obj-sub">${esc(i.benefitOwner || i.owner)}</div></td><td>${esc(i.benefitExpected || 'Sin beneficio esperado')}</td><td><span class="benefit-real-tag ${cls}">${label}</span><div>${esc(i.benefitReal || 'Sin evidencia de beneficio real')}</div></td><td class="benefit-money">${fmtMoney(budget)}</td><td class="benefit-money">${fmtMoney(spent)}</td><td>${budget?Math.round((spent/budget)*100):0}%</td><td>${esc(i.benefitDate || i.dueDate || 's/f')}</td></tr>`;
+    }).join('');
+    $('viewBeneficios').innerHTML = `<div class="section-hero"><h2>Beneficios</h2><p>Da seguimiento al beneficio esperado, beneficio real, presupuesto, gasto y fecha de captura de valor.</p></div><div class="card table-wrap"><table><thead><tr><th>Objetivo</th><th>Iniciativa</th><th>Beneficio esperado</th><th>Beneficio real</th><th>Presupuesto</th><th>Gastado</th><th>Uso</th><th>Fecha beneficio</th></tr></thead><tbody>${rows || `<tr><td colspan="8"><div class="empty-box">No hay beneficios registrados.</div></td></tr>`}</tbody></table></div>`;
+  }
+
+  function generateAlerts(){
+    const plan = currentPlan();
+    const alerts=[];
+    plan.objectives.forEach(o=>{
+      const score = calcObjectiveScore(o);
+      if(score < 55) alerts.push({level:'critical', title:`IGEE bajo: ${o.name}`, cause:`El objetivo está en ${Math.round(score)}%.`, decision:'Revisar responsable, KPI principal y acciones vencidas en comité.', obj:o});
+      if(['Alto','Crítico','Critico'].includes(text(o.gapRisk))) alerts.push({level:'committee', title:`Brecha ${o.gapRisk}: ${o.name}`, cause:o.gap || 'Brecha sin descripción.', decision:'Definir acción correctiva y dueño end-to-end.', obj:o});
+      o.initiatives.forEach(i=>{
+        if(!i.impactKpi) alerts.push({level:'adjust', title:`Iniciativa sin KPI: ${i.name}`, cause:`No está conectada a un indicador del objetivo ${o.name}.`, decision:'Asignar KPI impactado o eliminar iniciativa desconectada.', obj:o, init:i});
+        if(num(i.spent) > num(i.budget) && num(i.budget)>0) alerts.push({level:'committee', title:`Sobregasto: ${i.name}`, cause:`Gastado ${fmtMoney(i.spent)} vs presupuesto ${fmtMoney(i.budget)}.`, decision:'Autorizar ampliación, recortar alcance o detener gasto.', obj:o, init:i});
+        i.actions.forEach(a=>{
+          const overdue = a.dueDate && new Date(a.dueDate) < new Date(todayISO()) && !['terminada','finalizada','completada','done'].includes(text(a.status).toLowerCase());
+          if(overdue) alerts.push({level:'critical', title:`Acción vencida: ${a.title}`, cause:`Compromiso vencido ${daysText(a.dueDate)}. Responsable: ${a.responsible || i.owner || 'Sin responsable'}.`, decision:'Escalar bloqueo o redefinir fecha con responsable explícito.', obj:o, init:i, act:a});
+        });
+      });
+    });
+    return alerts;
+  }
+
+  function renderAlertas(){
+    const alerts = generateAlerts();
+    $('viewAlertas').innerHTML = `<div class="section-hero"><h2>Centro de alertas ejecutivas</h2><p>Señales automáticas para comité: bajo avance, brecha crítica, sobregasto, iniciativas desconectadas y acciones vencidas.</p></div><div class="alert-board">${alerts.map(al=>`<div class="alert-exec-card ${al.level}"><div class="alert-exec-head"><div><div class="alert-obj-title">${esc(al.title)}</div><div class="alert-obj-meta">${esc(al.obj?.name || '')}</div></div><div class="alert-cause-col">${esc(al.cause)}</div><div class="alert-btns">${al.obj?`<button class="btn btn-secondary btn-xs" data-action="viewObjective" data-obj-id="${esc(al.obj.id)}">Ver objetivo</button>`:''}${al.init?`<button class="btn btn-secondary btn-xs" data-action="initiativeActions" data-obj-id="${esc(al.obj.id)}" data-init-id="${esc(al.init.id)}">Ver acciones</button>`:''}</div></div><div class="alert-body"><div class="alert-panel"><div class="alert-panel-title">Decisión sugerida</div><div class="alert-decision-text">${esc(al.decision)}</div></div><div class="alert-panel"><div class="alert-panel-title">Señales</div><div class="alert-signals"><span class="alert-signal red">${esc(al.level)}</span><span class="alert-signal blue">IGEE ${Math.round(calcObjectiveScore(al.obj||{}))}%</span></div></div></div></div>`).join('') || '<div class="empty-box">No hay alertas críticas por el momento.</div>'}</div>`;
+  }
+
+  function renderCadencia(){
+    const plan = currentPlan();
+    const alerts = generateAlerts().slice(0,8).map(a=>({id:uid('agenda-auto'), type:'Alerta', priority:a.level==='critical'?'Crítica':'Alta', status:'Pendiente', title:a.title, owner:a.obj?.leader||'', dueDate:todayISO(), duration:'10 min', context:a.cause, decision:a.decision, auto:true}));
+    const agenda = [...asArray(plan.agenda), ...alerts];
+    $('viewCadencia').innerHTML = `<div class="section-hero"><div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap"><div><h2>Cadencia y comité</h2><p>Agenda ejecutiva combinando puntos manuales y alertas sugeridas por la herramienta.</p></div><button class="btn btn-primary btn-sm" data-action="addAgenda">+ Punto manual</button></div></div><div class="agenda-list">${agenda.map(a=>`<div class="agenda-card p-${priorityClass(a.priority)}"><div class="agenda-card-title">${esc(a.title)}</div><div class="agenda-card-meta">${esc(a.type)} · ${esc(a.priority)} · ${esc(a.status)} · ${esc(a.duration || '')}</div><div class="agenda-context-box">${esc(a.context || a.notes || 'Sin contexto')}</div><div class="agenda-decision-box">${esc(a.decision || 'Sin decisión esperada')}</div>${a.auto?'':`<div style="display:flex;gap:6px;margin-top:8px"><button class="btn btn-secondary btn-xs" data-action="editAgenda" data-agenda-id="${esc(a.id)}">Editar</button><button class="btn btn-danger btn-xs" data-action="deleteAgenda" data-agenda-id="${esc(a.id)}">Eliminar</button></div>`}</div>`).join('') || '<div class="empty-box">No hay agenda registrada.</div>'}</div>`;
+  }
+  function priorityClass(p){ p=text(p).toLowerCase(); if(p.includes('crít')||p.includes('crit')) return 'critical'; if(p.includes('alta')) return 'high'; if(p.includes('baja')) return 'low'; return 'medium'; }
+
+  function objectiveName(id){ return currentPlan()?.objectives.find(o=>o.id===id)?.name || ''; }
+
+  function openObjectiveModal(obj=null){
+    editingObjectiveId = obj?.id || null;
+    $('objectiveModalTitle').textContent = obj ? 'Editar Objetivo' : 'Nuevo Objetivo';
+    setStep(0);
+    clearObjectiveForm();
+    populateParentOptions(obj?.id);
+    if(obj) fillObjectiveForm(obj); else addIndicatorRow();
+    openModal('objectiveModal');
+  }
+
+  function clearObjectiveForm(){
+    ['oName','oCode','oDesc','oLeader','oStart','oEnd','oAreas','oTags','oProjects','oTheme','oExpectedResult','oBudget','oAlignmentEvidence','oCorrectionAction','oCurrentState','oTargetState','oGap','oBreakpoint','oTomRole','oTomProcess','oTomCapabilities','oTomTech','oTomGovernance','oDecisionFlow'].forEach(id=>{ if($(id)) $(id).value=''; });
+    $('oStatus').value='activo'; $('oType').value='resultado'; $('oPerspective').value='financiera'; $('oLevel').value='Corporativo';
+    $('oBudgetAlignment').value='Medio'; $('oProcessAlignment').value='Medio'; $('oStructureAlignment').value='Medio'; $('oIndicatorAlignment').value='Medio'; $('oEvidenceLevel').value='Parcial'; $('oGapRisk').value='Medio'; $('oTomType').value='Central';
+    $('indicatorsBox').innerHTML=''; $('initiativesBox').innerHTML=''; $('relationsBox').innerHTML='';
+  }
+  function populateParentOptions(excludeId=''){
+    const sel = $('oParent'); if(!sel) return;
+    const opts = currentPlan()?.objectives.filter(o=>o.id!==excludeId).map(o=>`<option value="${esc(o.id)}">${esc(o.code?o.code+' · ':'')}${esc(o.name)}</option>`).join('') || '';
+    sel.innerHTML = `<option value="">— Sin objetivo padre —</option>${opts}`;
+  }
+  function fillObjectiveForm(o){
+    $('oName').value=o.name||''; $('oCode').value=o.code||''; $('oDesc').value=o.desc||''; $('oLeader').value=o.leader||''; $('oStart').value=o.start||''; $('oEnd').value=o.end||''; $('oStatus').value=normalizeStatus(o.status||'activo'); $('oAreas').value=arrayToCsv(o.areas); $('oTags').value=arrayToCsv(o.tags); $('oProjects').value=arrayToCsv(o.projects); $('oType').value=o.type||'resultado'; $('oPerspective').value=o.perspective||'financiera'; $('oLevel').value=o.level||'Corporativo'; $('oParent').value=o.parentId||''; $('oTheme').value=o.theme||''; $('oExpectedResult').value=o.expectedResult||''; $('oBudget').value=o.budget||''; $('oBudgetAlignment').value=o.budgetAlignment||'Medio'; $('oProcessAlignment').value=o.processAlignment||'Medio'; $('oStructureAlignment').value=o.structureAlignment||'Medio'; $('oIndicatorAlignment').value=o.indicatorAlignment||'Medio'; $('oEvidenceLevel').value=o.evidenceLevel||'Parcial'; $('oAlignmentEvidence').value=o.alignmentEvidence||''; $('oCorrectionAction').value=o.correctionAction||''; $('oCurrentState').value=o.currentState||''; $('oTargetState').value=o.targetState||''; $('oGap').value=o.gap||''; $('oGapRisk').value=o.gapRisk||'Medio'; $('oBreakpoint').value=o.breakpoint||''; $('oTomType').value=o.tomType||'Central'; $('oTomRole').value=o.tomRole||''; $('oTomProcess').value=o.tomProcess||''; $('oTomCapabilities').value=o.tomCapabilities||''; $('oTomTech').value=o.tomTech||''; $('oTomGovernance').value=o.tomGovernance||''; $('oDecisionFlow').value=o.decisionFlow||'';
+    o.indicators.forEach(addIndicatorRow); o.initiatives.forEach(addInitiativeRow); o.relations.forEach(addRelationRow);
+  }
+  function setStep(step){
+    currentStep = clamp(step,0,2);
+    qsa('.step-panel').forEach(p=>p.classList.toggle('active', num(p.dataset.panel)===currentStep));
+    qsa('.step-btn').forEach(b=>{ const s=num(b.dataset.step); b.classList.toggle('active', s===currentStep); b.classList.toggle('done', s<currentStep); });
+    $('stepPrevBtn').classList.toggle('hidden', currentStep===0);
+    $('stepNextBtn').classList.toggle('hidden', currentStep===2);
+    const hints = ['Paso 1 de 3 · Esencial: nombre, KPIs y arquitectura','Paso 2 de 3 · Ejecución: iniciativas y relaciones','Paso 3 de 3 · Modelo estratégico: alineación, brecha y TOM'];
+    $('stepNavHint').textContent = hints[currentStep];
+  }
+
+  function addIndicatorRow(data={}){
+    const tpl = $('indicatorTpl'); const clone = tpl.content.cloneNode(true); const row = clone.querySelector('.indicator-row');
+    row.querySelector('.ind-name').value=data.name||''; row.querySelector('.ind-action').value=data.action||'Incrementar'; row.querySelector('.ind-unit').value=data.unit||''; row.querySelector('.ind-owner').value=data.owner||''; row.querySelector('.ind-initial').value=data.initial ?? ''; row.querySelector('.ind-current').value=data.current ?? ''; row.querySelector('.ind-target').value=data.target ?? ''; row.querySelector('.ind-weight').value=data.weight ?? 100; row.dataset.kpiId=data.id||uid('kpi');
+    $('indicatorsBox').appendChild(clone); updateIndicatorRowScore(row);
+  }
+  function updateIndicatorRowScore(row){
+    if(!row) return;
+    const k=readIndicatorRow(row); const s=Math.round(calcIndicatorScore(k));
+    row.querySelector('.ind-score-display').textContent = `Avance estimado: ${s}% · Estado ${kpiState(s).label}`;
+  }
+  function readIndicatorRow(row){ return { id:row.dataset.kpiId||uid('kpi'), name:row.querySelector('.ind-name').value.trim(), action:row.querySelector('.ind-action').value, unit:row.querySelector('.ind-unit').value.trim(), owner:row.querySelector('.ind-owner').value.trim(), initial:num(row.querySelector('.ind-initial').value), current:num(row.querySelector('.ind-current').value), target:num(row.querySelector('.ind-target').value), weight:num(row.querySelector('.ind-weight').value,100), history:[] }; }
+
+  function addInitiativeRow(data={}){
+    const tpl=$('initiativeTpl'); const clone=tpl.content.cloneNode(true); const row=clone.querySelector('.initiative-row');
+    row.dataset.initId=data.id||uid('init'); row._existingActions = asArray(data.actions);
+    row.querySelector('.init-name').value=data.name||''; row.querySelector('.init-owner').value=data.owner||''; row.querySelector('.init-due').value=data.dueDate||''; row.querySelector('.init-status').value=data.status||'En progreso'; row.querySelector('.init-expimpact').value=data.expectedImpact ?? ''; row.querySelector('.init-realimpact').value=data.realImpact ?? ''; row.querySelector('.init-priority').value=data.priority||'Alta'; row.querySelector('.init-redundant').value=data.redundant||'No'; row.querySelector('.init-competes').value=data.competes||'No'; row.querySelector('.init-kpi').value=data.impactKpi||''; row.querySelector('.init-benefit').value=data.benefitExpected||''; row.querySelector('.init-benefitreal').value=data.benefitReal||''; row.querySelector('.init-benefitowner').value=data.benefitOwner||''; row.querySelector('.init-benefitdate').value=data.benefitDate||''; row.querySelector('.init-budget').value=data.budget ?? ''; row.querySelector('.init-spent').value=data.spent ?? ''; row.querySelector('.init-actions').value=asArray(data.actions).map(a=>a.title).join('\n'); row.querySelector('.init-detail').value=data.detail||''; row.querySelector('.init-progress-display').textContent=`${Math.round(calcActionsProgress(data.actions||[]))}%`;
+    $('initiativesBox').appendChild(clone);
+  }
+  function readInitiativeRow(row){
+    const lines = row.querySelector('.init-actions').value.split('\n').map(s=>s.trim()).filter(Boolean);
+    const old = row._existingActions || [];
+    const actions = lines.length ? lines.map((title,idx)=> normalizeAction({...old[idx], title})) : old.map(normalizeAction);
+    const init = { id:row.dataset.initId||uid('init'), name:row.querySelector('.init-name').value.trim(), owner:row.querySelector('.init-owner').value.trim(), dueDate:row.querySelector('.init-due').value, status:row.querySelector('.init-status').value, expectedImpact:num(row.querySelector('.init-expimpact').value), realImpact:num(row.querySelector('.init-realimpact').value), priority:row.querySelector('.init-priority').value, redundant:row.querySelector('.init-redundant').value, competes:row.querySelector('.init-competes').value, impactKpi:row.querySelector('.init-kpi').value.trim(), benefitExpected:row.querySelector('.init-benefit').value.trim(), benefitReal:row.querySelector('.init-benefitreal').value.trim(), benefitOwner:row.querySelector('.init-benefitowner').value.trim(), benefitDate:row.querySelector('.init-benefitdate').value, budget:num(row.querySelector('.init-budget').value), spent:num(row.querySelector('.init-spent').value), detail:row.querySelector('.init-detail').value.trim(), actions };
+    init.progress = calcActionsProgress(actions); return init;
+  }
+
+  function addRelationRow(data={}){
+    const tpl=$('relationTpl'); const clone=tpl.content.cloneNode(true); const row=clone.querySelector('.relation-row'); row.dataset.relId=data.id||uid('rel');
+    const sel=row.querySelector('.rel-target'); sel.innerHTML = `<option value="">— Selecciona objetivo —</option>${currentPlan().objectives.filter(o=>o.id!==editingObjectiveId).map(o=>`<option value="${esc(o.id)}">${esc(o.code?o.code+' · ':'')}${esc(o.name)}</option>`).join('')}`;
+    sel.value=data.targetId||''; row.querySelector('.rel-type').value=data.type||'Impacta a'; row.querySelector('.rel-intensity').value=data.intensity||'Media'; row.querySelector('.rel-risk').value=data.risk||'Medio'; row.querySelector('.rel-time').value=data.time||'90 días'; row.querySelector('.rel-owner').value=data.owner||''; row.querySelector('.rel-evidence').value=data.evidence||'';
+    $('relationsBox').appendChild(clone);
+  }
+  function readRelationRow(row){ return { id:row.dataset.relId||uid('rel'), targetId:row.querySelector('.rel-target').value, type:row.querySelector('.rel-type').value, intensity:row.querySelector('.rel-intensity').value, risk:row.querySelector('.rel-risk').value, time:row.querySelector('.rel-time').value, owner:row.querySelector('.rel-owner').value.trim(), evidence:row.querySelector('.rel-evidence').value.trim() }; }
+  function suggestRelation(row){
+    const type = row.querySelector('.rel-type').value;
+    row.querySelector('.rel-intensity').value = ['Bloquea a','Depende de','Compite con'].includes(type) ? 'Alta' : 'Media';
+    row.querySelector('.rel-risk').value = ['Bloquea a','Compite con'].includes(type) ? 'Alto' : 'Medio';
+    row.querySelector('.rel-mode-hint').textContent = 'Modo: sugerido automáticamente';
+  }
+
+  function saveObjectiveFromModal(){
+    const plan=currentPlan(); if(!plan) return;
+    const name=$('oName').value.trim(); const leader=$('oLeader').value.trim();
+    if(!name) return toast('Captura el nombre del objetivo.', 'warn');
+    if(!leader) return toast('Captura el líder responsable.', 'warn');
+    const existing=plan.objectives.find(o=>o.id===editingObjectiveId);
+    const obj = existing || { id:uid('obj'), planningId:plan.id };
+    Object.assign(obj, { code:$('oCode').value.trim(), name, title:name, desc:$('oDesc').value.trim(), description:$('oDesc').value.trim(), leader, owner:leader, start:$('oStart').value, startDate:$('oStart').value, end:$('oEnd').value, endDate:$('oEnd').value, status:$('oStatus').value, areas:csvToArray($('oAreas').value), tags:csvToArray($('oTags').value), projects:csvToArray($('oProjects').value), type:$('oType').value, perspective:$('oPerspective').value, level:$('oLevel').value, parentId:$('oParent').value, theme:$('oTheme').value.trim(), expectedResult:$('oExpectedResult').value.trim(), budget:num($('oBudget').value), budgetAlignment:$('oBudgetAlignment').value, processAlignment:$('oProcessAlignment').value, structureAlignment:$('oStructureAlignment').value, indicatorAlignment:$('oIndicatorAlignment').value, evidenceLevel:$('oEvidenceLevel').value, alignmentEvidence:$('oAlignmentEvidence').value.trim(), correctionAction:$('oCorrectionAction').value.trim(), currentState:$('oCurrentState').value.trim(), targetState:$('oTargetState').value.trim(), gap:$('oGap').value.trim(), gapRisk:$('oGapRisk').value, breakpoint:$('oBreakpoint').value.trim(), tomType:$('oTomType').value, tomRole:$('oTomRole').value.trim(), tomProcess:$('oTomProcess').value.trim(), tomCapabilities:$('oTomCapabilities').value.trim(), tomTech:$('oTomTech').value.trim(), tomGovernance:$('oTomGovernance').value.trim(), decisionFlow:$('oDecisionFlow').value.trim(), indicators:qsa('#indicatorsBox .indicator-row').map(readIndicatorRow).filter(k=>k.name), initiatives:qsa('#initiativesBox .initiative-row').map(readInitiativeRow).filter(i=>i.name), relations:qsa('#relationsBox .relation-row').map(readRelationRow).filter(r=>r.targetId) });
+    obj.kpis = obj.indicators;
+    if(!existing) plan.objectives.push(obj);
+    plan.updatedAt = new Date().toISOString();
+    saveState(); closeModal('objectiveModal'); renderWorkspace(); toast(existing?'Objetivo actualizado.':'Objetivo creado.','success');
+  }
+
+  function deleteObjective(id){ if(!confirm('¿Eliminar este objetivo?')) return; const plan=currentPlan(); plan.objectives=plan.objectives.filter(o=>o.id!==id); saveState(); renderWorkspace(); toast('Objetivo eliminado.','success'); }
+
+  function viewObjective(id){
+    const o=findObjective(id); if(!o) return;
+    $('detailTitle').textContent = o.name; $('detailSubtitle').textContent = `${o.code || ''} · ${o.leader || ''}`; $('editDetail').dataset.objId = o.id;
+    $('detailBody').innerHTML = `<div class="detail-layout"><div class="detail-left"><div class="detail-panel"><h3>Resumen ejecutivo</h3><div class="kv-grid"><div class="kv-item"><div class="kv-label">IGEE</div><div class="kv-value">${Math.round(calcObjectiveScore(o))}%</div></div><div class="kv-item"><div class="kv-label">Estatus</div><div class="kv-value">${esc(o.status)}</div></div><div class="kv-item"><div class="kv-label">Compromiso</div><div class="kv-value">${esc(o.end || 's/f')}</div></div></div><p class="small muted" style="margin-top:10px">${esc(o.desc)}</p></div><div class="detail-panel"><h3>KPIs</h3><div class="mini-list">${o.indicators.map(k=>`<div class="mini-card"><div class="mini-head"><div><div class="mini-title">${esc(k.name)}</div><div class="mini-sub">${fmtNum(k.initial)} → ${fmtNum(k.current)} / ${fmtNum(k.target)} ${esc(k.unit)}</div></div><span class="badge ${kpiState(calcIndicatorScore(k)).cls}">${Math.round(calcIndicatorScore(k))}%</span></div></div>`).join('') || '<div class="empty-box">Sin KPIs</div>'}</div></div></div><div><div class="detail-panel"><h3>Brecha / TOM</h3><div class="detail-grid"><div class="detail-box full"><div class="detail-box-label">Brecha</div><div class="detail-box-value">${esc(o.gap)}</div></div><div class="detail-box"><div class="detail-box-label">Riesgo</div><div class="detail-box-value">${esc(o.gapRisk)}</div></div><div class="detail-box"><div class="detail-box-label">Dueño E2E</div><div class="detail-box-value">${esc(o.tomRole)}</div></div><div class="detail-box full"><div class="detail-box-label">Proceso TOM</div><div class="detail-box-value">${esc(o.tomProcess)}</div></div></div></div></div></div>`;
+    openModal('detailModal');
+  }
+
+  function openInitiativeEditor(objId, initId=null){
+    initiativeContext={objectiveId:objId, initiativeId:initId};
+    const init = initId ? findInitiative(objId, initId) : null; const obj=findObjective(objId);
+    $('initiativeEditorTitle').textContent = init ? 'Editar Iniciativa' : 'Nueva Iniciativa'; $('initiativeEditorSubtitle').textContent = obj?.name || '';
+    $('initiativeName').value=init?.name||''; $('initiativeOwner').value=init?.owner||''; $('initiativeDueDate').value=init?.dueDate||''; $('initiativeStatus').value=init?.status||'En progreso'; $('initiativeExpectedImpact').value=init?.expectedImpact??''; $('initiativeRealImpact').value=init?.realImpact??''; $('initiativePriority').value=init?.priority||'Alta'; $('initiativeRedundant').value=init?.redundant||'No'; $('initiativeCompetes').value=init?.competes||'No'; $('initiativeBudget').value=init?.budget??''; $('initiativeSpent').value=init?.spent??''; $('initiativeBenefitExpected').value=init?.benefitExpected||''; $('initiativeBenefitReal').value=init?.benefitReal||''; $('initiativeBenefitOwner').value=init?.benefitOwner||''; $('initiativeBenefitDate').value=init?.benefitDate||''; $('initiativeDetail').value=init?.detail||''; $('initiativeProgressCalc').textContent=`${Math.round(calcActionsProgress(init?.actions||[]))}% · ${(init?.actions||[]).filter(a=>['Terminada','Finalizada'].includes(a.status)).length}/${init?.actions?.length||0} acciones terminadas`;
+    $('initiativeImpactKpi').innerHTML = `<option value="">— Selecciona KPI —</option>${(obj?.indicators||[]).map(k=>`<option value="${esc(k.name)}">${esc(k.name)}</option>`).join('')}`; $('initiativeImpactKpi').value=init?.impactKpi||'';
+    openModal('initiativeEditorModal');
+  }
+  function saveInitiativeEditor(){
+    const obj=findObjective(initiativeContext.objectiveId); if(!obj) return; const existing=obj.initiatives.find(i=>i.id===initiativeContext.initiativeId); const name=$('initiativeName').value.trim(); if(!name) return toast('Captura el nombre de la iniciativa.','warn');
+    const init= existing || { id:uid('init'), actions:[] };
+    Object.assign(init,{ name, title:name, owner:$('initiativeOwner').value.trim(), dueDate:$('initiativeDueDate').value, status:$('initiativeStatus').value, expectedImpact:num($('initiativeExpectedImpact').value), realImpact:num($('initiativeRealImpact').value), priority:$('initiativePriority').value, redundant:$('initiativeRedundant').value, competes:$('initiativeCompetes').value, impactKpi:$('initiativeImpactKpi').value, budget:num($('initiativeBudget').value), spent:num($('initiativeSpent').value), benefitExpected:$('initiativeBenefitExpected').value.trim(), benefitReal:$('initiativeBenefitReal').value.trim(), benefitOwner:$('initiativeBenefitOwner').value.trim(), benefitDate:$('initiativeBenefitDate').value, detail:$('initiativeDetail').value.trim() });
+    init.progress=calcActionsProgress(init.actions); if(!existing) obj.initiatives.push(init); saveState(); closeModal('initiativeEditorModal'); renderWorkspace(); toast(existing?'Iniciativa actualizada.':'Iniciativa creada.','success');
+  }
+  function deleteInitiative(objId, initId){ if(!confirm('¿Eliminar iniciativa?')) return; const obj=findObjective(objId); obj.initiatives=obj.initiatives.filter(i=>i.id!==initId); saveState(); renderWorkspace(); toast('Iniciativa eliminada.','success'); }
+  function viewInitiative(objId, initId){ const init=findInitiative(objId, initId); if(!init) return; initiativeContext={objectiveId:objId,initiativeId:initId}; $('initiativeViewTitle').textContent=init.name; $('initiativeViewSubtitle').textContent=findObjective(objId)?.name||''; $('initiativeViewBody').innerHTML=`<div class="detail-grid"><div class="detail-box"><div class="detail-box-label">Responsable</div><div class="detail-box-value">${esc(init.owner)}</div></div><div class="detail-box"><div class="detail-box-label">Fecha</div><div class="detail-box-value">${esc(init.dueDate)} · ${daysText(init.dueDate)}</div></div><div class="detail-box"><div class="detail-box-label">Avance</div><div class="detail-box-value">${calcActionsProgress(init.actions)}%</div></div><div class="detail-box"><div class="detail-box-label">KPI impactado</div><div class="detail-box-value">${esc(init.impactKpi||'Sin KPI')}</div></div><div class="detail-box full"><div class="detail-box-label">Beneficio esperado</div><div class="detail-box-value">${esc(init.benefitExpected)}</div></div><div class="detail-box full"><div class="detail-box-label">Detalle</div><div class="detail-box-value">${esc(init.detail)}</div></div></div>`; openModal('initiativeViewModal'); }
+
+  function openInitiativeActions(objId, initId){ actionContext={objectiveId:objId, initiativeId:initId, actionId:null}; const init=findInitiative(objId,initId); $('initiativeActionsTitle').textContent=`Acciones · ${init?.name||''}`; $('initiativeActionsSubtitle').textContent=findObjective(objId)?.name||''; renderInitiativeActionsBody(); openModal('initiativeActionsModal'); }
+  function renderInitiativeActionsBody(){ const init=findInitiative(actionContext.objectiveId, actionContext.initiativeId); $('initiativeActionsBody').innerHTML=`<div class="action-list">${(init?.actions||[]).map(a=>`<div class="action-item ${a.dueDate && new Date(a.dueDate)<new Date(todayISO()) && !['Terminada','Finalizada'].includes(a.status)?'overdue-action':''}"><div class="action-item-title">${esc(a.title)}</div><div class="action-item-sub">${esc(a.responsible || 'Sin responsable')} · ${esc(a.status)} · ${esc(a.dueDate || 's/f')} · ${daysText(a.dueDate)}</div><div class="action-item-detail">${esc(a.detail)}</div><div class="action-item-foot"><button class="btn btn-secondary btn-xs" data-action="viewAction" data-obj-id="${esc(actionContext.objectiveId)}" data-init-id="${esc(actionContext.initiativeId)}" data-act-id="${esc(a.id)}">Ver</button><button class="btn btn-secondary btn-xs" data-action="editAction" data-obj-id="${esc(actionContext.objectiveId)}" data-init-id="${esc(actionContext.initiativeId)}" data-act-id="${esc(a.id)}">Editar</button><button class="btn btn-primary btn-xs" data-action="completeAction" data-obj-id="${esc(actionContext.objectiveId)}" data-init-id="${esc(actionContext.initiativeId)}" data-act-id="${esc(a.id)}">Terminar</button><button class="btn btn-danger btn-xs" data-action="deleteAction" data-obj-id="${esc(actionContext.objectiveId)}" data-init-id="${esc(actionContext.initiativeId)}" data-act-id="${esc(a.id)}">Eliminar</button></div></div>`).join('') || '<div class="empty-box">No hay acciones. Usa “Nueva Acción”.</div>'}</div>`; }
+  function openActionEditor(actionId=null){ const act=actionId?findAction(actionContext.objectiveId,actionContext.initiativeId,actionId):null; actionContext.actionId=actionId; $('actionEditorTitle').textContent=act?'Editar Acción':'Nueva Acción'; $('actionEditorSubtitle').textContent=findInitiative(actionContext.objectiveId,actionContext.initiativeId)?.name||''; $('actionTitle').value=act?.title||''; $('actionResponsible').value=act?.responsible||''; $('actionDueDate').value=act?.dueDate||''; $('actionStatus').value=act?.status||'Por hacer'; $('actionDetail').value=act?.detail||''; openModal('actionEditorModal'); }
+  function saveActionEditor(){ const init=findInitiative(actionContext.objectiveId, actionContext.initiativeId); if(!init) return; const title=$('actionTitle').value.trim(); if(!title) return toast('Captura el título de la acción.','warn'); const existing=init.actions.find(a=>a.id===actionContext.actionId); const act=existing || {id:uid('act')}; Object.assign(act,{title, responsible:$('actionResponsible').value.trim(), dueDate:$('actionDueDate').value, status:$('actionStatus').value, detail:$('actionDetail').value.trim()}); if(!existing) init.actions.push(act); init.progress=calcActionsProgress(init.actions); saveState(); closeModal('actionEditorModal'); renderInitiativeActionsBody(); renderWorkspace(); toast(existing?'Acción actualizada.':'Acción creada.','success'); }
+  function viewAction(objId, initId, actId){ const a=findAction(objId,initId,actId); if(!a) return; actionContext={objectiveId:objId,initiativeId:initId,actionId:actId}; $('actionViewTitle').textContent=a.title; $('actionViewSubtitle').textContent=findInitiative(objId,initId)?.name||''; $('actionViewBody').innerHTML=`<div class="detail-grid"><div class="detail-box"><div class="detail-box-label">Responsable</div><div class="detail-box-value">${esc(a.responsible)}</div></div><div class="detail-box"><div class="detail-box-label">Estatus</div><div class="detail-box-value">${esc(a.status)}</div></div><div class="detail-box"><div class="detail-box-label">Compromiso</div><div class="detail-box-value">${esc(a.dueDate)} · ${daysText(a.dueDate)}</div></div><div class="detail-box full"><div class="detail-box-label">Detalle</div><div class="detail-box-value">${esc(a.detail)}</div></div></div>`; openModal('actionViewModal'); }
+  function deleteAction(objId,initId,actId){ if(!confirm('¿Eliminar acción?')) return; const init=findInitiative(objId,initId); init.actions=init.actions.filter(a=>a.id!==actId); init.progress=calcActionsProgress(init.actions); saveState(); renderInitiativeActionsBody(); renderWorkspace(); }
+  function completeAction(objId,initId,actId){ const a=findAction(objId,initId,actId); if(a){ a.status='Terminada'; const init=findInitiative(objId,initId); init.progress=calcActionsProgress(init.actions); saveState(); renderInitiativeActionsBody(); renderWorkspace(); toast('Acción marcada como terminada.','success'); } }
+
+  function openManualAgendaModal(id=null){ manualAgendaEditingId=id; const plan=currentPlan(); const item=id?plan.agenda.find(a=>a.id===id):null; $('manualAgendaModalTitle').textContent=item?'Editar punto de agenda':'Nuevo punto de agenda'; $('agendaType').value=item?.type||'Tema libre'; $('agendaPriority').value=item?.priority||'Media'; $('agendaStatus').value=item?.status||'Pendiente'; $('agendaTitle').value=item?.title||''; $('agendaOwner').value=item?.owner||''; $('agendaDueDate').value=item?.dueDate||''; $('agendaDuration').value=item?.duration||'10 min'; $('agendaContext').value=item?.context||''; $('agendaDecision').value=item?.decision||''; $('agendaNotes').value=item?.notes||''; $('agendaLinkedObjective').innerHTML=`<option value="">— Sin objetivo —</option>${plan.objectives.map(o=>`<option value="${esc(o.id)}">${esc(o.name)}</option>`).join('')}`; $('agendaLinkedObjective').value=item?.linkedObjective||''; populateAgendaInitiatives(item?.linkedObjective,item?.linkedInitiative); $('agendaLinkedObjective').onchange=()=>populateAgendaInitiatives($('agendaLinkedObjective').value,''); openModal('manualAgendaModal'); }
+  function populateAgendaInitiatives(objId, selected=''){ const obj=findObjective(objId); $('agendaLinkedInitiative').innerHTML=`<option value="">— Sin iniciativa —</option>${(obj?.initiatives||[]).map(i=>`<option value="${esc(i.id)}">${esc(i.name)}</option>`).join('')}`; $('agendaLinkedInitiative').value=selected||''; }
+  function saveManualAgenda(){ const plan=currentPlan(); const title=$('agendaTitle').value.trim(); if(!title) return toast('Captura el título del punto.','warn'); const existing=plan.agenda.find(a=>a.id===manualAgendaEditingId); const item=existing||{id:uid('agenda')}; Object.assign(item,{type:$('agendaType').value, priority:$('agendaPriority').value, status:$('agendaStatus').value, title, owner:$('agendaOwner').value.trim(), dueDate:$('agendaDueDate').value, duration:$('agendaDuration').value.trim(), linkedObjective:$('agendaLinkedObjective').value, linkedInitiative:$('agendaLinkedInitiative').value, context:$('agendaContext').value.trim(), decision:$('agendaDecision').value.trim(), notes:$('agendaNotes').value.trim()}); if(!existing) plan.agenda.push(item); plan.manualAgenda=plan.agenda; saveState(); closeModal('manualAgendaModal'); renderCadencia(); toast(existing?'Agenda actualizada.':'Punto agregado.','success'); }
+  function deleteAgenda(id){ if(!confirm('¿Eliminar punto de agenda?')) return; const plan=currentPlan(); plan.agenda=plan.agenda.filter(a=>a.id!==id); plan.manualAgenda=plan.agenda; saveState(); renderCadencia(); }
+
+  function exportBackupJSON(){
+    const payload = { version:'ximpler-edge-v3-corregido', schema:'planning-backup', exportedAt:new Date().toISOString(), activePlanningId:state.activePlanningId, currentPlanningId:state.activePlanningId, plannings:state.plannings };
+    downloadFile(`ximpler_edge_backup_${todayISO()}.json`, JSON.stringify(payload,null,2), 'application/json;charset=utf-8');
+  }
+  function importBackupJSON(e){
+    const file=e.target.files?.[0]; if(!file) return;
+    const reader=new FileReader();
+    reader.onload=()=>{
+      try{
+        const raw=JSON.parse(reader.result);
+        const imported=normalizeBackup(raw);
+        if(!imported.plannings.length) throw new Error('No se encontraron planeaciones en el JSON.');
+        state=imported; if(!state.activePlanningId) state.activePlanningId=state.plannings[0].id; saveState(); renderPlanningCards(); toast(`Importación lista: ${state.plannings.length} planeación(es).`, 'success');
+      }catch(err){ console.error(err); toast('No se pudo importar el JSON: '+err.message, 'error'); }
+      e.target.value='';
+    };
+    reader.readAsText(file);
+  }
+
+  function exportReportXLS(){
+    const plan=currentPlan(); if(!plan) return;
+    const sections = [];
+    sections.push(['Objetivos', ['Código','Objetivo','Líder','Estatus','IGEE','Fecha compromiso','Brecha'], plan.objectives.map(o=>[o.code,o.name,o.leader,o.status,Math.round(calcObjectiveScore(o))+'%',o.end,o.gap])]);
+    sections.push(['KPIs', ['Objetivo','KPI','Inicial','Actual','Meta','Unidad','Avance'], plan.objectives.flatMap(o=>o.indicators.map(k=>[o.name,k.name,k.initial,k.current,k.target,k.unit,Math.round(calcIndicatorScore(k))+'%']))]);
+    sections.push(['Iniciativas', ['Objetivo','Iniciativa','Responsable','Estatus','Avance','KPI impactado','Presupuesto','Gastado','Beneficio esperado','Beneficio real'], plan.objectives.flatMap(o=>o.initiatives.map(i=>[o.name,i.name,i.owner,i.status,calcActionsProgress(i.actions)+'%',i.impactKpi,i.budget,i.spent,i.benefitExpected,i.benefitReal]))]);
+    sections.push(['Acciones', ['Objetivo','Iniciativa','Acción','Responsable','Estatus','Fecha compromiso','Detalle'], plan.objectives.flatMap(o=>o.initiatives.flatMap(i=>i.actions.map(a=>[o.name,i.name,a.title,a.responsible,a.status,a.dueDate,a.detail])))]);
+    const html = `<html><head><meta charset="UTF-8"></head><body>${sections.map(([title,headers,rows])=>`<h2>${esc(title)}</h2><table border="1"><thead><tr>${headers.map(h=>`<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${r.map(c=>`<td>${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table><br>`).join('')}</body></html>`;
+    downloadFile(`reporte_general_${plan.name.replace(/[^a-z0-9]+/gi,'_')}_${todayISO()}.xls`, html, 'application/vnd.ms-excel;charset=utf-8');
+  }
+
+  function downloadFile(filename, content, type){
+    const blob=new Blob([content],{type}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=filename; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),500);
+  }
+
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+})();
+</script>
+</body>
+</html>
