@@ -756,14 +756,14 @@ tbody tr:hover td{background:#fafbfc}
 <div class="page" id="planningView">
   <div class="topbar">
     <div class="tl">
-      <h1>Ximpler EDGE <span style="font-weight:400;color:var(--muted);font-size:22px">v5.1</span></h1>
+      <h1>Ximpler EDGE <span style="font-weight:400;color:var(--muted);font-size:22px">v5.2</span></h1>
       <p class="subtitle">Copiloto estratégico v5.1 · Alineación visible, trazabilidad ejecutiva y avance ponderado explicado.</p>
     </div>
     <div class="tr">
       <button id="newPlanningBtn" class="btn btn-primary">+ Nueva Planeación</button>
       <button id="exportBackupBtn" class="btn btn-secondary">Exportar JSON</button>
-      <label class="btn btn-secondary" for="importBackupInput">Importar JSON</label>
-      <input id="importBackupInput" class="hidden" type="file" accept="application/json">
+      <button id="importBackupBtn" class="btn btn-secondary" type="button">Importar JSON</button>
+      <input id="importBackupInput" class="hidden" type="file" accept="application/json,.json">
       <div class="storage-wrap" id="storageBar">
         <span>Almacenamiento</span>
         <div class="storage-track"><div class="storage-fill" id="storageFill" style="width:0%"></div></div>
@@ -1084,7 +1084,7 @@ tbody tr:hover td{background:#fafbfc}
 'use strict';
 
 // ── CONSTANTES ──────────────────────────────────────────────────────
-const STORAGE_KEY = 'ximpler_edge_v5';
+const STORAGE_KEY = 'ximpler_edge_v5_2';
 const KPI_STALE_DAYS = { 'Diaria':2, 'Semanal':9, 'Mensual':35, 'Trimestral':100 };
 
 let state = { plannings:[], activePlanningId:null };
@@ -1627,6 +1627,7 @@ function bindEvents(){
   $('closePlanningModal')?.addEventListener('click',()=>closeModal('planningModal'));
   $('savePlanning')?.addEventListener('click',savePlanningModal);
   $('exportBackupBtn')?.addEventListener('click',exportJSON);
+  $('importBackupBtn')?.addEventListener('click',()=>{ const input=$('importBackupInput'); if(input) input.click(); });
   $('importBackupInput')?.addEventListener('change',importJSON);
   $('planningSearch')?.addEventListener('input',renderPlanningCards);
   $('planningStatus')?.addEventListener('change',renderPlanningCards);
@@ -3471,15 +3472,22 @@ function exportJSON(){
 }
 function importJSON(e){
   const file=e.target.files?.[0]; if(!file) return;
+  toast('Leyendo archivo JSON…','t-info');
   const reader=new FileReader(); reader.onload=()=>{
     try{
-      const raw=JSON.parse(reader.result); const imported=normalizeBackup(raw);
-      if(!imported.plannings.length) throw new Error('No se encontraron planeaciones.');
-      state=imported; if(!state.activePlanningId) state.activePlanningId=state.plannings[0].id;
-      saveState(); renderPlanningCards(); toast(`Importado: ${state.plannings.length} planeación(es).`,'t-ok');
-    }catch(err){ toast('Error al importar: '+err.message,'t-err'); }
+      const raw=JSON.parse(reader.result);
+      const imported=normalizeBackup(raw);
+      if(!imported.plannings || !imported.plannings.length) throw new Error('No se encontraron planeaciones en el JSON.');
+      state={version:V5_VERSION,activePlanningId:imported.activePlanningId||imported.plannings[0].id,plannings:imported.plannings};
+      if(!state.activePlanningId) state.activePlanningId=state.plannings[0].id;
+      const statusSelect=$('planningStatus'); if(statusSelect) statusSelect.value='all';
+      saveState(); renderPlanningCards(); updateStorageBar();
+      toast(`Importado correctamente: ${state.plannings.length} planeación(es).`,'t-ok');
+    }catch(err){ console.error(err); toast('Error al importar: '+err.message,'t-err'); }
     e.target.value='';
-  }; reader.readAsText(file);
+  };
+  reader.onerror=()=>{ toast('No se pudo leer el archivo seleccionado.','t-err'); e.target.value=''; };
+  reader.readAsText(file);
 }
 function exportXLS(){
   const plan=currentPlan(); if(!plan) return;
@@ -3506,7 +3514,7 @@ function downloadFile(filename,content,type){ const blob=new Blob([content],{typ
 // evitar objetivos, iniciativas, KPIs y acciones dispersas o sin evidencia.
 // ══════════════════════════════════════════════════════════════════════
 const V5_LEGACY_STORAGE_KEY = 'ximpler_edge_v4';
-const V5_VERSION = 'v5';
+const V5_VERSION = 'v5.2';
 
 function v5Tone(score){ score=num(score); return score>=80?'green':score>=55?'yellow':'red'; }
 function v5Pill(label,value,tone='gray',title=''){
@@ -3715,17 +3723,29 @@ function v5BlockingSummary(obj){
   return b.map(x=>`<span class="v5-lock">⚠ ${esc(x)}</span>`).join(' ');
 }
 
-// Reglas v5: migración y normalización extendida
+// Reglas v5.2: migración y normalización extendida
 const _loadStateV4 = loadState;
+function v52ParseStateRaw(raw){
+  if(!raw) return null;
+  try{
+    const parsed=JSON.parse(raw);
+    const normalized=normalizeBackup(parsed);
+    return normalized && Array.isArray(normalized.plannings) ? normalized : null;
+  }catch(err){ return null; }
+}
+function v52HasPlans(candidate){ return !!(candidate && Array.isArray(candidate.plannings) && candidate.plannings.length); }
 loadState = function(){
   try{
-    let raw=localStorage.getItem(STORAGE_KEY);
-    if(!raw){
-      raw=localStorage.getItem(V5_LEGACY_STORAGE_KEY);
-      if(raw) localStorage.setItem(STORAGE_KEY, raw);
+    const keys=[STORAGE_KEY,'ximpler_edge_v5_2','ximpler_edge_v5_1','ximpler_edge_v5','ximpler_edge_v4'];
+    let chosen=null;
+    for(const key of keys){
+      const candidate=v52ParseStateRaw(localStorage.getItem(key));
+      if(v52HasPlans(candidate)){ chosen=candidate; break; }
+      if(!chosen && candidate) chosen=candidate;
     }
-    if(raw){ state=normalizeBackup(JSON.parse(raw)); }
-  }catch(err){ state={plannings:[],activePlanningId:null}; }
+    state=chosen || {version:V5_VERSION,plannings:[],activePlanningId:null};
+    if(v52HasPlans(state)) localStorage.setItem(STORAGE_KEY,JSON.stringify(state));
+  }catch(err){ state={version:V5_VERSION,plannings:[],activePlanningId:null}; }
   if(!state.plannings) state.plannings=[];
   if(!state.activePlanningId&&state.plannings[0]) state.activePlanningId=state.plannings[0].id;
 };
@@ -3789,7 +3809,7 @@ function v5InjectAfter(id, html){
   const el=$(id); if(el && !document.getElementById(html.match(/id="([^"]+)"/)?.[1]||'__missing')) el.closest('.field')?.insertAdjacentHTML('afterend', html);
 }
 function applyV5DOMUpgrades(){
-  document.title='Ximpler EDGE v5 · Copiloto de Ejecución Estratégica';
+  document.title='Ximpler EDGE v5.2 · Copiloto de Ejecución Estratégica';
   const subtitle=document.querySelector('#planningView .subtitle'); if(subtitle) subtitle.textContent='Copiloto estratégico v5 · Trazabilidad ejecutiva: resultado, ejecución, evidencia, gobernanza y comité con reglas duras.';
   v5InjectAfter('oBudget', `<div class="field"><label>Peso estratégico %</label><input id="oStrategicWeight" class="input" type="number" min="0" max="100" step="1" value="100"><div class="hint">Define cuánto pesa este objetivo en la planeación. Ya no todos los objetivos valen igual.</div></div>`);
   v5InjectAfter('oExpectedResult', `<div class="field"><label>Hipótesis estratégica</label><input id="oHypothesis" class="input" placeholder="Si hacemos X, esperamos mover Y porque..."></div>`);
@@ -4101,7 +4121,8 @@ init = function(){
   applyV5DOMUpgrades();
   _initV4();
   state.plannings.forEach(p=>asArray(p.objectives).forEach(o=>{ o.indicators=asArray(o.indicators||o.kpis).map(normalizeIndicator); o.kpis=o.indicators; o.initiatives=asArray(o.initiatives).map(normalizeInitiative); }));
-  saveState();
+  if(state.plannings.length) saveState(); else updateStorageBar();
+  renderPlanningCards();
   if($('workspaceView')&&!$('workspaceView').classList.contains('hidden')) renderWorkspace();
 };
 
