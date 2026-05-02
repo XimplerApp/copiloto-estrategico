@@ -354,10 +354,34 @@ tbody tr:hover td{background:#fafbfc}
 .tom-bad{background:var(--rose-s);color:var(--rose)}
 
 /* ── IMPACTO ── */
-.impact-obj-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:var(--sh-sm);overflow:hidden;margin-bottom:14px}
-.impact-obj-head{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:start;padding:14px 16px;border-bottom:1px solid var(--border);background:var(--surface2)}
-.impact-pills{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
-.impact-pill{display:inline-flex;align-items:center;gap:4px;background:var(--slate-s);color:var(--text2);border-radius:var(--r-full);font-size:11px;font-weight:600;padding:5px 8px}
+.impact-obj-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:var(--sh-sm);overflow:hidden;margin-bottom:16px}
+.impact-obj-head{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:start;padding:16px 18px;border-bottom:1px solid var(--border);background:var(--surface2)}
+.impact-obj-title{font-size:17px;font-weight:800;letter-spacing:-.2px;color:var(--text)}
+.impact-obj-meta{display:flex;gap:8px;flex-wrap:wrap;color:var(--muted);font-size:12px;margin-top:4px}
+.impact-pills{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
+.impact-pill{display:inline-flex;align-items:center;gap:4px;background:var(--slate-s);color:var(--text2);border-radius:var(--r-full);font-size:11px;font-weight:700;padding:6px 9px}
+.impact-pill.ok{background:var(--em-s);color:var(--em)}
+.impact-pill.warn{background:var(--amber-s);color:var(--amber)}
+.impact-pill.bad{background:var(--rose-s);color:var(--rose)}
+.impact-table-name{font-weight:800;font-size:13px;color:var(--text);cursor:pointer;line-height:1.3}
+.impact-table-name:hover{color:var(--em);text-decoration:underline}
+.impact-mini-note{font-size:11px;color:var(--muted);margin-top:3px;line-height:1.35}
+.impact-progress-wrap{display:flex;align-items:center;gap:10px;min-width:160px}
+.impact-progress-label{font-size:12px;font-weight:800;min-width:38px;color:var(--text)}
+.impact-track{height:8px;border-radius:999px;background:#e9edf2;overflow:hidden;flex:1;min-width:90px}
+.impact-fill{height:100%;border-radius:999px;background:var(--em-l)}
+.impact-fill.mid{background:var(--amber)}
+.impact-fill.low{background:var(--rose)}
+.impact-priority{display:inline-flex;border-radius:var(--r-full);padding:5px 9px;font-size:11px;font-weight:800}
+.impact-priority.crit{background:var(--rose-s);color:var(--rose)}
+.impact-priority.high{background:var(--amber-s);color:var(--amber)}
+.impact-priority.mid{background:var(--blue-s);color:var(--blue)}
+.impact-priority.low{background:var(--em-s);color:var(--em)}
+.impact-portfolio{font-size:12px;color:var(--text2)}
+.impact-kpi-pill{display:inline-flex;border-radius:var(--r-full);padding:5px 9px;font-size:11px;font-weight:800;background:var(--blue-s);color:var(--blue)}
+.impact-kpi-pill.ok{background:var(--em-s);color:var(--em)}
+.impact-kpi-pill.warn{background:var(--amber-s);color:var(--amber)}
+.impact-kpi-pill.bad{background:var(--rose-s);color:var(--rose)}
 
 /* ── BENEFICIOS ── */
 .benefit-real-pending{background:var(--slate-s);color:var(--slate)}
@@ -1130,6 +1154,47 @@ function calcImpactScore(obj){
   const avgProgress=inits.reduce((a,i)=>a+calcActionsProgress(i.actions),0)/inits.length;
   return clamp(avgProgress,0,100);
 }
+function calcInitiativeEfficiency(init){
+  const expected=Math.max(0,num(init?.expectedImpact));
+  const real=Math.max(0,num(init?.realImpact));
+  if(expected<=0) return real>0?100:0;
+  return clamp((real/expected)*100,0,100);
+}
+function impactTone(value){
+  const v=num(value);
+  return v>=80?'ok':v>=50?'warn':'bad';
+}
+function impactFillClass(value){
+  const v=num(value);
+  return v>=80?'':v>=50?'mid':'low';
+}
+function impactProgress(value){
+  const v=Math.round(clamp(value));
+  return `<div class="impact-progress-wrap"><span class="impact-progress-label">${v}%</span><div class="impact-track"><div class="impact-fill ${impactFillClass(v)}" style="width:${v}%"></div></div></div>`;
+}
+function initiativeKpiStatus(obj,init){
+  const name=txt(init?.impactKpi).trim();
+  if(!name) return {label:'Sin KPI',tone:'bad'};
+  const kpi=asArray(obj?.indicators||obj?.kpis).find(k=>txt(k.name).trim().toLowerCase()===name.toLowerCase());
+  if(!kpi) return {label:'KPI no encontrado',tone:'warn'};
+  const score=Math.round(calcIndicatorScore(kpi));
+  if(score>=85) return {label:`OK ${score}%`,tone:'ok'};
+  if(score>=60) return {label:`Vigilar ${score}%`,tone:'warn'};
+  return {label:`Crítico ${score}%`,tone:'bad'};
+}
+function initiativePortfolioLabel(init){
+  const flags=[];
+  if(txt(init?.redundant).toLowerCase()==='sí'||txt(init?.redundant).toLowerCase()==='si') flags.push('Redundante');
+  if(txt(init?.competes).toLowerCase()==='sí'||txt(init?.competes).toLowerCase()==='si') flags.push('Compite');
+  return flags.length?flags.join(' · '):'Sin conflicto';
+}
+function priorityClassImpact(priority){
+  const p=txt(priority).toLowerCase();
+  if(p.includes('crít')||p.includes('crit')) return 'crit';
+  if(p.includes('alta')) return 'high';
+  if(p.includes('baja')) return 'low';
+  return 'mid';
+}
 
 function alignmentDimensionScore(value){
   const map={alto:100,medio:60,bajo:25};
@@ -1810,21 +1875,59 @@ function renderAlineacion(){
     const ass=alignmentAssessment(o);
     const cls=ass.score>=75?'align-high':ass.score>=50?'align-mid':'align-low';
     const note=o.alignmentEvidence||o.correctionAction||'Sin notas de evidencia/corrección registradas.';
-    return `<tr class="align-row-risk ${alignmentRowClass(ass.score)}"><td><div class="align-obj-cell"><div class="align-obj-title" data-action="viewObj" data-obj-id="${esc(o.id)}">${esc(o.name)}</div><div class="obj-sub">${esc(o.theme||objectiveTypeLabel(o.type))}</div><div class="align-score-wrap"><span class="align-pill ${cls}">IAE ${ass.score}%</span><div class="align-progress"><div class="align-progress-fill" style="width:${clamp(ass.score)}%;background:${progressColor(ass.score)}"></div></div></div><div class="align-actions"><button class="btn btn-secondary btn-xs" data-action="viewObj" data-obj-id="${esc(o.id)}">Ver detalle</button></div></div></td><td><div class="align-components-grid">${ass.items.map(alignComponentMini).join('')}</div></td><td>${alignPill(o.evidenceLevel,'align-evidence')}<div class="align-evidence-note">${esc(note)}</div></td><td class="align-reco"><div class="align-reading ${ass.tone}">${esc(ass.reading)}</div><div class="align-why"><strong>Cómo se calculó:</strong> ${esc(ass.formula)}</div><div class="align-why"><strong>Por qué llegó a esta lectura:</strong> ${esc(ass.why)}</div>${ass.flags.length?`<div class="align-flags">${ass.flags.map(f=>`<span class="badge b-red">${esc(f)}</span>`).join('')}</div>`:''}</td></tr>`;
+    const weakest=ass.items.slice().sort((a,b)=>a.points-b.points).slice(0,2).map(i=>`${i.key}: ${Math.round(i.score)}%`).join(' · ');
+    return `<tr class="align-row-risk ${alignmentRowClass(ass.score)}"><td><div class="align-obj-cell"><div class="align-obj-title" data-action="viewObj" data-obj-id="${esc(o.id)}">${esc(o.name)}</div><div class="obj-sub">${esc(o.theme||objectiveTypeLabel(o.type))}</div><div class="align-score-wrap"><span class="align-pill ${cls}">IAE ${ass.score}%</span><div class="align-progress"><div class="align-progress-fill" style="width:${clamp(ass.score)}%;background:${progressColor(ass.score)}"></div></div></div><div class="align-actions"><button class="btn btn-secondary btn-xs" data-action="viewObj" data-obj-id="${esc(o.id)}">Ver detalle</button></div></div></td><td><div class="align-components-grid">${ass.items.map(alignComponentMini).join('')}</div></td><td>${alignPill(o.evidenceLevel,'align-evidence')}<div class="align-evidence-note">${esc(note)}</div></td><td class="align-reco"><div class="align-reading ${ass.tone}">${esc(ass.reading)}</div><div class="align-why"><strong>Factores a revisar:</strong> ${esc(weakest||'sin debilidades relevantes')}</div>${ass.flags.length?`<div class="align-flags">${ass.flags.map(f=>`<span class="badge b-red">${esc(f)}</span>`).join('')}</div>`:''}</td></tr>`;
   }).join('');
-  $('viewAlineacion').innerHTML=`<div class="section-hero"><h2>Alineación estratégica</h2><p>La lectura ahora usa el IAE: Índice de Alineación Estratégica. Combina diseño estratégico, ejecución operativa, TOM, KPIs y evidencia; además explica por qué se llegó a cada interpretación.</p></div><div class="card table-wrap"><table><thead><tr><th>Objetivo</th><th>Componentes del IAE</th><th>Evidencia</th><th>Lectura ejecutiva y lógica</th></tr></thead><tbody>${rows||`<tr><td colspan="4"><div class="empty-box">Sin objetivos registrados.</div></td></tr>`}</tbody></table></div>`;
+  $('viewAlineacion').innerHTML=`<div class="section-hero"><h2>Alineación estratégica</h2><p>Vista ejecutiva del IAE con componentes ponderados, evidencia y factores críticos por objetivo.</p></div><div class="card table-wrap"><table><thead><tr><th>Objetivo</th><th>Componentes del IAE</th><th>Evidencia</th><th>Lectura ejecutiva</th></tr></thead><tbody>${rows||`<tr><td colspan="4"><div class="empty-box">Sin objetivos registrados.</div></td></tr>`}</tbody></table></div>`;
 }
 
 // ── IMPACTO ──────────────────────────────────────────────────────────
 function renderImpacto(){
   const plan=currentPlan();
-  $('viewImpacto').innerHTML=`<div class="section-hero"><h2>Impacto estratégico</h2></div>${plan.objectives.map(o=>{
-    const exp=o.initiatives.reduce((a,i)=>a+num(i.expectedImpact),0);
-    const real=o.initiatives.reduce((a,i)=>a+num(i.realImpact),0);
-    const prog=o.initiatives.length?Math.round(o.initiatives.reduce((a,i)=>a+calcActionsProgress(i.actions),0)/o.initiatives.length):0;
-    const cls=real>=exp&&exp>0?'impact-status-ok':prog<50?'impact-status-risk':'';
-    return `<div class="impact-obj-card"><div class="impact-obj-head"><div><div style="font-size:16px;font-weight:700">${esc(o.name)}</div><div style="font-size:11px;color:var(--muted);margin-top:4px">${esc(o.leader)} · ${esc(objectiveTypeLabel(o.type))} · ${esc(o.end||'s/f')}</div><div class="impact-pills"><span class="impact-pill ${cls}">Avance ${prog}%</span><span class="impact-pill">Esperado ${fmtNum(exp,0)}%</span><span class="impact-pill">Real ${fmtNum(real,0)}%</span><span class="impact-pill">IGEE ${Math.round(calcObjectiveScore(o))}%</span></div></div></div></div>`;
-  }).join('')||'<div class="empty-box">Sin objetivos.</div>'}`;
+  const cards=plan.objectives.map(o=>{
+    const kpiScore=Math.round(calcObjectiveScore(o));
+    const impactObj=Math.round(calcImpactScore(o));
+    const avance=Math.round(calcObjectiveOperationalProgress(o));
+    const inits=asArray(o.initiatives);
+    const expectedTotal=inits.reduce((a,i)=>a+Math.max(0,num(i.expectedImpact)),0);
+    const realTotal=inits.reduce((a,i)=>a+Math.max(0,num(i.realImpact)),0);
+    const efficiency=Math.round(expectedTotal>0?clamp((realTotal/expectedTotal)*100,0,100):impactObj);
+    const rows=inits.map(init=>{
+      const progress=Math.round(calcActionsProgress(init.actions));
+      const done=asArray(init.actions).filter(a=>['terminada','finalizada','completada','done'].includes(txt(a.status).toLowerCase())).length;
+      const total=asArray(init.actions).length;
+      const eff=Math.round(calcInitiativeEfficiency(init));
+      const kpi=initiativeKpiStatus(o,init);
+      return `<tr>
+        <td><div class="impact-table-name" data-action="viewInit" data-obj-id="${esc(o.id)}" data-init-id="${esc(init.id)}">${esc(init.name)}</div><div class="impact-mini-note">Responsable: ${esc(init.owner||'—')} · KPI: ${esc(init.impactKpi||'Sin KPI impactado')} · ${done}/${total} acciones terminadas</div></td>
+        <td>${impactProgress(progress)}</td>
+        <td><strong>${fmtNum(init.expectedImpact,0)}%</strong></td>
+        <td><strong>${fmtNum(init.realImpact,0)}%</strong></td>
+        <td>${impactProgress(eff)}</td>
+        <td><span class="impact-priority ${priorityClassImpact(init.priority)}">${esc(init.priority||'Media')}</span></td>
+        <td><div class="impact-portfolio">${esc(initiativePortfolioLabel(init))}</div></td>
+        <td><span class="impact-kpi-pill ${kpi.tone}">${esc(kpi.label)}</span></td>
+      </tr>`;
+    }).join('');
+    return `<div class="impact-obj-card">
+      <div class="impact-obj-head">
+        <div>
+          <div class="impact-obj-title">${esc(o.code?o.code+' · ':'')}${esc(o.name)}</div>
+          <div class="impact-obj-meta"><span>Líder: <strong>${esc(o.leader||'—')}</strong></span><span>Fecha: ${esc(o.end||'s/f')}</span><span>${esc(objectiveTypeLabel(o.type))}</span></div>
+          <div class="impact-pills">
+            <span class="impact-pill ${impactTone(kpiScore)}">KPI ${kpiScore}%</span>
+            <span class="impact-pill ${impactTone(impactObj)}">Impacto objetivo ${impactObj}%</span>
+            <span class="impact-pill ${impactTone(avance)}">Avance iniciativas ${avance}%</span>
+            <span class="impact-pill ${impactTone(efficiency)}">Eficiencia ${efficiency}%</span>
+            <span class="impact-pill">${inits.length} iniciativa(s)</span>
+          </div>
+        </div>
+        <div><button class="btn btn-secondary btn-sm" data-action="viewObj" data-obj-id="${esc(o.id)}">Ver detalle</button></div>
+      </div>
+      <div class="table-wrap"><table><thead><tr><th>Iniciativa</th><th>Avance calculado</th><th>Impacto esperado</th><th>Impacto real</th><th>Eficiencia</th><th>Prioridad</th><th>Portafolio</th><th>Estado KPI</th></tr></thead><tbody>${rows||`<tr><td colspan="8"><div class="empty-box">Sin iniciativas registradas.</div></td></tr>`}</tbody></table></div>
+    </div>`;
+  }).join('');
+  $('viewImpacto').innerHTML=`<div class="section-hero"><h2>Matriz de Impacto Estratégico / Suficiencia del Portafolio</h2><p>Analiza si el portafolio de iniciativas es suficiente para mover el impacto esperado y si la ejecución real está convirtiéndose en resultados.</p></div>${cards||'<div class="empty-box">Sin objetivos.</div>'}`;
 }
 
 // ── BRECHAS ──────────────────────────────────────────────────────────
@@ -2381,7 +2484,7 @@ function importJSON(e){
 function exportXLS(){
   const plan=currentPlan(); if(!plan) return;
   const sections=[];
-  sections.push(['Objetivos',['Código','Objetivo','Líder','Estatus','IGEE','Impacto','IAE','Lectura alineación','Explicación IAE','Riesgo %','TOM','Compromiso','Alcance','Brecha','Riesgo declarado','Riesgo inferido'],plan.objectives.map(o=>{const ass=alignmentAssessment(o);return [o.code,o.name,o.leader,o.status,Math.round(calcObjectiveScore(o))+'%',Math.round(calcImpactScore(o))+'%',ass.score+'%',ass.reading,ass.formula+' | '+ass.why,Math.round(calcRiskScore(o))+'%',Math.round(tomScore(o))+'%',o.end,`${o.indicators.length} KPIs · ${o.initiatives.length} iniciativas · ${o.initiatives.reduce((a,i)=>a+i.actions.length,0)} acciones`,o.gap,o.gapRisk,inferGapRisk(o)];})]);
+  sections.push(['Objetivos',['Código','Objetivo','Líder','Estatus','IGEE','Impacto','IAE','Lectura alineación','Riesgo %','TOM','Compromiso','Alcance','Brecha','Riesgo declarado','Riesgo inferido'],plan.objectives.map(o=>{const ass=alignmentAssessment(o);return [o.code,o.name,o.leader,o.status,Math.round(calcObjectiveScore(o))+'%',Math.round(calcImpactScore(o))+'%',ass.score+'%',ass.reading,Math.round(calcRiskScore(o))+'%',Math.round(tomScore(o))+'%',o.end,`${o.indicators.length} KPIs · ${o.initiatives.length} iniciativas · ${o.initiatives.reduce((a,i)=>a+i.actions.length,0)} acciones`,o.gap,o.gapRisk,inferGapRisk(o)];})]);
   sections.push(['KPIs',['Objetivo','KPI','Acción','Inicial','Actual','Meta','Unidad','Avance','Confianza','Última actualización'],plan.objectives.flatMap(o=>o.indicators.map(k=>{const conf=kpiConfidence(k);return[o.name,k.name,k.action,k.initial,k.current,k.target,k.unit,Math.round(calcIndicatorScore(k))+'%',conf.label,k.lastUpdate||'Sin fecha'];}))]);
   sections.push(['Iniciativas',['Objetivo','Iniciativa','Responsable','Estatus','Avance','KPI impactado','Impacto esperado','Impacto real','Redundante','Presupuesto','Gastado'],plan.objectives.flatMap(o=>o.initiatives.map(i=>[o.name,i.name,i.owner,i.status,calcActionsProgress(i.actions)+'%',i.impactKpi,(i.expectedImpact||0)+'%',(i.realImpact||0)+'%',i.redundant,i.budget,i.spent]))]);
   sections.push(['Acciones',['Objetivo','Iniciativa','Acción','Responsable','Estatus','Compromiso','Vencida'],plan.objectives.flatMap(o=>o.initiatives.flatMap(i=>i.actions.map(a=>[o.name,i.name,a.title,a.responsible,a.status,a.dueDate,isOverdue(a.dueDate,a.status)?'Sí':'No'])))]);
