@@ -400,6 +400,22 @@ tbody tr:hover td{background:#fafbfc}
 .file-name{font-weight:700;font-size:13px;word-break:break-word}
 .file-meta{font-size:11px;color:var(--muted);margin-top:3px}
 .file-actions{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end}
+.detail-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;border-bottom:1px solid var(--border);padding-bottom:8px}
+.detail-tab{border:1px solid var(--border);background:var(--surface2);color:var(--muted);border-radius:var(--r-full);padding:6px 10px;font-size:11px;font-weight:800;cursor:pointer;transition:var(--tr)}
+.detail-tab:hover{background:var(--surface);color:var(--text)}
+.detail-tab.active{background:var(--em);border-color:var(--em);color:#fff}
+.detail-tab-panel{display:none}
+.detail-tab-panel.active{display:block}
+.reminder-add-row{display:grid;grid-template-columns:1fr 135px 95px auto;gap:8px;align-items:end;margin-bottom:12px}
+.link-add-row{display:grid;grid-template-columns:1fr 1.4fr auto;gap:8px;align-items:end;margin-bottom:12px}
+@media(max-width:800px){.reminder-add-row,.link-add-row{grid-template-columns:1fr}}
+.reminder-card,.link-card,.history-item{border:1px solid var(--border);border-radius:var(--r-sm);padding:10px;background:var(--surface);margin-bottom:8px}
+.reminder-card{border-left:3px solid var(--amber)}
+.link-card{border-left:3px solid var(--blue)}
+.history-item{border-left:3px solid var(--slate);display:grid;grid-template-columns:110px 1fr;gap:10px}
+.history-time{font-size:10px;color:var(--muted);font-weight:800;text-transform:uppercase;letter-spacing:.04em;line-height:1.35}
+.history-title{font-weight:800;font-size:13px;line-height:1.35}
+.history-detail{font-size:12px;color:var(--muted);margin-top:3px;line-height:1.4}
 
 /* ── MISC ── */
 .muted{color:var(--muted)}
@@ -820,7 +836,10 @@ function normalizeObjective(o,planningId){
   const relations=asArray(first(o.relations,o.relaciones,o.relatedObjectives)).map(normalizeRelation);
   const checklist=asArray(first(o.checklist,o.checklistItems,o.listaChecklist)).map(normalizeChecklistItem);
   const attachments=asArray(first(o.attachments,o.files,o.archivosAdjuntos)).map(normalizeAttachment);
-  return { ...o, id, planningId:first(o.planningId,planningId), code:first(o.code,''), name:first(o.name,o.title,o.nombre,'Objetivo sin nombre'), desc:first(o.desc,o.description,''), creator:first(o.creator,o.creatorName,o.createdBy,''), leader:first(o.leader,o.owner,o.lider,''), start:first(o.start,o.startDate,''), end:first(o.end,o.endDate,''), status:normalizeStatus(first(o.status,'activo')), updateFrequency:first(o.updateFrequency,o.objectiveFrequency,o.frecuenciaActualizacion,'Mensual'), lastUpdate:first(o.lastUpdate,o.lastUpdated,o.updatedObjectiveAt,''), areas:csvArr(first(o.areas,[])), tags:csvArr(first(o.tags,[])), projects:csvArr(first(o.projects,o.linkedProjects,[])), involved:csvArr(first(o.involved,o.guests,o.invitados,o.involucrados,[])), type:first(o.type,o.tipo,'resultado'), perspective:first(o.perspective,o.perspectiva,'procesos'), level:first(o.level,o.nivel,'Corporativo'), parentId:first(o.parentId,o.parent,''), theme:first(o.theme,''), expectedResult:first(o.expectedResult,''), budget:num(first(o.budget,0)), budgetAlignment:first(o.budgetAlignment,'Medio'), processAlignment:first(o.processAlignment,'Medio'), structureAlignment:first(o.structureAlignment,'Medio'), indicatorAlignment:first(o.indicatorAlignment,'Medio'), evidenceLevel:first(o.evidenceLevel,'Parcial'), alignmentEvidence:first(o.alignmentEvidence,''), correctionAction:first(o.correctionAction,''), currentState:first(o.currentState,''), targetState:first(o.targetState,''), gap:first(o.gap,''), gapRisk:first(o.gapRisk,'Medio'), breakpoint:first(o.breakpoint,''), tomType:first(o.tomType,'Central'), tomRole:first(o.tomRole,''), tomProcess:first(o.tomProcess,''), tomCapabilities:first(o.tomCapabilities,''), tomTech:first(o.tomTech,''), tomGovernance:first(o.tomGovernance,''), decisionFlow:first(o.decisionFlow,''), checklist, attachments, indicators, kpis:indicators, initiatives, relations };
+  const reminders=asArray(first(o.reminders,o.recordatorios,o.reminderDates)).map(normalizeReminderItem);
+  const links=asArray(first(o.links,o.enlaces,o.webLinks,o.referenceLinks)).map(normalizeWebLink);
+  const history=asArray(first(o.history,o.bitacora,o.historialMovimientos)).map(normalizeHistoryItem);
+  return { ...o, id, planningId:first(o.planningId,planningId), code:first(o.code,''), name:first(o.name,o.title,o.nombre,'Objetivo sin nombre'), desc:first(o.desc,o.description,''), creator:first(o.creator,o.creatorName,o.createdBy,''), leader:first(o.leader,o.owner,o.lider,''), start:first(o.start,o.startDate,''), end:first(o.end,o.endDate,''), status:normalizeStatus(first(o.status,'activo')), updateFrequency:first(o.updateFrequency,o.objectiveFrequency,o.frecuenciaActualizacion,'Mensual'), lastUpdate:first(o.lastUpdate,o.lastUpdated,o.updatedObjectiveAt,''), areas:csvArr(first(o.areas,[])), tags:csvArr(first(o.tags,[])), projects:csvArr(first(o.projects,o.linkedProjects,[])), involved:csvArr(first(o.involved,o.guests,o.invitados,o.involucrados,[])), type:first(o.type,o.tipo,'resultado'), perspective:first(o.perspective,o.perspectiva,'procesos'), level:first(o.level,o.nivel,'Corporativo'), parentId:first(o.parentId,o.parent,''), theme:first(o.theme,''), expectedResult:first(o.expectedResult,''), budget:num(first(o.budget,0)), budgetAlignment:first(o.budgetAlignment,'Medio'), processAlignment:first(o.processAlignment,'Medio'), structureAlignment:first(o.structureAlignment,'Medio'), indicatorAlignment:first(o.indicatorAlignment,'Medio'), evidenceLevel:first(o.evidenceLevel,'Parcial'), alignmentEvidence:first(o.alignmentEvidence,''), correctionAction:first(o.correctionAction,''), currentState:first(o.currentState,''), targetState:first(o.targetState,''), gap:first(o.gap,''), gapRisk:first(o.gapRisk,'Medio'), breakpoint:first(o.breakpoint,''), tomType:first(o.tomType,'Central'), tomRole:first(o.tomRole,''), tomProcess:first(o.tomProcess,''), tomCapabilities:first(o.tomCapabilities,''), tomTech:first(o.tomTech,''), tomGovernance:first(o.tomGovernance,''), decisionFlow:first(o.decisionFlow,''), checklist, attachments, reminders, links, history, indicators, kpis:indicators, initiatives, relations };
 }
 function normalizeIndicator(k){
   k=k||{};
@@ -848,6 +867,18 @@ function normalizeChecklistItem(c){
 function normalizeAttachment(f){
   f=f||{};
   return { ...f, id:txt(first(f.id,uid('file'))), name:first(f.name,f.filename,'Archivo adjunto'), type:first(f.type,f.mimeType,''), size:num(first(f.size,0)), dataUrl:first(f.dataUrl,f.url,''), addedAt:first(f.addedAt,new Date().toISOString()) };
+}
+function normalizeReminderItem(r){
+  r=r||{};
+  return { ...r, id:txt(first(r.id,uid('rem'))), title:first(r.title,r.name,'Recordatorio del objetivo'), date:first(r.date,r.dueDate,r.fecha,''), time:first(r.time,r.hora,''), notes:first(r.notes,r.nota,''), createdAt:first(r.createdAt,new Date().toISOString()) };
+}
+function normalizeWebLink(l){
+  l=l||{};
+  return { ...l, id:txt(first(l.id,uid('link'))), title:first(l.title,l.name,'Enlace de referencia'), url:first(l.url,l.href,l.link,''), notes:first(l.notes,l.nota,''), createdAt:first(l.createdAt,new Date().toISOString()) };
+}
+function normalizeHistoryItem(h){
+  h=h||{};
+  return { ...h, id:txt(first(h.id,uid('hist'))), action:first(h.action,h.type,h.movimiento,'Movimiento'), detail:first(h.detail,h.description,h.detalle,''), actor:first(h.actor,h.user,h.usuario,'Sistema'), at:first(h.at,h.date,h.createdAt,new Date().toISOString()) };
 }
 function normalizeAgendaItem(a){
   a=a||{};
@@ -1141,6 +1172,13 @@ function handleClick(e){
   if(a==='triggerObjFile') triggerObjectiveFileInput(oid);
   if(a==='viewObjFile') viewObjectiveAttachment(oid,act.dataset.fileId);
   if(a==='delObjFile') deleteObjectiveAttachment(oid,act.dataset.fileId);
+  if(a==='detailTab') switchDetailTab(act.dataset.detailTab);
+  if(a==='addReminder') addReminderDate(oid);
+  if(a==='editReminder') editReminderDate(oid,act.dataset.reminderId);
+  if(a==='delReminder') deleteReminderDate(oid,act.dataset.reminderId);
+  if(a==='addObjLink') addObjectiveLink(oid);
+  if(a==='editObjLink') editObjectiveLink(oid,act.dataset.linkId);
+  if(a==='delObjLink') deleteObjectiveLink(oid,act.dataset.linkId);
 }
 function handleInput(e){
   if(e.target.matches('.ind-initial,.ind-current,.ind-target,.ind-action,.ind-weight')) updateIndicatorScore(e.target.closest('.indicator-row'));
@@ -1335,9 +1373,10 @@ function saveQuickKpi(){
   // Guardar historial antes de actualizar
   if(!Array.isArray(k.history)) k.history=[];
   k.history.push({ date:todayISO(), value:k.current, note:'Antes de actualización'+( k.lastUpdate?` (actualizado el ${k.lastUpdate})`:'' ) });
+  const oldVal=k.current;
   k.current=num(newVal);
   k.lastUpdate=todayISO();
-  touchObjective(obj);
+  touchObjective(obj,'Actualización de KPI',`Se actualizó el KPI "${k.name}" de ${fmtNum(oldVal)} a ${fmtNum(k.current)} ${k.unit||''}.${note?' Nota: '+note:''}`);
   if(note) k.history[k.history.length-1].note=note;
   // mantener historial últimas 24 entradas
   if(k.history.length>24) k.history=k.history.slice(-24);
@@ -1651,24 +1690,36 @@ function saveObjectiveModal(){
   if(!name) return toast('Captura el nombre.','t-warn');
   if(!leader) return toast('Captura el líder.','t-warn');
   const existing=plan.objectives.find(o=>o.id===editingObjectiveId);
-  const obj=existing||{id:uid('obj'),planningId:plan.id,checklist:[],attachments:[]};
+  const obj=existing||{id:uid('obj'),planningId:plan.id,checklist:[],attachments:[],reminders:[],links:[],history:[]};
   Object.assign(obj,{code:$('oCode').value.trim(),name,title:name,desc:$('oDesc').value.trim(),creator:$('oCreator').value.trim(),leader,owner:leader,start:$('oStart').value,startDate:$('oStart').value,end:$('oEnd').value,endDate:$('oEnd').value,status:$('oStatus').value,updateFrequency:$('oUpdateFrequency').value,lastUpdate:$('oLastUpdate').value||todayISO(),areas:csvArr($('oAreas').value),tags:csvArr($('oTags').value),projects:csvArr($('oProjects').value),involved:csvArr($('oInvolved').value),type:$('oType').value,perspective:$('oPerspective').value,level:$('oLevel').value,parentId:$('oParent').value,theme:$('oTheme').value.trim(),expectedResult:$('oExpectedResult').value.trim(),budget:num($('oBudget').value),budgetAlignment:$('oBudgetAlignment').value,processAlignment:$('oProcessAlignment').value,structureAlignment:$('oStructureAlignment').value,indicatorAlignment:$('oIndicatorAlignment').value,evidenceLevel:$('oEvidenceLevel').value,alignmentEvidence:$('oAlignmentEvidence').value.trim(),correctionAction:$('oCorrectionAction').value.trim(),currentState:$('oCurrentState').value.trim(),targetState:$('oTargetState').value.trim(),gap:$('oGap').value.trim(),gapRisk:$('oGapRisk').value,breakpoint:$('oBreakpoint').value.trim(),tomType:$('oTomType').value,tomRole:$('oTomRole').value.trim(),tomProcess:$('oTomProcess').value.trim(),tomCapabilities:$('oTomCapabilities').value.trim(),tomTech:$('oTomTech').value.trim(),tomGovernance:$('oTomGovernance').value.trim(),decisionFlow:$('oDecisionFlow').value.trim(),
     indicators:qsa('#indicatorsBox .indicator-row').map(readIndicatorRow).filter(k=>k.name),
     initiatives:qsa('#initiativesBox .initiative-row').map(readInitiativeRow).filter(i=>i.name),
     relations:qsa('#relationsBox .relation-row').map(readRelationRow).filter(r=>r.targetId)
   });
   obj.kpis=obj.indicators;
-  if(!existing) plan.objectives.push(obj);
+  if(!existing){
+    plan.objectives.push(obj);
+    addHistory(obj,'Creación de objetivo',`Se creó el objetivo "${obj.name}".`,obj.creator||'Sistema');
+  } else {
+    addHistory(obj,'Edición de objetivo','Se actualizó la información general del objetivo.',obj.creator||'Sistema');
+  }
   plan.updatedAt=new Date().toISOString();
   saveState(); closeModal('objectiveModal'); renderWorkspace(); toast(existing?'Objetivo actualizado.':'Objetivo creado.','t-ok');
 }
 function deleteObjective(id){ if(!confirm('¿Eliminar objetivo?')) return; const plan=currentPlan(); plan.objectives=plan.objectives.filter(o=>o.id!==id); saveState(); renderWorkspace(); toast('Objetivo eliminado.','t-ok'); }
 
 
-function touchObjective(obj){
+function addHistory(obj,action,detail='',actor='Sistema'){
+  if(!obj) return;
+  if(!Array.isArray(obj.history)) obj.history=[];
+  obj.history.unshift({id:uid('hist'),action,detail,actor:actor||'Sistema',at:new Date().toISOString()});
+  if(obj.history.length>250) obj.history=obj.history.slice(0,250);
+}
+function touchObjective(obj,action='',detail='',actor='Sistema'){
   if(!obj) return;
   obj.lastUpdate=todayISO();
   obj.updatedAt=new Date().toISOString();
+  if(action) addHistory(obj,action,detail,actor);
   const plan=currentPlan(); if(plan) plan.updatedAt=new Date().toISOString();
 }
 function chipsHtml(items,empty='Sin registro',color=''){
@@ -1686,11 +1737,11 @@ function addChecklistItem(objId){
   if(!title) return toast('Escribe el punto del checklist.','t-warn');
   if(!Array.isArray(obj.checklist)) obj.checklist=[];
   obj.checklist.push({id:uid('chk'),title,dueDate:dueEl?.value||'',done:false,createdAt:new Date().toISOString()});
-  touchObjective(obj); saveState(); viewObjective(objId); renderActiveTab(); toast('Punto agregado al checklist.','t-ok');
+  touchObjective(obj,'Checklist',`Se agregó el punto "${title}" al checklist.`); saveState(); viewObjective(objId); renderActiveTab(); toast('Punto agregado al checklist.','t-ok');
 }
 function toggleChecklistItem(objId,checkId){
   const obj=findObjective(objId); const item=obj?.checklist?.find(c=>c.id===checkId); if(!item) return;
-  item.done=!item.done; touchObjective(obj); saveState(); viewObjective(objId); renderActiveTab();
+  item.done=!item.done; touchObjective(obj,'Checklist',`Se marcó el punto "${item.title}" como ${item.done?'completado':'pendiente'}.`); saveState(); viewObjective(objId); renderActiveTab();
 }
 function editChecklistItem(objId,checkId){
   const obj=findObjective(objId); const item=obj?.checklist?.find(c=>c.id===checkId); if(!item) return;
@@ -1699,12 +1750,15 @@ function editChecklistItem(objId,checkId){
   const clean=title.trim(); if(!clean) return toast('El punto no puede quedar vacío.','t-warn');
   const due=prompt('Fecha compromiso (YYYY-MM-DD):',item.dueDate||'');
   if(due===null) return;
-  item.title=clean; item.dueDate=due.trim(); touchObjective(obj); saveState(); viewObjective(objId); renderActiveTab(); toast('Checklist actualizado.','t-ok');
+  item.title=clean; item.dueDate=due.trim(); touchObjective(obj,'Checklist',`Se editó el punto "${item.title}" del checklist.`); saveState(); viewObjective(objId); renderActiveTab(); toast('Checklist actualizado.','t-ok');
 }
 function deleteChecklistItem(objId,checkId){
   const obj=findObjective(objId); if(!obj) return;
+  const item=asArray(obj.checklist).find(c=>c.id===checkId);
   if(!confirm('¿Eliminar este punto del checklist?')) return;
-  obj.checklist=asArray(obj.checklist).filter(c=>c.id!==checkId); touchObjective(obj); saveState(); viewObjective(objId); renderActiveTab(); toast('Punto eliminado.','t-ok');
+  obj.checklist=asArray(obj.checklist).filter(c=>c.id!==checkId);
+  touchObjective(obj,'Checklist',`Se eliminó el punto "${item?.title||'sin nombre'}" del checklist.`);
+  saveState(); viewObjective(objId); renderActiveTab(); toast('Punto eliminado.','t-ok');
 }
 function triggerObjectiveFileInput(objId){
   const input=document.getElementById(`objFileInput-${objId}`); if(input) input.click();
@@ -1717,7 +1771,7 @@ function addObjectiveFiles(objId,files){
     const reader=new FileReader();
     reader.onload=()=>{
       obj.attachments.push({id:uid('file'),name:file.name,type:file.type||'application/octet-stream',size:file.size,dataUrl:reader.result,addedAt:new Date().toISOString()});
-      touchObjective(obj); saveState(); viewObjective(objId); renderActiveTab(); toast('Archivo adjunto agregado.','t-ok');
+      touchObjective(obj,'Carga de archivo',`Se adjuntó el archivo "${file.name}".`); saveState(); viewObjective(objId); renderActiveTab(); toast('Archivo adjunto agregado.','t-ok');
     };
     reader.onerror=()=>toast(`No se pudo leer ${file.name}.`,'t-err');
     reader.readAsDataURL(file);
@@ -1733,8 +1787,108 @@ function viewObjectiveAttachment(objId,fileId){
 }
 function deleteObjectiveAttachment(objId,fileId){
   const obj=findObjective(objId); if(!obj) return;
+  const f=asArray(obj.attachments).find(x=>x.id===fileId);
   if(!confirm('¿Eliminar este archivo adjunto?')) return;
-  obj.attachments=asArray(obj.attachments).filter(f=>f.id!==fileId); touchObjective(obj); saveState(); viewObjective(objId); renderActiveTab(); toast('Archivo eliminado.','t-ok');
+  obj.attachments=asArray(obj.attachments).filter(f=>f.id!==fileId);
+  touchObjective(obj,'Eliminación de archivo',`Se eliminó el archivo adjunto "${f?.name||'sin nombre'}".`);
+  saveState(); viewObjective(objId); renderActiveTab(); toast('Archivo eliminado.','t-ok');
+}
+function normalizeUrl(url){
+  const u=txt(url).trim();
+  if(!u) return '';
+  if(/^https?:\/\//i.test(u)) return u;
+  return 'https://'+u;
+}
+function formatHistoryDate(iso){
+  const d=new Date(iso||Date.now());
+  if(Number.isNaN(d.getTime())) return 'Sin fecha';
+  return d.toLocaleString('es-MX',{year:'numeric',month:'short',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+}
+function switchDetailTab(tab){
+  if(!tab) return;
+  qsa('#detailBody .detail-tab').forEach(b=>b.classList.toggle('active',b.dataset.detailTab===tab));
+  qsa('#detailBody .detail-tab-panel').forEach(p=>p.classList.toggle('active',p.dataset.panel===tab));
+}
+function addReminderDate(objId){
+  const obj=findObjective(objId); if(!obj) return;
+  const title=$(`remTitle-${objId}`)?.value.trim()||'Recordatorio del objetivo';
+  const date=$(`remDate-${objId}`)?.value||'';
+  const time=$(`remTime-${objId}`)?.value||'';
+  if(!date) return toast('Selecciona la fecha del recordatorio.','t-warn');
+  if(!Array.isArray(obj.reminders)) obj.reminders=[];
+  obj.reminders.push({id:uid('rem'),title,date,time,notes:'',createdAt:new Date().toISOString()});
+  touchObjective(obj,'Recordatorio',`Se agregó recordatorio "${title}" para ${date}${time?' a las '+time:''}.`);
+  saveState(); viewObjective(objId); switchDetailTab('reminders'); renderActiveTab(); toast('Recordatorio agregado.','t-ok');
+}
+function editReminderDate(objId,reminderId){
+  const obj=findObjective(objId); const r=asArray(obj?.reminders).find(x=>x.id===reminderId); if(!r) return;
+  const title=prompt('Título del recordatorio:',r.title||'Recordatorio del objetivo'); if(title===null) return;
+  const date=prompt('Fecha del recordatorio (YYYY-MM-DD):',r.date||''); if(date===null) return;
+  const time=prompt('Hora del recordatorio (HH:MM, opcional):',r.time||''); if(time===null) return;
+  if(!date.trim()) return toast('La fecha del recordatorio no puede quedar vacía.','t-warn');
+  r.title=title.trim()||'Recordatorio del objetivo'; r.date=date.trim(); r.time=time.trim();
+  touchObjective(obj,'Recordatorio',`Se editó recordatorio "${r.title}" para ${r.date}${r.time?' a las '+r.time:''}.`);
+  saveState(); viewObjective(objId); switchDetailTab('reminders'); renderActiveTab(); toast('Recordatorio actualizado.','t-ok');
+}
+function deleteReminderDate(objId,reminderId){
+  const obj=findObjective(objId); if(!obj) return;
+  const r=asArray(obj.reminders).find(x=>x.id===reminderId);
+  if(!confirm('¿Eliminar este recordatorio?')) return;
+  obj.reminders=asArray(obj.reminders).filter(x=>x.id!==reminderId);
+  touchObjective(obj,'Recordatorio',`Se eliminó recordatorio "${r?.title||'sin nombre'}".`);
+  saveState(); viewObjective(objId); switchDetailTab('reminders'); renderActiveTab(); toast('Recordatorio eliminado.','t-ok');
+}
+function addObjectiveLink(objId){
+  const obj=findObjective(objId); if(!obj) return;
+  const title=$(`linkTitle-${objId}`)?.value.trim()||'Enlace de referencia';
+  const rawUrl=$(`linkUrl-${objId}`)?.value.trim()||'';
+  if(!rawUrl) return toast('Captura la liga web de referencia.','t-warn');
+  const url=normalizeUrl(rawUrl);
+  if(!Array.isArray(obj.links)) obj.links=[];
+  obj.links.push({id:uid('link'),title,url,notes:'',createdAt:new Date().toISOString()});
+  touchObjective(obj,'Enlace de referencia',`Se agregó enlace "${title}": ${url}`);
+  saveState(); viewObjective(objId); switchDetailTab('links'); renderActiveTab(); toast('Enlace agregado.','t-ok');
+}
+function editObjectiveLink(objId,linkId){
+  const obj=findObjective(objId); const l=asArray(obj?.links).find(x=>x.id===linkId); if(!l) return;
+  const title=prompt('Título del enlace:',l.title||'Enlace de referencia'); if(title===null) return;
+  const url=prompt('URL del enlace:',l.url||''); if(url===null) return;
+  if(!url.trim()) return toast('La URL no puede quedar vacía.','t-warn');
+  l.title=title.trim()||'Enlace de referencia'; l.url=normalizeUrl(url);
+  touchObjective(obj,'Enlace de referencia',`Se editó enlace "${l.title}".`);
+  saveState(); viewObjective(objId); switchDetailTab('links'); renderActiveTab(); toast('Enlace actualizado.','t-ok');
+}
+function deleteObjectiveLink(objId,linkId){
+  const obj=findObjective(objId); if(!obj) return;
+  const l=asArray(obj.links).find(x=>x.id===linkId);
+  if(!confirm('¿Eliminar este enlace?')) return;
+  obj.links=asArray(obj.links).filter(x=>x.id!==linkId);
+  touchObjective(obj,'Enlace de referencia',`Se eliminó enlace "${l?.title||'sin nombre'}".`);
+  saveState(); viewObjective(objId); switchDetailTab('links'); renderActiveTab(); toast('Enlace eliminado.','t-ok');
+}
+function remindersHtml(o){
+  const list=asArray(o.reminders);
+  return `<div class="reminder-add-row"><div><label>Recordatorio</label><input id="remTitle-${esc(o.id)}" class="input" placeholder="Ej. Revisar avance en comité"></div><div><label>Fecha</label><input id="remDate-${esc(o.id)}" type="date" class="input"></div><div><label>Hora</label><input id="remTime-${esc(o.id)}" type="time" class="input"></div><button class="btn btn-primary btn-sm" data-action="addReminder" data-obj-id="${esc(o.id)}">+ Agregar</button></div>
+  ${list.length?list.map(r=>`<div class="reminder-card"><div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><div><div class="check-title">⏰ ${esc(r.title)}</div><div class="check-meta">Fecha: ${esc(r.date||'s/f')} ${r.time?`· Hora: ${esc(r.time)}`:''} · ${daysText(r.date)}</div></div><div style="display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end"><button class="btn btn-secondary btn-xs" data-action="editReminder" data-obj-id="${esc(o.id)}" data-reminder-id="${esc(r.id)}">Editar</button><button class="btn btn-danger btn-xs" data-action="delReminder" data-obj-id="${esc(o.id)}" data-reminder-id="${esc(r.id)}">Eliminar</button></div></div></div>`).join(''):'<div class="empty-box">Sin recordatorios registrados.</div>'}`;
+}
+function linksHtml(o){
+  const list=asArray(o.links);
+  return `<div class="link-add-row"><div><label>Título</label><input id="linkTitle-${esc(o.id)}" class="input" placeholder="Ej. Minuta, documento, dashboard"></div><div><label>Liga web</label><input id="linkUrl-${esc(o.id)}" class="input" placeholder="https://..."></div><button class="btn btn-primary btn-sm" data-action="addObjLink" data-obj-id="${esc(o.id)}">+ Agregar enlace</button></div>
+  ${list.length?list.map(l=>`<div class="link-card"><div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><div><div class="check-title">🔗 ${esc(l.title)}</div><div class="check-meta" style="word-break:break-all">${esc(l.url)}</div></div><div style="display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end"><a class="btn btn-secondary btn-xs" href="${esc(normalizeUrl(l.url))}" target="_blank" rel="noopener">Abrir</a><button class="btn btn-secondary btn-xs" data-action="editObjLink" data-obj-id="${esc(o.id)}" data-link-id="${esc(l.id)}">Editar</button><button class="btn btn-danger btn-xs" data-action="delObjLink" data-obj-id="${esc(o.id)}" data-link-id="${esc(l.id)}">Eliminar</button></div></div></div>`).join(''):'<div class="empty-box">Sin enlaces web registrados.</div>'}`;
+}
+function historyHtml(o){
+  const list=asArray(o.history).slice().sort((a,b)=>new Date(b.at||0)-new Date(a.at||0));
+  return list.length?list.map(h=>`<div class="history-item"><div class="history-time">${esc(formatHistoryDate(h.at))}<br>${esc(h.actor||'Sistema')}</div><div><div class="history-title">${esc(h.action)}</div><div class="history-detail">${esc(h.detail||'—')}</div></div></div>`).join(''):'<div class="empty-box">Sin historial automático todavía. Los próximos movimientos quedarán registrados aquí.</div>';
+}
+function objectiveTabsHtml(o){
+  const checklistCount=asArray(o.checklist).length;
+  const checklistDone=asArray(o.checklist).filter(c=>c.done).length;
+  return `<div class="detail-tabs"><button class="detail-tab active" data-action="detailTab" data-detail-tab="checklist" data-obj-id="${esc(o.id)}">Checklist</button><button class="detail-tab" data-action="detailTab" data-detail-tab="reminders" data-obj-id="${esc(o.id)}">Recordatorios</button><button class="detail-tab" data-action="detailTab" data-detail-tab="links" data-obj-id="${esc(o.id)}">Enlaces</button><button class="detail-tab" data-action="detailTab" data-detail-tab="files" data-obj-id="${esc(o.id)}">Archivos</button><button class="detail-tab" data-action="detailTab" data-detail-tab="history" data-obj-id="${esc(o.id)}">Historial</button></div>
+  <div class="detail-tab-panel active" data-panel="checklist"><div class="detail-section-title">✅ Checklist editable</div><div class="detail-section-sub">${checklistDone} de ${checklistCount} puntos completados.</div>${checklistHtml(o)}</div>
+  <div class="detail-tab-panel" data-panel="reminders"><div class="detail-section-title">⏰ Fechas de recordatorio</div><div class="detail-section-sub">Agenda fechas clave de seguimiento para este objetivo.</div>${remindersHtml(o)}</div>
+  <div class="detail-tab-panel" data-panel="links"><div class="detail-section-title">🔗 Enlaces de referencia</div><div class="detail-section-sub">Ligas web, minutas, dashboards o documentos relacionados.</div>${linksHtml(o)}</div>
+  <div class="detail-tab-panel" data-panel="files"><div class="detail-section-title">📎 Archivos adjuntos</div>${attachmentsHtml(o)}</div>
+  <div class="detail-tab-panel" data-panel="history"><div class="detail-section-title">🕘 Historial</div><div class="detail-section-sub">Bitácora automática de creación, edición, KPIs, archivos, enlaces, recordatorios y checklist.</div>${historyHtml(o)}</div>`;
 }
 function checklistHtml(o){
   const list=asArray(o.checklist);
@@ -1762,8 +1916,6 @@ function viewObjective(id){
   $('editDetail').dataset.objId=o.id;
   const isVen=isOverdue(o.end,o.status)&&Math.round(calcObjectiveScore(o))<90;
   const parentName=o.parentId?objectiveName(o.parentId):'';
-  const checklistCount=asArray(o.checklist).length;
-  const checklistDone=asArray(o.checklist).filter(c=>c.done).length;
   $('detailBody').innerHTML=`<div class="detail-layout">
     <div class="detail-left">
       <div class="detail-panel">
@@ -1808,10 +1960,6 @@ function viewObjective(id){
           ${detailValue('Resultado esperado',o.expectedResult)}
           ${detailValue('Presupuesto',fmtMoney(o.budget))}
           ${detailValue('Evidencia',o.evidenceLevel)}
-          ${detailValue('Alineación presupuesto',o.budgetAlignment)}
-          ${detailValue('Alineación procesos',o.processAlignment)}
-          ${detailValue('Alineación estructura',o.structureAlignment)}
-          ${detailValue('Alineación indicadores',o.indicatorAlignment)}
           <div class="detail-box full"><div class="detail-box-label">Notas de evidencia / acción correctiva</div><div class="detail-box-value">${esc([o.alignmentEvidence,o.correctionAction].filter(Boolean).join('\n')||'—')}</div></div>
         </div>
       </div>
@@ -1822,13 +1970,7 @@ function viewObjective(id){
     </div>
     <div>
       <div class="detail-panel">
-        <div class="detail-section-title">✅ Checklist editable</div>
-        <div class="detail-section-sub">${checklistDone} de ${checklistCount} puntos completados.</div>
-        ${checklistHtml(o)}
-      </div>
-      <div class="detail-panel">
-        <div class="detail-section-title">📎 Archivos adjuntos</div>
-        ${attachmentsHtml(o)}
+        ${objectiveTabsHtml(o)}
       </div>
     </div>
   </div>`;
