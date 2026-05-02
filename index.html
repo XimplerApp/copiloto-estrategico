@@ -677,7 +677,7 @@ tbody tr:hover td{background:#fafbfc}
     <div class="tr">
       <button id="newObjectiveBtn" class="btn btn-primary">+ Nuevo Objetivo</button>
       <button id="exportReportBtn" class="btn btn-secondary">Reporte General XLS</button>
-      <button id="exportAgendaPDFBtn" class="btn btn-teal">📋 Agenda Comité</button>
+      <button id="exportAgendaPDFBtn" class="btn btn-teal">📋 Exportar Comité</button>
     </div>
   </div>
   <div id="summaryStrip" class="summary-strip"></div>
@@ -692,8 +692,7 @@ tbody tr:hover td{background:#fafbfc}
   <div id="viewTOM" class="view-panel hidden"></div>
   <div id="viewBeneficios" class="view-panel hidden"></div>
   <div id="viewAlertas" class="view-panel hidden"></div>
-  <div id="viewCadencia" class="view-panel hidden"></div>
-  <div id="viewCompromisos" class="view-panel hidden"></div>
+  <div id="viewComite" class="view-panel hidden"></div>
 </div>
 
 <!-- ══ MODALS ══ -->
@@ -972,8 +971,7 @@ const TABS = [
   {id:'tom',label:'TOM',panel:'viewTOM'},
   {id:'beneficios',label:'Beneficios',panel:'viewBeneficios'},
   {id:'alertas',label:'Alertas',panel:'viewAlertas'},
-  {id:'cadencia',label:'Cadencia',panel:'viewCadencia'},
-  {id:'compromisos',label:'Compromisos',panel:'viewCompromisos'}
+  {id:'comite',label:'Comité',panel:'viewComite'}
 ];
 
 // ── HELPERS ─────────────────────────────────────────────────────────
@@ -1124,7 +1122,7 @@ function normalizeHistoryItem(h){
 }
 function normalizeAgendaItem(a){
   a=a||{};
-  return { ...a, id:txt(first(a.id,uid('agenda'))), type:first(a.type,'Tema libre'), priority:first(a.priority,'Media'), status:first(a.status,'Pendiente'), title:first(a.title,'Punto de agenda'), owner:first(a.owner,''), dueDate:first(a.dueDate,''), duration:first(a.duration,'10 min'), linkedObjective:first(a.linkedObjective,''), linkedInitiative:first(a.linkedInitiative,''), context:first(a.context,''), decision:first(a.decision,''), notes:first(a.notes,'') };
+  return { ...a, id:txt(first(a.id,uid('agenda'))), type:first(a.type,'Tema libre'), origin:first(a.origin,a.origen,'Manual'), priority:first(a.priority,'Media'), status:first(a.status,'Pendiente'), title:first(a.title,'Punto de agenda'), owner:first(a.owner,''), dueDate:first(a.dueDate,''), duration:first(a.duration,'10 min'), linkedObjective:first(a.linkedObjective,''), linkedInitiative:first(a.linkedInitiative,''), context:first(a.context,''), decision:first(a.decision,''), notes:first(a.notes,'') };
 }
 function normalizeCommitment(c){
   c=c||{};
@@ -1639,7 +1637,7 @@ function renderTabs(){
 }
 function renderActiveTab(){
   TABS.forEach(t=>{ $(t.panel)?.classList.toggle('hidden',t.id!==activeTab); qsa('#mainTabs .nav-tab').find(b=>b.dataset.tab===t.id)?.classList.toggle('active',t.id===activeTab); });
-  const map={objetivos:renderObjetivos,kpi:renderKPI,operativo:renderOperativo,mapa:renderMapa,alineacion:renderAlineacion,impacto:renderImpacto,brechas:renderBrechas,tom:renderTOM,beneficios:renderBeneficios,alertas:renderAlertas,cadencia:renderCadencia,compromisos:renderCompromisos};
+  const map={objetivos:renderObjetivos,kpi:renderKPI,operativo:renderOperativo,mapa:renderMapa,alineacion:renderAlineacion,impacto:renderImpacto,brechas:renderBrechas,tom:renderTOM,beneficios:renderBeneficios,alertas:renderAlertas,comite:renderComite};
   (map[activeTab]||renderObjetivos)();
 }
 
@@ -1799,15 +1797,7 @@ function openAutopsia(objId){
 }
 
 // ── COMPROMISOS COMITÉ ───────────────────────────────────────────────
-function renderCompromisos(){
-  const plan=currentPlan();
-  const commits=plan.commitments||[];
-  const open=commits.filter(c=>c.status!=='Cumplido');
-  const done=commits.filter(c=>c.status==='Cumplido');
-  $('viewCompromisos').innerHTML=`<div class="section-hero"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px"><div><h2>Compromisos del comité</h2><p>Acuerdos horizontales que no caben en una iniciativa existente. Se rastrean directamente desde el acuerdo de comité hasta su cierre.</p></div><button class="btn btn-primary btn-sm" data-action="addCommit">+ Nuevo compromiso</button></div></div>
-  <div class="metric-strip"><div class="metric-card"><div class="metric-label">Compromisos abiertos</div><div class="metric-value">${open.length}</div></div><div class="metric-card"><div class="metric-label">Bloqueados</div><div class="metric-value" style="color:var(--rose)">${open.filter(c=>c.status==='Bloqueado').length}</div></div><div class="metric-card"><div class="metric-label">Cumplidos</div><div class="metric-value" style="color:var(--em)">${done.length}</div></div></div>
-  ${commits.length?`<div style="display:flex;flex-direction:column;gap:10px">${[...open,...done].map(c=>{const statusCls=c.status==='Cumplido'?'cs-done':c.status==='Bloqueado'?'cs-blocked':'cs-open';return `<div class="commit-card" style="${c.status==='Cumplido'?'opacity:.65':''}"><div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px"><div><div class="commit-title">${esc(c.title)}</div><div class="commit-meta">Responsable: ${esc(c.owner||'—')} · Área: ${esc(c.area||'—')} · Fecha: ${esc(c.dueDate||'s/f')} (${daysText(c.dueDate)})</div><span class="commit-status ${statusCls}">${esc(c.status)}</span><span class="badge b-${c.priority==='Crítica'?'red':c.priority==='Alta'?'yellow':c.priority==='Baja'?'green':'blue'}" style="margin-left:6px">${esc(c.priority)}</span>${c.criteria?`<div class="obj-sub" style="margin-top:5px">Criterio de cierre: ${esc(c.criteria)}</div>`:''}</div><div style="display:flex;gap:6px;flex-wrap:wrap">${c.status!=='Cumplido'?`<button class="btn btn-teal btn-xs" data-action="completeCommit" data-commit-id="${esc(c.id)}">✓ Cumplido</button>`:''}${c.status!=='Cumplido'?`<button class="btn btn-secondary btn-xs" data-action="editCommit" data-commit-id="${esc(c.id)}">Editar</button>`:''}<button class="btn btn-danger btn-xs" data-action="delCommit" data-commit-id="${esc(c.id)}">Eliminar</button></div></div>${c.context?`<div class="agenda-context-box" style="margin-top:8px">${esc(c.context)}</div>`:''}</div>`;}).join('')}</div>`:`<div class="empty-box"><div class="empty-box-title">Sin compromisos registrados</div>Usa "+ Nuevo compromiso" para capturar acuerdos tomados en comité que requieren seguimiento.</div>`}`;
-}
+function renderCompromisos(){ renderComite(); }
 function openCommitModal(id=null){
   commitEditId=id; const plan=currentPlan(); const item=id?plan.commitments.find(c=>c.id===id):null;
   $('commitModalTitle').textContent=item?'Editar Compromiso':'Nuevo Compromiso de Comité';
@@ -1822,10 +1812,10 @@ function saveCommitment(){
   const item=existing||{id:uid('commit'),createdAt:new Date().toISOString()};
   Object.assign(item,{title,owner:$('commitOwner').value.trim(),area:$('commitArea').value.trim(),dueDate:$('commitDue').value,priority:$('commitPriority').value,status:$('commitStatus').value,criteria:$('commitCriteria').value.trim(),context:$('commitContext').value.trim()});
   if(!existing) plan.commitments.push(item);
-  saveState(); closeModal('commitModal'); if(activeTab==='compromisos') renderCompromisos(); else renderWorkspace(); toast(existing?'Compromiso actualizado.':'Compromiso registrado.','t-ok');
+  saveState(); closeModal('commitModal'); if(activeTab==='comite') renderComite(); else renderWorkspace(); toast(existing?'Compromiso actualizado.':'Compromiso registrado.','t-ok');
 }
-function deleteCommitment(id){ if(!confirm('¿Eliminar compromiso?')) return; const plan=currentPlan(); plan.commitments=plan.commitments.filter(c=>c.id!==id); saveState(); renderCompromisos(); }
-function completeCommitment(id){ const plan=currentPlan(); const c=plan.commitments.find(c=>c.id===id); if(c){ c.status='Cumplido'; saveState(); renderCompromisos(); toast('Compromiso marcado como cumplido.','t-ok'); } }
+function deleteCommitment(id){ if(!confirm('¿Eliminar compromiso?')) return; const plan=currentPlan(); plan.commitments=plan.commitments.filter(c=>c.id!==id); saveState(); renderComite(); }
+function completeCommitment(id){ const plan=currentPlan(); const c=plan.commitments.find(c=>c.id===id); if(c){ c.status='Cumplido'; saveState(); renderComite(); toast('Compromiso marcado como cumplido.','t-ok'); } }
 
 // ── AGENDA PDF ───────────────────────────────────────────────────────
 function exportAgendaPDF(){
@@ -1836,9 +1826,10 @@ function exportAgendaPDF(){
     if(!isOverdue(a.end,a.status)&&isOverdue(b.end,b.status)) return 1;
     return sa-sb;
   }).slice(0,6);
-  const commits=(plan.commitments||[]).filter(c=>c.status!=='Cumplido').slice(0,4);
+  const commits=(plan.commitments||[]).filter(c=>c.status!=='Cumplido').slice(0,8);
+  const agenda=(plan.agenda||[]).filter(a=>!['Resuelto','Aprobado','Rechazado'].includes(a.status)).slice(0,12);
   const date=new Date().toLocaleDateString('es-MX',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
-  const html=`<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Agenda Comité · ${esc(plan.name)}</title><style>body{font-family:Arial,sans-serif;font-size:12px;margin:30px;color:#111}h1{font-size:20px;margin-bottom:4px}h2{font-size:14px;margin:18px 0 8px;color:#0d6b58}table{width:100%;border-collapse:collapse;margin-bottom:16px}th{background:#f0f2f5;text-align:left;padding:7px 10px;font-size:10px;text-transform:uppercase;letter-spacing:.04em}td{padding:7px 10px;border-bottom:1px solid #e2e5ea;font-size:11px}tr:last-child td{border-bottom:none}.pill{display:inline-block;padding:2px 7px;border-radius:99px;font-size:10px;font-weight:700}.red{background:#fef2f2;color:#c0292b}.amber{background:#fffbeb;color:#b45309}.green{background:#e6f4f0;color:#0d6b58}.gray{background:#f1f5f9;color:#475569}.footer{margin-top:24px;font-size:10px;color:#9ca3af;border-top:1px solid #e2e5ea;padding-top:10px}
+  const html=`<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Comité · ${esc(plan.name)}</title><style>body{font-family:Arial,sans-serif;font-size:12px;margin:30px;color:#111}h1{font-size:20px;margin-bottom:4px}h2{font-size:14px;margin:18px 0 8px;color:#0d6b58}table{width:100%;border-collapse:collapse;margin-bottom:16px}th{background:#f0f2f5;text-align:left;padding:7px 10px;font-size:10px;text-transform:uppercase;letter-spacing:.04em}td{padding:7px 10px;border-bottom:1px solid #e2e5ea;font-size:11px}tr:last-child td{border-bottom:none}.pill{display:inline-block;padding:2px 7px;border-radius:99px;font-size:10px;font-weight:700}.red{background:#fef2f2;color:#c0292b}.amber{background:#fffbeb;color:#b45309}.green{background:#e6f4f0;color:#0d6b58}.gray{background:#f1f5f9;color:#475569}.footer{margin-top:24px;font-size:10px;color:#9ca3af;border-top:1px solid #e2e5ea;padding-top:10px}
 
 /* ── TOM / BENEFICIOS / ALERTAS · refresh visual ── */
 .tom-board{display:flex;flex-direction:column;gap:14px}
@@ -1918,15 +1909,17 @@ function exportAgendaPDF(){
 .alert-severity-pill.follow{background:var(--em-s);color:var(--em)}
 
 </style></head><body>
-  <h1>Agenda de Comité Ejecutivo</h1>
-  <p><strong>${esc(plan.name)}</strong> · ${esc(date)} · Cadencia: ${esc(plan.cadence)} · Comité: ${esc(plan.committee||'No definido')}</p>
+  <h1>Comité Ejecutivo</h1>
+  <p><strong>${esc(plan.name)}</strong> · ${esc(date)} · Comité: ${esc(plan.committee||'No definido')}</p>
   <p style="font-size:11px;color:#6b7280;margin-top:4px">IGEE: ${Math.round(calcPlanScore(plan))}% · Generada automáticamente por Ximpler EDGE v4</p>
-  <h2>1. Objetivos para revisión (ordenados por intervención requerida)</h2>
+
+  ${agenda.length?`<h2>1. Temas de comité</h2><table><thead><tr><th>Tema</th><th>Origen</th><th>Prioridad</th><th>Responsable</th><th>Tiempo</th><th>Decisión requerida</th></tr></thead><tbody>${agenda.map(a=>{const cls=a.priority==='Crítica'?'red':a.priority==='Alta'?'amber':'gray';return `<tr><td><strong>${esc(a.title)}</strong><br><span style="color:#6b7280">${esc(a.context||'Sin contexto')}</span></td><td>${esc(a.origin||'Manual')}</td><td><span class="pill ${cls}">${esc(a.priority)}</span></td><td>${esc(a.owner||'—')}</td><td>${esc(a.duration||'10 min')}</td><td>${esc(a.decision||'—')}</td></tr>`;}).join('')}</tbody></table>`:''}
+  <h2>2. Objetivos para revisión (ordenados por intervención requerida)</h2>
   <table><thead><tr><th>#</th><th>Objetivo</th><th>Responsable</th><th>IGEE</th><th>Compromiso</th><th>Decisión sugerida</th></tr></thead><tbody>
   ${objs.map((o,i)=>{const sc=Math.round(calcObjectiveScore(o));const cls=sc>=80?'green':sc>=55?'amber':'red';const aStats=objectiveActionStats(o);const dec=sc<50?`IGEE crítico (${sc}%). Redefinir ejecución`:aStats.overdue>0?`${aStats.overdue} acción(es) vencida(s). Resolver o escalar`:'Seguimiento normal';return `<tr><td>${i+1}</td><td><strong>${esc(o.name)}</strong><br><span style="color:#6b7280">${esc(o.theme||objectiveTypeLabel(o.type))}</span></td><td>${esc(o.leader||'—')}</td><td><span class="pill ${cls}">${sc}%</span></td><td>${esc(o.end||'s/f')}<br>${daysText(o.end)}</td><td style="max-width:220px">${esc(dec)}</td></tr>`;}).join('')}
   </tbody></table>
-  ${commits.length?`<h2>2. Compromisos abiertos de comité</h2><table><thead><tr><th>Compromiso</th><th>Responsable</th><th>Área</th><th>Prioridad</th><th>Fecha</th><th>Criterio de cierre</th></tr></thead><tbody>${commits.map(c=>{const cls=c.priority==='Crítica'?'red':c.priority==='Alta'?'amber':'gray';return `<tr><td>${esc(c.title)}</td><td>${esc(c.owner||'—')}</td><td>${esc(c.area||'—')}</td><td><span class="pill ${cls}">${esc(c.priority)}</span></td><td>${esc(c.dueDate||'s/f')}</td><td>${esc(c.criteria||'—')}</td></tr>`;}).join('')}</tbody></table>`:''}
-  <div class="footer">Ximpler EDGE v4 · ${esc(date)} · Documento generado para uso interno del comité. No sustituye el acta oficial.</div>
+  ${commits.length?`<h2>3. Compromisos abiertos de comité</h2><table><thead><tr><th>Compromiso</th><th>Responsable</th><th>Área</th><th>Prioridad</th><th>Fecha</th><th>Criterio de cierre</th></tr></thead><tbody>${commits.map(c=>{const cls=c.priority==='Crítica'?'red':c.priority==='Alta'?'amber':'gray';return `<tr><td>${esc(c.title)}</td><td>${esc(c.owner||'—')}</td><td>${esc(c.area||'—')}</td><td><span class="pill ${cls}">${esc(c.priority)}</span></td><td>${esc(c.dueDate||'s/f')}</td><td>${esc(c.criteria||'—')}</td></tr>`;}).join('')}</tbody></table>`:''}
+  <div class="footer">Ximpler EDGE v4 · ${esc(date)} · Documento generado para uso interno de comité. No sustituye el acta oficial.</div>
   </body></html>`;
   const win=window.open('','_blank'); if(!win) return toast('Habilita las ventanas emergentes para generar el PDF.','t-warn');
   win.document.write(html); win.document.close(); setTimeout(()=>win.print(),400);
@@ -2231,28 +2224,118 @@ function renderBeneficios(){
 }
 
 // ── ALERTAS ──────────────────────────────────────────────────────────
+function alertPriority(level){
+  return level==='critical'?'Crítica':level==='committee'?'Alta':level==='adjust'?'Media':'Baja';
+}
+function alertSeverityLabel(level){
+  return level==='critical'?'Intervención crítica':level==='committee'?'Decisión de comité':level==='adjust'?'Ajuste requerido':'Seguimiento';
+}
+function alertCauseLabel(kind){
+  const map={
+    kpi_low:'Resultado fuera de trayectoria',
+    gap_high:'Brecha estratégica declarada',
+    gap_inferred:'Riesgo inferido por datos',
+    initiative_no_kpi:'Iniciativa sin medición',
+    overspend:'Sobregasto presupuestal',
+    action_overdue:'Compromiso táctico vencido',
+    kpi_stale:'Dato sin vigencia'
+  };
+  return map[kind]||'Señal ejecutiva';
+}
 function generateAlerts(){
   const plan=currentPlan(); const alerts=[];
   plan.objectives.forEach(o=>{
-    const score=calcObjectiveScore(o);
-    if(score<55) alerts.push({level:'critical',title:`IGEE bajo: ${o.name}`,cause:`El objetivo está en ${Math.round(score)}%.`,decision:'Revisar KPI principal, responsable y acciones vencidas en comité.',obj:o});
-    if(['Alto','Crítico'].includes(txt(o.gapRisk))) alerts.push({level:'committee',title:`Brecha ${o.gapRisk}: ${o.name}`,cause:o.gap||'Brecha sin descripción.',decision:'Definir acción correctiva y dueño end-to-end.',obj:o});
+    const score=Math.round(calcObjectiveScore(o));
+    const op=calcObjectiveOperationalProgress(o);
+    const tom=tomScore(o);
+    const aStats=objectiveActionStats(o);
+    if(score<55) alerts.push({
+      kind:'kpi_low',level:'critical',obj:o,
+      title:`Resultado crítico: ${o.name}`,
+      cause:`El IGEE del objetivo está en ${score}%, por debajo del umbral mínimo recomendado de 55%.`,
+      impact:`Si no se interviene, el objetivo puede cerrar el ciclo con avance insuficiente aunque existan iniciativas activas.`,
+      decision:`Definir plan de recuperación: KPI prioritario, responsable único, 2–3 acciones críticas y fecha de revisión antes del siguiente comité.`,
+      signals:[`IGEE ${score}%`,`Avance operativo ${op}%`,`TOM ${tom}%`,`${aStats.overdue} acción(es) vencida(s)`]
+    });
+    if(['Alto','Crítico'].includes(txt(o.gapRisk))) alerts.push({
+      kind:'gap_high',level:'committee',obj:o,
+      title:`Brecha estratégica ${o.gapRisk}: ${o.name}`,
+      cause:o.gap||'El objetivo tiene una brecha estratégica sin descripción suficiente.',
+      impact:`La diferencia entre estado actual y estado objetivo puede impedir que las iniciativas generen el resultado esperado.`,
+      decision:`Aprobar dueño end-to-end, acción correctiva, criterio de cierre y fecha de validación de la brecha.`,
+      signals:[`Riesgo gap ${o.gapRisk}`,`IGEE ${score}%`,`TOM ${tom}%`]
+    });
     const inferred=inferGapRisk(o);
-    if(inferred!==o.gapRisk&&['Alto','Crítico'].includes(inferred)) alerts.push({level:'committee',title:`Riesgo gap inferido mayor al declarado: ${o.name}`,cause:`Declarado: ${o.gapRisk} · Inferido: ${inferred}. Los datos del objetivo sugieren mayor riesgo.`,decision:'Revisar y actualizar el campo "Riesgo del gap" para alinear la evaluación.',obj:o});
+    if(inferred!==o.gapRisk&&['Alto','Crítico'].includes(inferred)) alerts.push({
+      kind:'gap_inferred',level:'committee',obj:o,
+      title:`Riesgo inferido mayor al declarado: ${o.name}`,
+      cause:`El objetivo declara riesgo "${o.gapRisk}", pero los datos operativos sugieren riesgo "${inferred}".`,
+      impact:`Puede existir subestimación ejecutiva del problema y decisiones insuficientes para el nivel real de exposición.`,
+      decision:`Revalidar el riesgo del gap con evidencia, actualizar clasificación y decidir si requiere escalamiento a comité.`,
+      signals:[`Declarado ${o.gapRisk}`,`Inferido ${inferred}`,`IGEE ${score}%`,`Avance ${op}%`]
+    });
     o.initiatives.forEach(i=>{
-      if(!i.impactKpi) alerts.push({level:'adjust',title:`Iniciativa sin KPI: ${i.name}`,cause:`No está conectada a un indicador del objetivo "${o.name}".`,decision:'Asignar KPI impactado o eliminar iniciativa desconectada.',obj:o,init:i});
-      if(num(i.spent)>num(i.budget)&&num(i.budget)>0) alerts.push({level:'committee',title:`Sobregasto: ${i.name}`,cause:`Gastado ${fmtMoney(i.spent)} vs presupuesto ${fmtMoney(i.budget)}.`,decision:'Autorizar ampliación, recortar alcance o detener gasto.',obj:o,init:i});
-      i.actions.forEach(a=>{
-        if(isOverdue(a.dueDate,a.status)) alerts.push({level:'critical',title:`Acción vencida: ${a.title}`,cause:`Vencida ${daysText(a.dueDate)}. Responsable: ${a.responsible||i.owner||'Sin responsable'}.`,decision:'Escalar bloqueo o redefinir fecha con responsable explícito.',obj:o,init:i,act:a});
+      const initProgress=calcActionsProgress(i.actions);
+      if(!i.impactKpi) alerts.push({
+        kind:'initiative_no_kpi',level:'adjust',obj:o,init:i,
+        title:`Iniciativa sin KPI: ${i.name}`,
+        cause:`La iniciativa no está conectada a un KPI impactado dentro del objetivo.`,
+        impact:`Puede consumir tiempo, presupuesto y capacidad sin demostrar contribución al resultado estratégico.`,
+        decision:`Asignar KPI impactado o reclasificar/eliminar la iniciativa si no mueve ningún indicador relevante.`,
+        signals:[`Avance iniciativa ${initProgress}%`,`IGEE ${score}%`,`Sin KPI impactado`]
       });
-      // Semáforo stale en KPIs
+      if(num(i.spent)>num(i.budget)&&num(i.budget)>0) alerts.push({
+        kind:'overspend',level:'committee',obj:o,init:i,
+        title:`Sobregasto en iniciativa: ${i.name}`,
+        cause:`Gastado ${fmtMoney(i.spent)} vs presupuesto ${fmtMoney(i.budget)}.`,
+        impact:`El beneficio esperado puede perder rentabilidad o requerir autorización formal de ampliación presupuestal.`,
+        decision:`Decidir si se autoriza ampliación, se recorta alcance, se pausa gasto o se exige evidencia de beneficio.`,
+        signals:[`Uso presupuesto ${Math.round((num(i.spent)/num(i.budget))*100)}%`,`Impacto real ${num(i.realImpact)}%`,`Impacto esperado ${num(i.expectedImpact)}%`]
+      });
+      i.actions.forEach(a=>{
+        if(isOverdue(a.dueDate,a.status)) alerts.push({
+          kind:'action_overdue',level:'critical',obj:o,init:i,act:a,
+          title:`Acción vencida: ${a.title}`,
+          cause:`La acción venció ${daysText(a.dueDate)}. Responsable: ${a.responsible||i.owner||'Sin responsable'}.`,
+          impact:`El atraso puede frenar la iniciativa "${i.name}" y afectar el avance operativo del objetivo.`,
+          decision:`Escalar bloqueo, redefinir fecha con causa justificada o reasignar responsable con criterio de cierre explícito.`,
+          signals:[`Fecha ${a.dueDate||'s/f'}`,`Estatus ${a.status}`,`Iniciativa ${i.name}`,`Avance objetivo ${op}%`]
+        });
+      });
     });
     o.indicators.forEach(k=>{
       const conf=kpiConfidence(k);
-      if(conf.level==='stale') alerts.push({level:'adjust',title:`Dato sin confirmar: ${k.name}`,cause:`KPI de "${o.name}" no se actualiza según su frecuencia (${k.frequency||'Mensual'}). ${conf.label}.`,decision:'Actualizar el valor actual del indicador para mantener la confianza del dato.',obj:o});
+      if(conf.level==='stale') alerts.push({
+        kind:'kpi_stale',level:'adjust',obj:o,kpi:k,
+        title:`KPI sin actualización confiable: ${k.name}`,
+        cause:`El KPI no cumple su frecuencia de actualización (${k.frequency||'Mensual'}). ${conf.label}.`,
+        impact:`La lectura ejecutiva puede estar tomando decisiones con datos vencidos o sin evidencia reciente.`,
+        decision:`Actualizar valor actual, dueño del dato y fecha de corte antes de usar el KPI para decisión de comité.`,
+        signals:[`Frecuencia ${k.frequency||'Mensual'}`,`Última actualización ${k.lastUpdate||'Sin fecha'}`,`Score KPI ${Math.round(calcIndicatorScore(k))}%`]
+      });
     });
   });
-  return alerts;
+  const order={critical:0,committee:1,adjust:2,follow:3};
+  return alerts.sort((a,b)=>(order[a.level]??9)-(order[b.level]??9));
+}
+function sendAlertToCommittee(index){
+  const plan=currentPlan(); if(!plan) return;
+  const al=generateAlerts()[index]; if(!al) return toast('No se encontró la alerta.','t-warn');
+  if(!Array.isArray(plan.agenda)) plan.agenda=[];
+  const exists=plan.agenda.some(a=>a.origin==='Alerta'&&a.linkedObjective===al.obj?.id&&a.title===al.title&&a.status!=='Resuelto');
+  if(exists) return toast('Esta alerta ya está en Comité.','t-warn');
+  plan.agenda.push(normalizeAgendaItem({
+    type:'Alerta',origin:'Alerta',priority:alertPriority(al.level),status:'Pendiente',title:al.title,
+    owner:al.obj?.leader||al.init?.owner||al.act?.responsible||'',dueDate:todayISO(),duration:al.level==='critical'?'15 min':'10 min',
+    linkedObjective:al.obj?.id||'',linkedInitiative:al.init?.id||'',
+    context:`${al.cause}\n\nImpacto potencial: ${al.impact}`,
+    decision:al.decision,
+    notes:`Promovida desde Alertas Ejecutivas el ${todayISO()}. Señales: ${asArray(al.signals).join(' · ')}`
+  }));
+  plan.manualAgenda=plan.agenda;
+  saveState();
+  toast('Alerta enviada a Comité.','t-ok');
+  renderAlertas();
 }
 function renderAlertas(){
   const alerts=generateAlerts();
@@ -2260,51 +2343,62 @@ function renderAlertas(){
   const critical=alerts.filter(a=>a.level==='critical').length;
   const committee=alerts.filter(a=>a.level==='committee').length;
   const adjust=alerts.filter(a=>a.level==='adjust').length;
-  const overdue=alerts.filter(a=>/vencida/i.test(a.title||'')).length;
-  const cards=alerts.map(al=>{
+  const overdue=alerts.filter(a=>a.kind==='action_overdue').length;
+  const cards=alerts.map((al,idx)=>{
     const obj=al.obj||{};
-    const igee=Math.round(calcObjectiveScore(obj));
-    const op=calcObjectiveOperationalProgress(obj);
-    const tom=tomScore(obj);
-    const severity=al.level==='critical'?'Intervención crítica':al.level==='committee'?'Decisión de comité':al.level==='adjust'?'Ajuste requerido':'Seguimiento';
-    const cause=al.level==='critical'?'Resultado / plazo crítico':al.level==='committee'?'Riesgo estratégico':al.level==='adjust'?'Calidad de dato / diseño':'Seguimiento operativo';
-    const why=al.cause||'Se detectó una señal operativa que requiere atención.';
-    const sourceTags=[`IGEE ${igee}%`,`Avance ${op}%`,`TOM ${tom}%`];
-    if(al.init) sourceTags.push(`Iniciativa: ${al.init.name}`);
-    if(al.act) sourceTags.push(`Acción: ${al.act.status}`);
+    const severity=alertSeverityLabel(al.level);
+    const cause=alertCauseLabel(al.kind);
+    const already=currentPlan()?.agenda?.some(a=>a.origin==='Alerta'&&a.linkedObjective===obj.id&&a.title===al.title&&a.status!=='Resuelto');
     return `<div class="alert-card-v2 ${esc(al.level)}">
       <div class="alert-card-head-v2">
         <div>
           <div class="alert-title-v2">${esc(al.title)}</div>
-          <div class="alert-meta-v2">${esc(obj.code?obj.code+' · ':'')}${esc(obj.name||'Objetivo sin nombre')} · Responsable: ${esc(obj.leader||'—')} · ${daysText(obj.end)}</div>
+          <div class="alert-meta-v2">${esc(obj.code?obj.code+' · ':'')}${esc(obj.name||'Objetivo sin nombre')} · Responsable: ${esc(obj.leader||'—')}</div>
           <div class="alert-signal-row-v2"><span class="alert-severity-pill ${esc(al.level)}">${esc(severity)}</span><span class="alert-signal as-gray">${esc(cause)}</span></div>
         </div>
-        <div class="alert-cause-v2"><strong>Causa dominante:</strong> ${esc(cause)}<br><strong>Qué pasa:</strong> ${esc(why)}<br><strong>Fuente:</strong> ${esc(sourceTags.join(' + '))}</div>
-        <div style="display:flex;justify-content:flex-end"><button class="btn btn-secondary btn-sm" data-action="viewObj" data-obj-id="${esc(obj.id||'')}">Ver objetivo</button></div>
+        <div class="alert-cause-v2"><strong>Causa:</strong> ${esc(al.cause)}<br><strong>Impacto potencial:</strong> ${esc(al.impact)}</div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap"><button class="btn btn-secondary btn-sm" data-action="viewObj" data-obj-id="${esc(obj.id||'')}">Ver objetivo</button><button class="btn btn-primary btn-sm" data-action="sendAlertCommittee" data-alert-index="${idx}" ${already?'disabled':''}>${already?'En Comité':'Enviar a Comité'}</button></div>
       </div>
       <div class="alert-body-v2">
-        <div class="alert-panel-v2"><div class="alert-panel-v2-title">Por qué importa</div><div class="alert-panel-v2-text">${esc(why)}</div><div class="alert-signal-row-v2">${sourceTags.map(t=>`<span class="alert-signal as-gray">${esc(t)}</span>`).join('')}</div></div>
-        <div class="alert-panel-v2"><div class="alert-panel-v2-title">Decisión requerida</div><div class="alert-panel-v2-text">${esc(al.decision||'Definir responsable, fecha y criterio de cierre.')}</div><div class="alert-signal-row-v2"><span class="alert-signal as-${al.level==='critical'?'red':al.level==='committee'?'yellow':'blue'}">${esc(severity)}</span></div></div>
+        <div class="alert-panel-v2"><div class="alert-panel-v2-title">Señales que la activaron</div><div class="alert-signal-row-v2">${asArray(al.signals).map(t=>`<span class="alert-signal as-gray">${esc(t)}</span>`).join('')}</div></div>
+        <div class="alert-panel-v2"><div class="alert-panel-v2-title">Decisión sugerida</div><div class="alert-panel-v2-text">${esc(al.decision)}</div></div>
       </div>
     </div>`;
   }).join('');
-  $('viewAlertas').innerHTML=`<div class="section-hero"><h2>Centro de alertas ejecutivas</h2></div>
+  $('viewAlertas').innerHTML=`<div class="section-hero"><h2>Centro de alertas ejecutivas</h2><p class="subtitle">Diagnóstico automático de señales. Las alertas solo pasan a Comité cuando haces click en “Enviar a Comité”.</p></div>
     <div class="alert-exec-summary">
       <div class="alert-summary-card"><div class="alert-summary-label">Objetivos afectados</div><div class="alert-summary-value">${affected.size}</div><div class="alert-summary-note">Con una o más señales</div></div>
       <div class="alert-summary-card"><div class="alert-summary-label">Intervención crítica</div><div class="alert-summary-value red">${critical}</div><div class="alert-summary-note">Requieren acción inmediata</div></div>
-      <div class="alert-summary-card"><div class="alert-summary-label">Decisión de comité</div><div class="alert-summary-value amber">${committee}</div><div class="alert-summary-note">Requieren acuerdo ejecutivo</div></div>
+      <div class="alert-summary-card"><div class="alert-summary-label">Para Comité</div><div class="alert-summary-value amber">${committee}</div><div class="alert-summary-note">Requieren acuerdo ejecutivo</div></div>
       <div class="alert-summary-card"><div class="alert-summary-label">Ajustes requeridos</div><div class="alert-summary-value blue">${adjust}</div><div class="alert-summary-note">Datos, KPIs o diseño</div></div>
       <div class="alert-summary-card"><div class="alert-summary-label">Acciones vencidas</div><div class="alert-summary-value ${overdue?'red':''}">${overdue}</div><div class="alert-summary-note">Compromisos tácticos atrasados</div></div>
     </div>
     <div class="alert-board">${cards||'<div class="empty-box">Sin alertas críticas.</div>'}</div>`;
 }
 
-// ── CADENCIA ─────────────────────────────────────────────────────────
-function renderCadencia(){
-  const plan=currentPlan();
-  const alerts=generateAlerts().slice(0,8).map(a=>({id:uid('auto'),type:'Alerta',priority:a.level==='critical'?'Crítica':'Alta',status:'Pendiente',title:a.title,owner:a.obj?.leader||'',dueDate:todayISO(),duration:'10 min',context:a.cause,decision:a.decision,auto:true}));
-  const agenda=[...asArray(plan.agenda),...alerts];
-  $('viewCadencia').innerHTML=`<div class="section-hero"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px"><div><h2>Cadencia y agenda del comité</h2><p>Puntos manuales + alertas automáticas. Usa "📋 Agenda Comité" en la barra superior para generar el PDF listo para imprimir.</p></div><button class="btn btn-primary btn-sm" data-action="addAgenda">+ Punto manual</button></div></div><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px">${agenda.map(a=>`<div class="agenda-card p-${priorityClass(a.priority)}"><div style="font-weight:700;font-size:13px">${esc(a.title)}</div><div class="obj-sub">${esc(a.type)} · ${esc(a.priority)} · ${esc(a.status)} · ${esc(a.duration||'')}</div><div class="agenda-context-box">${esc(a.context||a.notes||'Sin contexto')}</div><div class="agenda-decision-box">${esc(a.decision||'Sin decisión esperada')}</div>${a.auto?'':`<div style="display:flex;gap:6px;margin-top:8px"><button class="btn btn-secondary btn-xs" data-action="editAgenda" data-agenda-id="${esc(a.id)}">Editar</button><button class="btn btn-danger btn-xs" data-action="delAgenda" data-agenda-id="${esc(a.id)}">Eliminar</button></div>`}</div>`).join('')||'<div class="empty-box">Sin agenda.</div>'}</div>`;
+// ── COMITÉ ─────────────────────────────────────────────────────────
+function renderComite(){
+  const plan=currentPlan(); if(!plan) return;
+  const agenda=asArray(plan.agenda).map(normalizeAgendaItem);
+  const commits=asArray(plan.commitments).map(normalizeCommitment);
+  const pendingAgenda=agenda.filter(a=>!['Resuelto','Aprobado','Rechazado'].includes(a.status));
+  const openCommits=commits.filter(c=>c.status!=='Cumplido');
+  const criticalAgenda=pendingAgenda.filter(a=>a.priority==='Crítica').length;
+  const overdueCommits=openCommits.filter(c=>isOverdue(c.dueDate,c.status)).length;
+  const agendaCards=agenda.length?agenda.map(a=>{
+    const linkedObj=a.linkedObjective?findObjective(a.linkedObjective):null;
+    return `<div class="agenda-card p-${priorityClass(a.priority)}">
+      <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><div><div style="font-weight:800;font-size:14px;line-height:1.25">${esc(a.title)}</div><div class="obj-sub">${esc(a.origin||'Manual')} · ${esc(a.type)} · ${esc(a.priority)} · ${esc(a.status)} · ${esc(a.duration||'')}</div></div>${linkedObj?`<button class="btn btn-secondary btn-xs" data-action="viewObj" data-obj-id="${esc(linkedObj.id)}">Ver objetivo</button>`:''}</div>
+      <div class="agenda-context-box">${esc(a.context||a.notes||'Sin contexto')}</div>
+      <div class="agenda-decision-box">${esc(a.decision||'Sin decisión requerida')}</div>
+      <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap"><button class="btn btn-secondary btn-xs" data-action="editAgenda" data-agenda-id="${esc(a.id)}">Editar</button><button class="btn btn-danger btn-xs" data-action="delAgenda" data-agenda-id="${esc(a.id)}">Eliminar</button></div>
+    </div>`;
+  }).join(''):'<div class="empty-box">Sin temas de comité. Puedes crear un punto manual o enviar una alerta a Comité.</div>';
+  const commitRows=commits.length?`<div style="display:flex;flex-direction:column;gap:10px">${commits.map(c=>{const statusCls=c.status==='Cumplido'?'cs-done':c.status==='Bloqueado'?'cs-blocked':'cs-open';return `<div class="commit-card" style="${c.status==='Cumplido'?'opacity:.65':''}"><div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px"><div><div class="commit-title">${esc(c.title)}</div><div class="commit-meta">Responsable: ${esc(c.owner||'—')} · Área: ${esc(c.area||'—')} · Fecha: ${esc(c.dueDate||'s/f')} (${daysText(c.dueDate)})</div><span class="commit-status ${statusCls}">${esc(c.status)}</span><span class="badge b-${c.priority==='Crítica'?'red':c.priority==='Alta'?'yellow':c.priority==='Baja'?'green':'blue'}" style="margin-left:6px">${esc(c.priority)}</span>${c.criteria?`<div class="obj-sub" style="margin-top:5px">Criterio de cierre: ${esc(c.criteria)}</div>`:''}</div><div style="display:flex;gap:6px;flex-wrap:wrap">${c.status!=='Cumplido'?`<button class="btn btn-teal btn-xs" data-action="completeCommit" data-commit-id="${esc(c.id)}">✓ Cumplido</button>`:''}${c.status!=='Cumplido'?`<button class="btn btn-secondary btn-xs" data-action="editCommit" data-commit-id="${esc(c.id)}">Editar</button>`:''}<button class="btn btn-danger btn-xs" data-action="delCommit" data-commit-id="${esc(c.id)}">Eliminar</button></div></div>${c.context?`<div class="agenda-context-box" style="margin-top:8px">${esc(c.context)}</div>`:''}</div>`;}).join('')}</div>`:'<div class="empty-box">Sin compromisos registrados.</div>';
+  $('viewComite').innerHTML=`<div class="section-hero"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px"><div><h2>Comité</h2><p class="subtitle">Agenda ejecutiva y compromisos en una sola vista. Las alertas no entran automáticamente: se agregan con “Enviar a Comité”.</p></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-primary btn-sm" data-action="addAgenda">+ Punto manual</button><button class="btn btn-secondary btn-sm" data-action="addCommit">+ Compromiso</button></div></div></div>
+    <div class="metric-strip"><div class="metric-card"><div class="metric-label">Temas pendientes</div><div class="metric-value">${pendingAgenda.length}</div><div class="metric-note">Agenda activa</div></div><div class="metric-card"><div class="metric-label">Temas críticos</div><div class="metric-value" style="color:var(--rose)">${criticalAgenda}</div><div class="metric-note">Requieren decisión</div></div><div class="metric-card"><div class="metric-label">Compromisos abiertos</div><div class="metric-value">${openCommits.length}</div><div class="metric-note">Seguimiento ejecutivo</div></div><div class="metric-card"><div class="metric-label">Compromisos vencidos</div><div class="metric-value" style="color:${overdueCommits?'var(--rose)':'var(--em)'}">${overdueCommits}</div><div class="metric-note">Fuera de fecha</div></div></div>
+    <div class="section-hero" style="margin-top:14px"><h2 style="font-size:17px">Agenda del comité</h2></div><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:10px;margin-bottom:18px">${agendaCards}</div>
+    <div class="section-hero"><h2 style="font-size:17px">Compromisos del comité</h2></div>${commitRows}`;
 }
 const priorityClass = p => { p=txt(p).toLowerCase(); if(p.includes('crít')||p.includes('crit')) return 'critical'; if(p.includes('alta')) return 'high'; if(p.includes('baja')) return 'low'; return 'medium'; };
 
@@ -2767,9 +2861,9 @@ function saveAgenda(){
   const existing=plan.agenda.find(a=>a.id===agendaEditId); const item=existing||{id:uid('agenda')};
   Object.assign(item,{type:$('agendaType').value,priority:$('agendaPriority').value,status:$('agendaStatus').value,title,owner:$('agendaOwner').value.trim(),dueDate:$('agendaDueDate').value,duration:$('agendaDuration').value.trim(),linkedObjective:$('agendaLinkedObjective').value,linkedInitiative:$('agendaLinkedInitiative').value,context:$('agendaContext').value.trim(),decision:$('agendaDecision').value.trim(),notes:$('agendaNotes').value.trim()});
   if(!existing) plan.agenda.push(item); plan.manualAgenda=plan.agenda;
-  saveState(); closeModal('manualAgendaModal'); renderCadencia(); toast(existing?'Punto actualizado.':'Punto agregado.','t-ok');
+  saveState(); closeModal('manualAgendaModal'); renderComite(); toast(existing?'Punto actualizado.':'Punto agregado.','t-ok');
 }
-function deleteAgenda(id){ if(!confirm('¿Eliminar punto?')) return; const plan=currentPlan(); plan.agenda=plan.agenda.filter(a=>a.id!==id); plan.manualAgenda=plan.agenda; saveState(); renderCadencia(); }
+function deleteAgenda(id){ if(!confirm('¿Eliminar punto?')) return; const plan=currentPlan(); plan.agenda=plan.agenda.filter(a=>a.id!==id); plan.manualAgenda=plan.agenda; saveState(); renderComite(); }
 
 // ── EXPORT / IMPORT ──────────────────────────────────────────────────
 function exportJSON(){
@@ -2794,6 +2888,7 @@ function exportXLS(){
   sections.push(['KPIs',['Objetivo','KPI','Acción','Inicial','Actual','Meta','Unidad','Avance','Confianza','Última actualización'],plan.objectives.flatMap(o=>o.indicators.map(k=>{const conf=kpiConfidence(k);return[o.name,k.name,k.action,k.initial,k.current,k.target,k.unit,Math.round(calcIndicatorScore(k))+'%',conf.label,k.lastUpdate||'Sin fecha'];}))]);
   sections.push(['Iniciativas',['Objetivo','Iniciativa','Responsable','Estatus','Avance','KPI impactado','Impacto esperado','Impacto real','Redundante','Presupuesto','Gastado'],plan.objectives.flatMap(o=>o.initiatives.map(i=>[o.name,i.name,i.owner,i.status,calcActionsProgress(i.actions)+'%',i.impactKpi,(i.expectedImpact||0)+'%',(i.realImpact||0)+'%',i.redundant,i.budget,i.spent]))]);
   sections.push(['Acciones',['Objetivo','Iniciativa','Acción','Responsable','Estatus','Compromiso','Vencida'],plan.objectives.flatMap(o=>o.initiatives.flatMap(i=>i.actions.map(a=>[o.name,i.name,a.title,a.responsible,a.status,a.dueDate,isOverdue(a.dueDate,a.status)?'Sí':'No'])))]);
+  sections.push(['Agenda Comité',['Título','Origen','Tipo','Prioridad','Estatus','Responsable','Fecha','Duración','Contexto','Decisión'],(plan.agenda||[]).map(a=>[a.title,a.origin||'Manual',a.type,a.priority,a.status,a.owner,a.dueDate,a.duration,a.context,a.decision])]);
   sections.push(['Compromisos Comité',['Título','Responsable','Área','Prioridad','Estatus','Compromiso','Criterio de cierre','Contexto'],(plan.commitments||[]).map(c=>[c.title,c.owner,c.area,c.priority,c.status,c.dueDate,c.criteria,c.context])]);
   const html=`<html><head><meta charset="UTF-8"></head><body>${sections.map(([title,headers,rows])=>`<h2>${esc(title)}</h2><table border="1"><thead><tr>${headers.map(h=>`<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${r.map(c=>`<td>${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table><br>`).join('')}</body></html>`;
   downloadFile(`reporte_${txt(plan.name).replace(/[^a-z0-9]+/gi,'_')}_${todayISO()}.xls`,html,'application/vnd.ms-excel;charset=utf-8');
