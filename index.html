@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>Ximpler EDGE v5.1 · Copiloto Estratégico</title>
+<title>Ximpler EDGE v5.3 · Copiloto Estratégico</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -756,8 +756,8 @@ tbody tr:hover td{background:#fafbfc}
 <div class="page" id="planningView">
   <div class="topbar">
     <div class="tl">
-      <h1>Ximpler EDGE <span style="font-weight:400;color:var(--muted);font-size:22px">v5.2</span></h1>
-      <p class="subtitle">Copiloto estratégico v5.1 · Alineación visible, trazabilidad ejecutiva y avance ponderado explicado.</p>
+      <h1>Ximpler EDGE <span style="font-weight:400;color:var(--muted);font-size:22px">v5.3</span></h1>
+      <p class="subtitle">Copiloto estratégico v5.3 · Importación robusta, alineación visible, trazabilidad ejecutiva y avance ponderado explicado.</p>
     </div>
     <div class="tr">
       <button id="newPlanningBtn" class="btn btn-primary">+ Nueva Planeación</button>
@@ -1084,7 +1084,7 @@ tbody tr:hover td{background:#fafbfc}
 'use strict';
 
 // ── CONSTANTES ──────────────────────────────────────────────────────
-const STORAGE_KEY = 'ximpler_edge_v5_2';
+const STORAGE_KEY = 'ximpler_edge_v5_3';
 const KPI_STALE_DAYS = { 'Diaria':2, 'Semanal':9, 'Mensual':35, 'Trimestral':100 };
 
 let state = { plannings:[], activePlanningId:null };
@@ -3514,7 +3514,7 @@ function downloadFile(filename,content,type){ const blob=new Blob([content],{typ
 // evitar objetivos, iniciativas, KPIs y acciones dispersas o sin evidencia.
 // ══════════════════════════════════════════════════════════════════════
 const V5_LEGACY_STORAGE_KEY = 'ximpler_edge_v4';
-const V5_VERSION = 'v5.2';
+const V5_VERSION = 'v5.3';
 
 function v5Tone(score){ score=num(score); return score>=80?'green':score>=55?'yellow':'red'; }
 function v5Pill(label,value,tone='gray',title=''){
@@ -3600,7 +3600,7 @@ function v5ObjectiveTraceabilityBreakdown(obj){
   const inits=asArray(obj?.initiatives);
   const actions=inits.flatMap(i=>asArray(i.actions));
   const kpiNames=new Set(kpis.map(k=>txt(k.name).trim().toLowerCase()).filter(Boolean));
-  const alignment=alignmentAssessment(obj).score;
+  const alignment=calcStrategicAlignmentBreakdown(obj).score;
   const kpiInitiativeLink=inits.length
     ? Math.round(inits.filter(i=>txt(i.impactKpi).trim() && kpiNames.has(txt(i.impactKpi).trim().toLowerCase())).length/inits.length*100)
     : (kpis.length?35:0);
@@ -3736,7 +3736,7 @@ function v52ParseStateRaw(raw){
 function v52HasPlans(candidate){ return !!(candidate && Array.isArray(candidate.plannings) && candidate.plannings.length); }
 loadState = function(){
   try{
-    const keys=[STORAGE_KEY,'ximpler_edge_v5_2','ximpler_edge_v5_1','ximpler_edge_v5','ximpler_edge_v4'];
+    const keys=[STORAGE_KEY,'ximpler_edge_v5_3','ximpler_edge_v5_2','ximpler_edge_v5_1','ximpler_edge_v5','ximpler_edge_v4'];
     let chosen=null;
     for(const key of keys){
       const candidate=v52ParseStateRaw(localStorage.getItem(key));
@@ -3804,12 +3804,58 @@ normalizeBackup = function(raw){
   return out;
 };
 
+// v5.3: guardado robusto para imports grandes.
+// 1) Intenta guardar completo.
+// 2) Si localStorage está lleno, libera copias viejas y reintenta.
+// 3) Si sigue lleno, guarda una versión compacta sin dataUrl/base64 pesado.
+// 4) Si aun así no cabe, conserva los datos en memoria para que la sesión no se rompa.
+let v53StorageWarningShown=false;
+function v53StoragePayload(){
+  return {version:V5_VERSION,updatedAt:state.updatedAt||new Date().toISOString(),activePlanningId:state.activePlanningId,plannings:state.plannings||[]};
+}
+function v53CompactForStorage(payload){
+  return JSON.parse(JSON.stringify(payload,(key,value)=>{
+    const lower=String(key||'').toLowerCase();
+    if(typeof value==='string'){
+      if((lower.includes('dataurl')||lower.includes('base64')||lower.includes('filedata')) && value.length>5000) return '';
+      if(value.startsWith('data:') && value.length>5000) return '';
+      if(value.length>250000) return value.slice(0,250000)+'… [recortado para almacenamiento local]';
+    }
+    return value;
+  }));
+}
+function v53RemoveLegacyCopies(){
+  ['ximpler_edge_v5_2','ximpler_edge_v5_1','ximpler_edge_v5','ximpler_edge_v4'].forEach(k=>{ try{ if(k!==STORAGE_KEY) localStorage.removeItem(k); }catch(e){} });
+}
+saveState = function(){
+  state.updatedAt=new Date().toISOString();
+  const payload=v53StoragePayload();
+  try{
+    localStorage.setItem(STORAGE_KEY,JSON.stringify(payload));
+  }catch(err1){
+    try{
+      v53RemoveLegacyCopies();
+      localStorage.setItem(STORAGE_KEY,JSON.stringify(payload));
+    }catch(err2){
+      try{
+        const compact=v53CompactForStorage(payload);
+        localStorage.setItem(STORAGE_KEY,JSON.stringify(compact));
+        if(!v53StorageWarningShown){ toast('Archivo importado. Se guardó en modo compacto porque el almacenamiento local estaba lleno.','t-warn'); v53StorageWarningShown=true; }
+      }catch(err3){
+        console.warn('No se pudo persistir en localStorage; datos quedan en memoria.',err3);
+        if(!v53StorageWarningShown){ toast('Archivo cargado en memoria, pero no cabe en almacenamiento local. Exporta un JSON compacto o borra datos antiguos del navegador.','t-warn'); v53StorageWarningShown=true; }
+      }
+    }
+  }
+  updateStorageBar();
+};
+
 // Reglas v5: DOM extendido
 function v5InjectAfter(id, html){
   const el=$(id); if(el && !document.getElementById(html.match(/id="([^"]+)"/)?.[1]||'__missing')) el.closest('.field')?.insertAdjacentHTML('afterend', html);
 }
 function applyV5DOMUpgrades(){
-  document.title='Ximpler EDGE v5.2 · Copiloto de Ejecución Estratégica';
+  document.title='Ximpler EDGE v5.3 · Copiloto de Ejecución Estratégica';
   const subtitle=document.querySelector('#planningView .subtitle'); if(subtitle) subtitle.textContent='Copiloto estratégico v5 · Trazabilidad ejecutiva: resultado, ejecución, evidencia, gobernanza y comité con reglas duras.';
   v5InjectAfter('oBudget', `<div class="field"><label>Peso estratégico %</label><input id="oStrategicWeight" class="input" type="number" min="0" max="100" step="1" value="100"><div class="hint">Define cuánto pesa este objetivo en la planeación. Ya no todos los objetivos valen igual.</div></div>`);
   v5InjectAfter('oExpectedResult', `<div class="field"><label>Hipótesis estratégica</label><input id="oHypothesis" class="input" placeholder="Si hacemos X, esperamos mover Y porque..."></div>`);
@@ -3850,15 +3896,19 @@ calcPlanScore = function(plan){
 };
 calcObjectiveOperationalProgress = function(obj){ return v5ObjectiveExecutionScore(obj); };
 inferGapRisk = function(obj){
-  const bd=v5ObjectiveScoreBreakdown(obj);
+  // v5.3: cálculo sin llamar a v5ObjectiveScoreBreakdown para evitar ciclo:
+  // calcRiskScore → inferGapRisk → scoreBreakdown → trazabilidad → alineación → calcRiskScore.
   const actionStats=objectiveActionStats(obj);
   const noKpi=asArray(obj?.indicators||obj?.kpis).length===0;
+  const resultado=v5ObjectiveResultScore(obj);
+  const evidencia=v5ObjectiveEvidenceScore(obj);
+  const tom=tomScore(obj);
   let points=0;
   if(noKpi) points+=4;
-  if(bd.resultado<50) points+=3; else if(bd.resultado<70) points+=2;
+  if(resultado<50) points+=3; else if(resultado<70) points+=2;
   if(actionStats.overdue>0) points+=2;
-  if(bd.evidencia<55) points+=2;
-  if(tomScore(obj)<50) points+=1;
+  if(evidencia<55) points+=2;
+  if(tom<50) points+=1;
   if(points>=7) return 'Crítico';
   if(points>=5) return 'Alto';
   if(points>=2) return 'Medio';
