@@ -552,6 +552,85 @@ tbody tr:hover td{background:#fafbfc}
 .mono{font-variant-numeric:tabular-nums}
 .chip{display:inline-flex;align-items:center;gap:4px;border-radius:var(--r-full);background:var(--blue-s);color:var(--blue);font-size:11px;font-weight:600;padding:4px 8px}
 .rel-mode-note{font-size:10px;color:var(--muted);margin-top:4px;font-style:italic}
+
+
+/* ── TOM / BENEFICIOS / ALERTAS · refresh visual ── */
+.tom-board{display:flex;flex-direction:column;gap:14px}
+.tom-obj-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:var(--sh-sm);overflow:hidden}
+.tom-obj-head{display:grid;grid-template-columns:1fr auto;gap:14px;align-items:start;padding:15px 17px;border-bottom:1px solid var(--border);background:linear-gradient(180deg,#fff,#fafbfc)}
+.tom-obj-title{font-size:16px;font-weight:700;line-height:1.25;cursor:pointer;color:var(--text)}
+.tom-obj-title:hover{color:var(--em);text-decoration:underline}
+.tom-obj-meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;color:var(--muted);font-size:12px}
+.tom-obj-pills{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
+.tom-obj-pill{display:inline-flex;align-items:center;gap:5px;border-radius:var(--r-full);padding:5px 9px;font-size:11px;font-weight:700;background:var(--slate-s);color:var(--slate)}
+.tom-obj-pill.ok{background:var(--em-s);color:var(--em)}
+.tom-obj-pill.mid{background:var(--amber-s);color:var(--amber)}
+.tom-obj-pill.bad{background:var(--rose-s);color:var(--rose)}
+.tom-components-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding:14px 16px;background:#fff}
+@media(max-width:1100px){.tom-components-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:700px){.tom-components-grid{grid-template-columns:1fr}}
+.tom-component-card{border:1px solid var(--border);border-radius:var(--r);padding:12px;background:var(--surface2);min-height:112px;display:flex;flex-direction:column;gap:7px}
+.tom-component-card.empty{background:#fff;border-style:dashed;color:var(--muted)}
+.tom-component-label{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);display:flex;align-items:center;justify-content:space-between;gap:8px}
+.tom-component-value{font-size:13px;line-height:1.45;color:var(--text);white-space:pre-wrap}
+.tom-component-badge{font-size:10px;border-radius:999px;padding:3px 7px;background:#fff;border:1px solid var(--border);color:var(--muted);font-weight:700}
+
+.benefit-board{display:flex;flex-direction:column;gap:16px}
+.benefit-obj-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:var(--sh-sm);overflow:hidden}
+.benefit-obj-head{display:grid;grid-template-columns:1fr auto;gap:14px;align-items:start;padding:16px 18px;border-bottom:1px solid var(--border);background:linear-gradient(180deg,#fff,#fafbfc)}
+.benefit-obj-title{font-size:17px;font-weight:700;line-height:1.25;cursor:pointer}
+.benefit-obj-title:hover{color:var(--em);text-decoration:underline}
+.benefit-obj-meta{font-size:12px;color:var(--muted);display:flex;gap:8px;flex-wrap:wrap;margin-top:5px}
+.benefit-summary{display:grid;grid-template-columns:repeat(5,minmax(120px,1fr));gap:10px;margin-top:12px}
+@media(max-width:1000px){.benefit-summary{grid-template-columns:repeat(2,1fr)}}
+.benefit-summary-card{border:1px solid var(--border);border-radius:var(--r);background:#fff;padding:10px 12px;min-height:62px;box-shadow:0 1px 2px rgba(0,0,0,.03)}
+.benefit-summary-label{font-size:10px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+.benefit-summary-value{font-size:18px;font-weight:800;color:var(--text);line-height:1.1}
+.benefit-summary-note{font-size:11px;color:var(--muted);margin-top:3px}
+.benefit-table th{font-size:10px}
+.benefit-init-name{font-weight:700;color:var(--text);cursor:pointer;line-height:1.28}
+.benefit-init-name:hover{color:var(--em);text-decoration:underline}
+.benefit-init-meta{font-size:11px;color:var(--muted);margin-top:3px;line-height:1.35}
+.benefit-real-box{display:flex;flex-direction:column;gap:5px;align-items:flex-start}
+.benefit-use{display:flex;align-items:center;gap:8px;min-width:96px}
+.benefit-use-track{height:7px;background:#e5e7eb;border-radius:999px;overflow:hidden;flex:1;min-width:54px}
+.benefit-use-fill{height:100%;background:var(--em-l);border-radius:999px}
+.benefit-use-fill.mid{background:var(--amber)}
+.benefit-use-fill.high{background:var(--rose)}
+.benefit-next{font-size:11px;color:var(--muted);text-align:right;margin-top:8px}
+
+.alert-exec-summary{display:grid;grid-template-columns:repeat(5,minmax(150px,1fr));gap:12px;margin-bottom:16px}
+@media(max-width:1100px){.alert-exec-summary{grid-template-columns:repeat(2,1fr)}}
+.alert-summary-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:13px 14px;box-shadow:var(--sh-sm)}
+.alert-summary-label{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:4px}
+.alert-summary-value{font-size:26px;font-weight:800;line-height:1}
+.alert-summary-value.red{color:var(--rose)}
+.alert-summary-value.amber{color:var(--amber)}
+.alert-summary-value.blue{color:var(--blue)}
+.alert-summary-note{font-size:11px;color:var(--muted);margin-top:4px;line-height:1.3}
+.alert-card-v2{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:var(--sh-sm);overflow:hidden;border-left:5px solid var(--blue)}
+.alert-card-v2.critical{border-left-color:var(--rose)}
+.alert-card-v2.committee{border-left-color:var(--amber)}
+.alert-card-v2.adjust{border-left-color:var(--blue)}
+.alert-card-v2.follow{border-left-color:var(--em-l)}
+.alert-card-head-v2{display:grid;grid-template-columns:1.25fr 1fr auto;gap:16px;align-items:start;padding:15px 17px;background:linear-gradient(180deg,#fff,#fafbfc);border-bottom:1px solid var(--border)}
+@media(max-width:1000px){.alert-card-head-v2{grid-template-columns:1fr}}
+.alert-title-v2{font-size:16px;font-weight:800;line-height:1.25}
+.alert-meta-v2{font-size:12px;color:var(--muted);margin-top:4px;line-height:1.35}
+.alert-cause-v2{font-size:12px;line-height:1.45;color:var(--text2)}
+.alert-cause-v2 strong{color:var(--text)}
+.alert-body-v2{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:14px 17px;background:#fff}
+@media(max-width:900px){.alert-body-v2{grid-template-columns:1fr}}
+.alert-panel-v2{border:1px solid var(--border);border-radius:var(--r);background:var(--surface2);padding:12px}
+.alert-panel-v2-title{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:7px}
+.alert-panel-v2-text{font-size:13px;font-weight:600;line-height:1.45;color:var(--text)}
+.alert-signal-row-v2{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.alert-severity-pill{display:inline-flex;border-radius:999px;padding:5px 9px;font-size:11px;font-weight:800}
+.alert-severity-pill.critical{background:var(--rose-s);color:var(--rose)}
+.alert-severity-pill.committee{background:var(--amber-s);color:var(--amber)}
+.alert-severity-pill.adjust{background:var(--blue-s);color:var(--blue)}
+.alert-severity-pill.follow{background:var(--em-s);color:var(--em)}
+
 </style>
 </head>
 <body>
@@ -1759,7 +1838,86 @@ function exportAgendaPDF(){
   }).slice(0,6);
   const commits=(plan.commitments||[]).filter(c=>c.status!=='Cumplido').slice(0,4);
   const date=new Date().toLocaleDateString('es-MX',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
-  const html=`<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Agenda Comité · ${esc(plan.name)}</title><style>body{font-family:Arial,sans-serif;font-size:12px;margin:30px;color:#111}h1{font-size:20px;margin-bottom:4px}h2{font-size:14px;margin:18px 0 8px;color:#0d6b58}table{width:100%;border-collapse:collapse;margin-bottom:16px}th{background:#f0f2f5;text-align:left;padding:7px 10px;font-size:10px;text-transform:uppercase;letter-spacing:.04em}td{padding:7px 10px;border-bottom:1px solid #e2e5ea;font-size:11px}tr:last-child td{border-bottom:none}.pill{display:inline-block;padding:2px 7px;border-radius:99px;font-size:10px;font-weight:700}.red{background:#fef2f2;color:#c0292b}.amber{background:#fffbeb;color:#b45309}.green{background:#e6f4f0;color:#0d6b58}.gray{background:#f1f5f9;color:#475569}.footer{margin-top:24px;font-size:10px;color:#9ca3af;border-top:1px solid #e2e5ea;padding-top:10px}</style></head><body>
+  const html=`<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Agenda Comité · ${esc(plan.name)}</title><style>body{font-family:Arial,sans-serif;font-size:12px;margin:30px;color:#111}h1{font-size:20px;margin-bottom:4px}h2{font-size:14px;margin:18px 0 8px;color:#0d6b58}table{width:100%;border-collapse:collapse;margin-bottom:16px}th{background:#f0f2f5;text-align:left;padding:7px 10px;font-size:10px;text-transform:uppercase;letter-spacing:.04em}td{padding:7px 10px;border-bottom:1px solid #e2e5ea;font-size:11px}tr:last-child td{border-bottom:none}.pill{display:inline-block;padding:2px 7px;border-radius:99px;font-size:10px;font-weight:700}.red{background:#fef2f2;color:#c0292b}.amber{background:#fffbeb;color:#b45309}.green{background:#e6f4f0;color:#0d6b58}.gray{background:#f1f5f9;color:#475569}.footer{margin-top:24px;font-size:10px;color:#9ca3af;border-top:1px solid #e2e5ea;padding-top:10px}
+
+/* ── TOM / BENEFICIOS / ALERTAS · refresh visual ── */
+.tom-board{display:flex;flex-direction:column;gap:14px}
+.tom-obj-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:var(--sh-sm);overflow:hidden}
+.tom-obj-head{display:grid;grid-template-columns:1fr auto;gap:14px;align-items:start;padding:15px 17px;border-bottom:1px solid var(--border);background:linear-gradient(180deg,#fff,#fafbfc)}
+.tom-obj-title{font-size:16px;font-weight:700;line-height:1.25;cursor:pointer;color:var(--text)}
+.tom-obj-title:hover{color:var(--em);text-decoration:underline}
+.tom-obj-meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;color:var(--muted);font-size:12px}
+.tom-obj-pills{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
+.tom-obj-pill{display:inline-flex;align-items:center;gap:5px;border-radius:var(--r-full);padding:5px 9px;font-size:11px;font-weight:700;background:var(--slate-s);color:var(--slate)}
+.tom-obj-pill.ok{background:var(--em-s);color:var(--em)}
+.tom-obj-pill.mid{background:var(--amber-s);color:var(--amber)}
+.tom-obj-pill.bad{background:var(--rose-s);color:var(--rose)}
+.tom-components-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding:14px 16px;background:#fff}
+@media(max-width:1100px){.tom-components-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:700px){.tom-components-grid{grid-template-columns:1fr}}
+.tom-component-card{border:1px solid var(--border);border-radius:var(--r);padding:12px;background:var(--surface2);min-height:112px;display:flex;flex-direction:column;gap:7px}
+.tom-component-card.empty{background:#fff;border-style:dashed;color:var(--muted)}
+.tom-component-label{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);display:flex;align-items:center;justify-content:space-between;gap:8px}
+.tom-component-value{font-size:13px;line-height:1.45;color:var(--text);white-space:pre-wrap}
+.tom-component-badge{font-size:10px;border-radius:999px;padding:3px 7px;background:#fff;border:1px solid var(--border);color:var(--muted);font-weight:700}
+
+.benefit-board{display:flex;flex-direction:column;gap:16px}
+.benefit-obj-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:var(--sh-sm);overflow:hidden}
+.benefit-obj-head{display:grid;grid-template-columns:1fr auto;gap:14px;align-items:start;padding:16px 18px;border-bottom:1px solid var(--border);background:linear-gradient(180deg,#fff,#fafbfc)}
+.benefit-obj-title{font-size:17px;font-weight:700;line-height:1.25;cursor:pointer}
+.benefit-obj-title:hover{color:var(--em);text-decoration:underline}
+.benefit-obj-meta{font-size:12px;color:var(--muted);display:flex;gap:8px;flex-wrap:wrap;margin-top:5px}
+.benefit-summary{display:grid;grid-template-columns:repeat(5,minmax(120px,1fr));gap:10px;margin-top:12px}
+@media(max-width:1000px){.benefit-summary{grid-template-columns:repeat(2,1fr)}}
+.benefit-summary-card{border:1px solid var(--border);border-radius:var(--r);background:#fff;padding:10px 12px;min-height:62px;box-shadow:0 1px 2px rgba(0,0,0,.03)}
+.benefit-summary-label{font-size:10px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+.benefit-summary-value{font-size:18px;font-weight:800;color:var(--text);line-height:1.1}
+.benefit-summary-note{font-size:11px;color:var(--muted);margin-top:3px}
+.benefit-table th{font-size:10px}
+.benefit-init-name{font-weight:700;color:var(--text);cursor:pointer;line-height:1.28}
+.benefit-init-name:hover{color:var(--em);text-decoration:underline}
+.benefit-init-meta{font-size:11px;color:var(--muted);margin-top:3px;line-height:1.35}
+.benefit-real-box{display:flex;flex-direction:column;gap:5px;align-items:flex-start}
+.benefit-use{display:flex;align-items:center;gap:8px;min-width:96px}
+.benefit-use-track{height:7px;background:#e5e7eb;border-radius:999px;overflow:hidden;flex:1;min-width:54px}
+.benefit-use-fill{height:100%;background:var(--em-l);border-radius:999px}
+.benefit-use-fill.mid{background:var(--amber)}
+.benefit-use-fill.high{background:var(--rose)}
+.benefit-next{font-size:11px;color:var(--muted);text-align:right;margin-top:8px}
+
+.alert-exec-summary{display:grid;grid-template-columns:repeat(5,minmax(150px,1fr));gap:12px;margin-bottom:16px}
+@media(max-width:1100px){.alert-exec-summary{grid-template-columns:repeat(2,1fr)}}
+.alert-summary-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:13px 14px;box-shadow:var(--sh-sm)}
+.alert-summary-label{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:4px}
+.alert-summary-value{font-size:26px;font-weight:800;line-height:1}
+.alert-summary-value.red{color:var(--rose)}
+.alert-summary-value.amber{color:var(--amber)}
+.alert-summary-value.blue{color:var(--blue)}
+.alert-summary-note{font-size:11px;color:var(--muted);margin-top:4px;line-height:1.3}
+.alert-card-v2{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:var(--sh-sm);overflow:hidden;border-left:5px solid var(--blue)}
+.alert-card-v2.critical{border-left-color:var(--rose)}
+.alert-card-v2.committee{border-left-color:var(--amber)}
+.alert-card-v2.adjust{border-left-color:var(--blue)}
+.alert-card-v2.follow{border-left-color:var(--em-l)}
+.alert-card-head-v2{display:grid;grid-template-columns:1.25fr 1fr auto;gap:16px;align-items:start;padding:15px 17px;background:linear-gradient(180deg,#fff,#fafbfc);border-bottom:1px solid var(--border)}
+@media(max-width:1000px){.alert-card-head-v2{grid-template-columns:1fr}}
+.alert-title-v2{font-size:16px;font-weight:800;line-height:1.25}
+.alert-meta-v2{font-size:12px;color:var(--muted);margin-top:4px;line-height:1.35}
+.alert-cause-v2{font-size:12px;line-height:1.45;color:var(--text2)}
+.alert-cause-v2 strong{color:var(--text)}
+.alert-body-v2{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:14px 17px;background:#fff}
+@media(max-width:900px){.alert-body-v2{grid-template-columns:1fr}}
+.alert-panel-v2{border:1px solid var(--border);border-radius:var(--r);background:var(--surface2);padding:12px}
+.alert-panel-v2-title{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:7px}
+.alert-panel-v2-text{font-size:13px;font-weight:600;line-height:1.45;color:var(--text)}
+.alert-signal-row-v2{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.alert-severity-pill{display:inline-flex;border-radius:999px;padding:5px 9px;font-size:11px;font-weight:800}
+.alert-severity-pill.critical{background:var(--rose-s);color:var(--rose)}
+.alert-severity-pill.committee{background:var(--amber-s);color:var(--amber)}
+.alert-severity-pill.adjust{background:var(--blue-s);color:var(--blue)}
+.alert-severity-pill.follow{background:var(--em-s);color:var(--em)}
+
+</style></head><body>
   <h1>Agenda de Comité Ejecutivo</h1>
   <p><strong>${esc(plan.name)}</strong> · ${esc(date)} · Cadencia: ${esc(plan.cadence)} · Comité: ${esc(plan.committee||'No definido')}</p>
   <p style="font-size:11px;color:#6b7280;margin-top:4px">IGEE: ${Math.round(calcPlanScore(plan))}% · Generada automáticamente por Ximpler EDGE v4</p>
@@ -1992,23 +2150,84 @@ function gapClass(r){ r=txt(r).toLowerCase(); if(r.includes('crítico')||r.inclu
 // ── TOM ──────────────────────────────────────────────────────────────
 function renderTOM(){
   const plan=currentPlan();
-  const rows=plan.objectives.map(o=>{
+  const cards=plan.objectives.map(o=>{
     const score=tomScore(o);
-    return `<tr><td><strong>${esc(o.name)}</strong><div class="obj-sub">${esc(o.tomType)} · ${esc(o.tomRole||'Sin dueño E2E')}</div></td><td><div class="tom-mini-box"><div class="tom-mini-label">Proceso</div><div class="tom-mini-value">${esc(o.tomProcess)}</div></div></td><td><div class="tom-mini-box"><div class="tom-mini-label">Capacidades</div><div class="tom-mini-value">${esc(o.tomCapabilities)}</div></div></td><td><div class="tom-mini-box"><div class="tom-mini-label">Tecnología</div><div class="tom-mini-value">${esc(o.tomTech)}</div></div></td><td><div class="tom-mini-box"><div class="tom-mini-label">Gobernanza</div><div class="tom-mini-value">${esc(o.tomGovernance)}</div></div></td><td><span class="tom-score-pill ${score>=80?'tom-ok':score>=50?'tom-mid':'tom-bad'}">${score}%</span></td></tr>`;
+    const tone=score>=80?'ok':score>=50?'mid':'bad';
+    const components=[
+      ['Proceso',o.tomProcess,'Define el flujo end-to-end'],
+      ['Capacidades',o.tomCapabilities,'Define capacidades y coordinación'],
+      ['Tecnología',o.tomTech,'Herramientas habilitadoras'],
+      ['Gobernanza',o.tomGovernance,'Ritmo, comités y escalamiento']
+    ];
+    const missing=components.filter(c=>txt(c[1]).trim().length<=10).length + (txt(o.tomRole).trim().length<=3?1:0);
+    const compHtml=components.map(([label,value,hint])=>{
+      const ok=txt(value).trim().length>10;
+      return `<div class="tom-component-card ${ok?'':'empty'}"><div class="tom-component-label"><span>${esc(label)}</span><span class="tom-component-badge">${ok?'Capturado':'Pendiente'}</span></div><div class="tom-component-value">${esc(value||`Sin ${label.toLowerCase()} registrado.`)}</div><div class="obj-sub">${esc(hint)}</div></div>`;
+    }).join('');
+    return `<div class="tom-obj-card">
+      <div class="tom-obj-head">
+        <div>
+          <div class="tom-obj-title" data-action="viewObj" data-obj-id="${esc(o.id)}">${esc(o.code?o.code+' · ':'')}${esc(o.name)}</div>
+          <div class="tom-obj-meta"><span>${esc(objectiveTypeLabel(o.type))}</span><span>Responsable: <strong>${esc(o.leader||'—')}</strong></span><span>Dueño E2E: <strong>${esc(o.tomRole||'Sin dueño')}</strong></span></div>
+          <div class="tom-obj-pills"><span class="tom-obj-pill ${tone}">TOM ${score}%</span><span class="tom-obj-pill ${missing?'mid':'ok'}">${missing?missing+' pendiente(s)':'Modelo completo'}</span><span class="tom-obj-pill">${esc(o.tomType||'Central')}</span></div>
+        </div>
+        <button class="btn btn-secondary btn-sm" data-action="viewObj" data-obj-id="${esc(o.id)}">Ver detalle</button>
+      </div>
+      <div class="tom-components-grid">${compHtml}</div>
+    </div>`;
   }).join('');
-  $('viewTOM').innerHTML=`<div class="section-hero"><h2>TOM · Modelo Operativo Objetivo</h2></div><div class="card table-wrap"><table><thead><tr><th>Objetivo</th><th>Proceso</th><th>Capacidades</th><th>Tecnología</th><th>Gobernanza</th><th>Score</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  $('viewTOM').innerHTML=`<div class="section-hero"><h2>TOM · Modelo Operativo Objetivo</h2></div><div class="tom-board">${cards||'<div class="empty-box">Sin objetivos registrados.</div>'}</div>`;
 }
 
 // ── BENEFICIOS ───────────────────────────────────────────────────────
 function renderBeneficios(){
   const plan=currentPlan();
-  const rows=plan.objectives.flatMap(o=>o.initiatives.map(i=>({o,i}))).map(({o,i})=>{
-    const real=txt(i.benefitReal).trim();
-    const cls=real?'benefit-real-ok':calcActionsProgress(i.actions)>50?'benefit-real-partial':'benefit-real-pending';
-    const label=real?'Realizado':calcActionsProgress(i.actions)>50?'Parcial':'Pendiente';
-    return `<tr><td><strong>${esc(o.name)}</strong></td><td>${esc(i.name)}</td><td>${esc(i.benefitExpected||'—')}</td><td><span class="benefit-real-tag ${cls}">${label}</span><div class="obj-sub">${esc(i.benefitReal||'—')}</div></td><td>${fmtMoney(i.budget)}</td><td>${fmtMoney(i.spent)}</td><td>${num(i.budget)?Math.round((num(i.spent)/num(i.budget))*100):0}%</td></tr>`;
+  const cards=plan.objectives.map(o=>{
+    const inits=asArray(o.initiatives);
+    const budget=inits.reduce((a,i)=>a+num(i.budget),0);
+    const spent=inits.reduce((a,i)=>a+num(i.spent),0);
+    const realized=inits.filter(i=>txt(i.benefitReal).trim()).length;
+    const partial=inits.filter(i=>!txt(i.benefitReal).trim()&&calcActionsProgress(i.actions)>50).length;
+    const nextDates=inits.map(i=>i.benefitDate||i.dueDate).filter(Boolean).sort();
+    const next=nextDates.find(d=>new Date(d+'T00:00:00')>=new Date(todayISO()+'T00:00:00'))||nextDates[0]||'';
+    const use=budget?Math.round((spent/budget)*100):0;
+    const rows=inits.map(i=>{
+      const real=txt(i.benefitReal).trim();
+      const progress=calcActionsProgress(i.actions);
+      const cls=real?'benefit-real-ok':progress>50?'benefit-real-partial':'benefit-real-pending';
+      const label=real?'Realizado':progress>50?'Parcial / validación':'Sin materializar';
+      const initUse=num(i.budget)?Math.round((num(i.spent)/num(i.budget))*100):0;
+      const fillCls=initUse>=80?'high':initUse>=50?'mid':'';
+      return `<tr>
+        <td><div class="benefit-init-name" data-action="viewInit" data-obj-id="${esc(o.id)}" data-init-id="${esc(i.id)}">${esc(i.name)}</div><div class="benefit-init-meta">Prioridad: ${esc(i.priority||'—')} · Estatus: ${esc(i.status||'—')} · Avance ${progress}%</div></td>
+        <td>${esc(i.benefitExpected||'—')}</td>
+        <td><div class="benefit-real-box"><span class="benefit-real-tag ${cls}">${esc(label)}</span><span class="obj-sub">${esc(real||'Aún sin beneficio real confirmado.')}</span></div></td>
+        <td><strong>${esc(i.benefitOwner||i.owner||'—')}</strong></td>
+        <td>${esc(i.benefitDate||i.dueDate||'s/f')}<div class="obj-sub">${daysText(i.benefitDate||i.dueDate)}</div></td>
+        <td><strong>${fmtMoney(i.budget)}</strong></td>
+        <td><strong>${fmtMoney(i.spent)}</strong></td>
+        <td><div class="benefit-use"><strong>${initUse}%</strong><div class="benefit-use-track"><div class="benefit-use-fill ${fillCls}" style="width:${clamp(initUse)}%"></div></div></div></td>
+      </tr>`;
+    }).join('');
+    return `<div class="benefit-obj-card">
+      <div class="benefit-obj-head">
+        <div>
+          <div class="benefit-obj-title" data-action="viewObj" data-obj-id="${esc(o.id)}">${esc(o.code?o.code+' · ':'')}${esc(o.name)}</div>
+          <div class="benefit-obj-meta"><span>${esc(objectiveTypeLabel(o.type))}</span><span>Responsable: <strong>${esc(o.leader||'—')}</strong></span><span>IGEE ${Math.round(calcObjectiveScore(o))}%</span></div>
+          <div class="benefit-summary">
+            <div class="benefit-summary-card"><div class="benefit-summary-label">Iniciativas</div><div class="benefit-summary-value">${inits.length}</div><div class="benefit-summary-note">Portafolio registrado</div></div>
+            <div class="benefit-summary-card"><div class="benefit-summary-label">Realizados</div><div class="benefit-summary-value">${realized}</div><div class="benefit-summary-note">${partial} en validación</div></div>
+            <div class="benefit-summary-card"><div class="benefit-summary-label">Presupuesto</div><div class="benefit-summary-value">${fmtMoney(budget)}</div><div class="benefit-summary-note">Total iniciativas</div></div>
+            <div class="benefit-summary-card"><div class="benefit-summary-label">Gastado</div><div class="benefit-summary-value">${fmtMoney(spent)}</div><div class="benefit-summary-note">Uso ${use}%</div></div>
+            <div class="benefit-summary-card"><div class="benefit-summary-label">Próxima realización</div><div class="benefit-summary-value" style="font-size:15px">${esc(next||'s/f')}</div><div class="benefit-summary-note">${next?daysText(next):'Sin fecha'}</div></div>
+          </div>
+        </div>
+        <div><button class="btn btn-secondary btn-sm" data-action="viewObj" data-obj-id="${esc(o.id)}">Ver detalle</button><div class="benefit-next">${next?`Próxima realización: ${esc(next)}`:'Sin próxima fecha'}</div></div>
+      </div>
+      <div class="table-wrap"><table class="benefit-table"><thead><tr><th>Iniciativa</th><th>Beneficio esperado</th><th>Beneficio real</th><th>Dueño beneficio</th><th>Fecha realización</th><th>Presupuesto</th><th>Gastado</th><th>Uso</th></tr></thead><tbody>${rows||`<tr><td colspan="8"><div class="empty-box">Sin iniciativas registradas.</div></td></tr>`}</tbody></table></div>
+    </div>`;
   }).join('');
-  $('viewBeneficios').innerHTML=`<div class="section-hero"><h2>Beneficios</h2></div><div class="card table-wrap"><table><thead><tr><th>Objetivo</th><th>Iniciativa</th><th>Beneficio esperado</th><th>Beneficio real</th><th>Presupuesto</th><th>Gastado</th><th>Uso</th></tr></thead><tbody>${rows||`<tr><td colspan="7"><div class="empty-box">Sin beneficios registrados.</div></td></tr>`}</tbody></table></div>`;
+  $('viewBeneficios').innerHTML=`<div class="section-hero"><h2>Beneficios</h2></div><div class="benefit-board">${cards||'<div class="empty-box">Sin objetivos registrados.</div>'}</div>`;
 }
 
 // ── ALERTAS ──────────────────────────────────────────────────────────
@@ -2037,7 +2256,47 @@ function generateAlerts(){
 }
 function renderAlertas(){
   const alerts=generateAlerts();
-  $('viewAlertas').innerHTML=`<div class="section-hero"><h2>Centro de alertas ejecutivas</h2><p>Incluye alertas por dato sin confirmar (semáforo de confianza), divergencia de riesgo gap declarado vs inferido, bajo IGEE, brecha crítica, sobregasto, iniciativas desconectadas y acciones vencidas.</p></div><div class="alert-board">${alerts.map(al=>`<div class="alert-exec-card ${al.level}"><div class="alert-exec-head"><div><div style="font-size:16px;font-weight:700">${esc(al.title)}</div><div class="obj-sub">${esc(al.obj?.name||'')}</div></div><div style="font-size:12px;color:var(--text2)">${esc(al.cause)}</div><div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">${al.obj?`<button class="btn btn-secondary btn-xs" data-action="viewObj" data-obj-id="${esc(al.obj.id)}">Ver objetivo</button>`:''}</div></div><div class="alert-body"><div class="alert-panel"><div class="alert-panel-title">Decisión sugerida</div><div style="font-size:13px;font-weight:700;color:var(--text);line-height:1.45">${esc(al.decision)}</div></div><div class="alert-panel"><div class="alert-panel-title">Señales</div><div class="alert-signals"><span class="alert-signal as-${al.level==='critical'?'red':al.level==='committee'?'yellow':'blue'}">${esc(al.level)}</span><span class="alert-signal as-gray">IGEE ${Math.round(calcObjectiveScore(al.obj||{}))}%</span></div></div></div></div>`).join('')||'<div class="empty-box">Sin alertas críticas.</div>'}</div>`;
+  const affected=new Set(alerts.map(a=>a.obj?.id).filter(Boolean));
+  const critical=alerts.filter(a=>a.level==='critical').length;
+  const committee=alerts.filter(a=>a.level==='committee').length;
+  const adjust=alerts.filter(a=>a.level==='adjust').length;
+  const overdue=alerts.filter(a=>/vencida/i.test(a.title||'')).length;
+  const cards=alerts.map(al=>{
+    const obj=al.obj||{};
+    const igee=Math.round(calcObjectiveScore(obj));
+    const op=calcObjectiveOperationalProgress(obj);
+    const tom=tomScore(obj);
+    const severity=al.level==='critical'?'Intervención crítica':al.level==='committee'?'Decisión de comité':al.level==='adjust'?'Ajuste requerido':'Seguimiento';
+    const cause=al.level==='critical'?'Resultado / plazo crítico':al.level==='committee'?'Riesgo estratégico':al.level==='adjust'?'Calidad de dato / diseño':'Seguimiento operativo';
+    const why=al.cause||'Se detectó una señal operativa que requiere atención.';
+    const sourceTags=[`IGEE ${igee}%`,`Avance ${op}%`,`TOM ${tom}%`];
+    if(al.init) sourceTags.push(`Iniciativa: ${al.init.name}`);
+    if(al.act) sourceTags.push(`Acción: ${al.act.status}`);
+    return `<div class="alert-card-v2 ${esc(al.level)}">
+      <div class="alert-card-head-v2">
+        <div>
+          <div class="alert-title-v2">${esc(al.title)}</div>
+          <div class="alert-meta-v2">${esc(obj.code?obj.code+' · ':'')}${esc(obj.name||'Objetivo sin nombre')} · Responsable: ${esc(obj.leader||'—')} · ${daysText(obj.end)}</div>
+          <div class="alert-signal-row-v2"><span class="alert-severity-pill ${esc(al.level)}">${esc(severity)}</span><span class="alert-signal as-gray">${esc(cause)}</span></div>
+        </div>
+        <div class="alert-cause-v2"><strong>Causa dominante:</strong> ${esc(cause)}<br><strong>Qué pasa:</strong> ${esc(why)}<br><strong>Fuente:</strong> ${esc(sourceTags.join(' + '))}</div>
+        <div style="display:flex;justify-content:flex-end"><button class="btn btn-secondary btn-sm" data-action="viewObj" data-obj-id="${esc(obj.id||'')}">Ver objetivo</button></div>
+      </div>
+      <div class="alert-body-v2">
+        <div class="alert-panel-v2"><div class="alert-panel-v2-title">Por qué importa</div><div class="alert-panel-v2-text">${esc(why)}</div><div class="alert-signal-row-v2">${sourceTags.map(t=>`<span class="alert-signal as-gray">${esc(t)}</span>`).join('')}</div></div>
+        <div class="alert-panel-v2"><div class="alert-panel-v2-title">Decisión requerida</div><div class="alert-panel-v2-text">${esc(al.decision||'Definir responsable, fecha y criterio de cierre.')}</div><div class="alert-signal-row-v2"><span class="alert-signal as-${al.level==='critical'?'red':al.level==='committee'?'yellow':'blue'}">${esc(severity)}</span></div></div>
+      </div>
+    </div>`;
+  }).join('');
+  $('viewAlertas').innerHTML=`<div class="section-hero"><h2>Centro de alertas ejecutivas</h2></div>
+    <div class="alert-exec-summary">
+      <div class="alert-summary-card"><div class="alert-summary-label">Objetivos afectados</div><div class="alert-summary-value">${affected.size}</div><div class="alert-summary-note">Con una o más señales</div></div>
+      <div class="alert-summary-card"><div class="alert-summary-label">Intervención crítica</div><div class="alert-summary-value red">${critical}</div><div class="alert-summary-note">Requieren acción inmediata</div></div>
+      <div class="alert-summary-card"><div class="alert-summary-label">Decisión de comité</div><div class="alert-summary-value amber">${committee}</div><div class="alert-summary-note">Requieren acuerdo ejecutivo</div></div>
+      <div class="alert-summary-card"><div class="alert-summary-label">Ajustes requeridos</div><div class="alert-summary-value blue">${adjust}</div><div class="alert-summary-note">Datos, KPIs o diseño</div></div>
+      <div class="alert-summary-card"><div class="alert-summary-label">Acciones vencidas</div><div class="alert-summary-value ${overdue?'red':''}">${overdue}</div><div class="alert-summary-note">Compromisos tácticos atrasados</div></div>
+    </div>
+    <div class="alert-board">${cards||'<div class="empty-box">Sin alertas críticas.</div>'}</div>`;
 }
 
 // ── CADENCIA ─────────────────────────────────────────────────────────
