@@ -1533,6 +1533,7 @@ function handleClick(e){
   if(a==='completeCommit') completeCommitment(commitId);
   if(a==='quickKpi') openQuickKpi(oid,kid);
   if(a==='autopsia') openAutopsia(oid);
+  if(a==='sendAlertCommittee') sendAlertToCommittee(num(act.dataset.alertIndex));
   if(a==='addChecklist') addChecklistItem(oid);
   if(a==='toggleChecklist') toggleChecklistItem(oid,cid);
   if(a==='editChecklist') editChecklistItem(oid,cid);
@@ -2327,7 +2328,7 @@ function sendAlertToCommittee(index){
   plan.agenda.push(normalizeAgendaItem({
     type:'Alerta',origin:'Alerta',priority:alertPriority(al.level),status:'Pendiente',title:al.title,
     owner:al.obj?.leader||al.init?.owner||al.act?.responsible||'',dueDate:todayISO(),duration:al.level==='critical'?'15 min':'10 min',
-    linkedObjective:al.obj?.id||'',linkedInitiative:al.init?.id||'',
+    linkedObjective:al.obj?.id||'',linkedInitiative:al.init?.id||'',linkedAction:al.act?.id||'',
     context:`${al.cause}\n\nImpacto potencial: ${al.impact}`,
     decision:al.decision,
     notes:`Promovida desde Alertas Ejecutivas el ${todayISO()}. Señales: ${asArray(al.signals).join(' · ')}`
@@ -2357,7 +2358,7 @@ function renderAlertas(){
           <div class="alert-signal-row-v2"><span class="alert-severity-pill ${esc(al.level)}">${esc(severity)}</span><span class="alert-signal as-gray">${esc(cause)}</span></div>
         </div>
         <div class="alert-cause-v2"><strong>Causa:</strong> ${esc(al.cause)}<br><strong>Impacto potencial:</strong> ${esc(al.impact)}</div>
-        <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap"><button class="btn btn-secondary btn-sm" data-action="viewObj" data-obj-id="${esc(obj.id||'')}">Ver objetivo</button><button class="btn btn-primary btn-sm" data-action="sendAlertCommittee" data-alert-index="${idx}" ${already?'disabled':''}>${already?'En Comité':'Enviar a Comité'}</button></div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">${al.act?`<button class="btn btn-secondary btn-sm" data-action="viewAct" data-obj-id="${esc(obj.id||'')}" data-init-id="${esc(al.init?.id||'')}" data-act-id="${esc(al.act.id||'')}">Ver acción</button>`:al.init?`<button class="btn btn-secondary btn-sm" data-action="viewInit" data-obj-id="${esc(obj.id||'')}" data-init-id="${esc(al.init.id||'')}">Ver iniciativa</button>`:`<button class="btn btn-secondary btn-sm" data-action="viewObj" data-obj-id="${esc(obj.id||'')}">Ver objetivo</button>`}<button class="btn btn-primary btn-sm" data-action="sendAlertCommittee" data-alert-index="${idx}" ${already?'disabled':''}>${already?'En Comité':'Enviar a Comité'}</button></div>
       </div>
       <div class="alert-body-v2">
         <div class="alert-panel-v2"><div class="alert-panel-v2-title">Señales que la activaron</div><div class="alert-signal-row-v2">${asArray(al.signals).map(t=>`<span class="alert-signal as-gray">${esc(t)}</span>`).join('')}</div></div>
