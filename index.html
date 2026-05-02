@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>Ximpler EDGE v5.5 · Copiloto Estratégico</title>
+<title>Ximpler EDGE v5.6 · Copiloto Estratégico</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -347,7 +347,7 @@ tbody tr:hover td{background:#fafbfc}
 
 /* ── KPI TABLERO ── */
 .kpi-gauge{width:64px;height:36px;position:relative;overflow:hidden}
-.kpi-gauge:before{content:"";position:absolute;left:0;top:0;width:64px;height:64px;border-radius:50%;background:conic-gradient(from 270deg,var(--rose) 0 54deg,var(--amber) 54deg 108deg,var(--em-l) 108deg 180deg,#e5e7eb 180deg 360deg)}
+.kpi-gauge:before{content:"";position:absolute;left:0;top:0;width:64px;height:64px;border-radius:50%;background:conic-gradient(from 270deg,var(--rose) 0 90deg,var(--amber) 90deg 135deg,var(--em-l) 135deg 180deg,#e5e7eb 180deg 360deg)}
 .kpi-gauge:after{content:"";position:absolute;left:12px;top:12px;width:40px;height:40px;border-radius:50%;background:var(--surface)}
 .kpi-needle{position:absolute;left:31px;bottom:2px;width:2px;height:26px;background:#1f2937;border-radius:999px;transform-origin:bottom center;transform:rotate(calc(-90deg + (var(--score)*1.8deg)));z-index:2}
 .kpi-score-text{position:absolute;left:0;right:0;bottom:0;text-align:center;font-size:9px;font-weight:700;z-index:3;color:var(--text)}
@@ -756,8 +756,8 @@ tbody tr:hover td{background:#fafbfc}
 <div class="page" id="planningView">
   <div class="topbar">
     <div class="tl">
-      <h1>Ximpler EDGE <span style="font-weight:400;color:var(--muted);font-size:22px">v5.3</span></h1>
-      <p class="subtitle">Copiloto estratégico v5.3 · Importación robusta, alineación visible, trazabilidad ejecutiva y avance ponderado explicado.</p>
+      <h1>Ximpler EDGE <span style="font-weight:400;color:var(--muted);font-size:22px">v5.6</span></h1>
+      <p class="subtitle">Copiloto estratégico v5.6 · Semáforo unificado: verde ≥75%, amarillo 51–74%, rojo ≤50%.</p>
     </div>
     <div class="tr">
       <button id="newPlanningBtn" class="btn btn-primary">+ Nueva Planeación</button>
@@ -1084,7 +1084,7 @@ tbody tr:hover td{background:#fafbfc}
 'use strict';
 
 // ── CONSTANTES ──────────────────────────────────────────────────────
-const STORAGE_KEY = 'ximpler_edge_v5_5';
+const STORAGE_KEY = 'ximpler_edge_v5_6';
 const KPI_STALE_DAYS = { 'Diaria':2, 'Semanal':9, 'Mensual':35, 'Trimestral':100 };
 
 let state = { plannings:[], activePlanningId:null };
@@ -2277,8 +2277,8 @@ function renderImpacto(){
       return `<tr>
         <td><div class="impact-table-name" data-action="viewInit" data-obj-id="${esc(o.id)}" data-init-id="${esc(init.id)}">${esc(init.name)}</div><div class="impact-mini-note">Responsable: ${esc(init.owner||'—')} · KPI: ${esc(init.impactKpi||'Sin KPI impactado')} · ${done}/${total} acciones terminadas</div></td>
         <td>${impactProgress(progress)}</td>
-        <td><strong>${fmtNum(init.expectedImpact,0)}%</strong></td>
-        <td><strong>${fmtNum(init.realImpact,0)}%</strong></td>
+        <td><span class="impact-kpi-pill ${impactTone(num(init.expectedImpact))}">${fmtNum(init.expectedImpact,0)}%</span></td>
+        <td><span class="impact-kpi-pill ${impactTone(num(init.realImpact))}">${fmtNum(init.realImpact,0)}%</span></td>
         <td>${impactProgress(eff)}</td>
         <td><span class="impact-priority ${priorityClassImpact(init.priority)}">${esc(init.priority||'Media')}</span></td>
         <td><div class="impact-portfolio">${esc(initiativePortfolioLabel(init))}</div></td>
@@ -3514,7 +3514,7 @@ function downloadFile(filename,content,type){ const blob=new Blob([content],{typ
 // evitar objetivos, iniciativas, KPIs y acciones dispersas o sin evidencia.
 // ══════════════════════════════════════════════════════════════════════
 const V5_LEGACY_STORAGE_KEY = 'ximpler_edge_v4';
-const V5_VERSION = 'v5.5';
+const V5_VERSION = 'v5.6';
 
 function v5Tone(score){ score=num(score); return score>=75?'green':score>=51?'yellow':'red'; }
 function v5Pill(label,value,tone='gray',title=''){
@@ -3736,7 +3736,7 @@ function v52ParseStateRaw(raw){
 function v52HasPlans(candidate){ return !!(candidate && Array.isArray(candidate.plannings) && candidate.plannings.length); }
 loadState = function(){
   try{
-    const keys=[STORAGE_KEY,'ximpler_edge_v5_4','ximpler_edge_v5_3','ximpler_edge_v5_2','ximpler_edge_v5_1','ximpler_edge_v5','ximpler_edge_v4'];
+    const keys=[STORAGE_KEY,'ximpler_edge_v5_5','ximpler_edge_v5_4','ximpler_edge_v5_3','ximpler_edge_v5_2','ximpler_edge_v5_1','ximpler_edge_v5','ximpler_edge_v4'];
     let chosen=null;
     for(const key of keys){
       const candidate=v52ParseStateRaw(localStorage.getItem(key));
@@ -3825,7 +3825,7 @@ function v53CompactForStorage(payload){
   }));
 }
 function v53RemoveLegacyCopies(){
-  ['ximpler_edge_v5_3','ximpler_edge_v5_2','ximpler_edge_v5_1','ximpler_edge_v5','ximpler_edge_v4'].forEach(k=>{ try{ if(k!==STORAGE_KEY) localStorage.removeItem(k); }catch(e){} });
+  ['ximpler_edge_v5_5','ximpler_edge_v5_4','ximpler_edge_v5_3','ximpler_edge_v5_2','ximpler_edge_v5_1','ximpler_edge_v5','ximpler_edge_v4'].forEach(k=>{ try{ if(k!==STORAGE_KEY) localStorage.removeItem(k); }catch(e){} });
 }
 saveState = function(){
   state.updatedAt=new Date().toISOString();
@@ -3855,8 +3855,8 @@ function v5InjectAfter(id, html){
   const el=$(id); if(el && !document.getElementById(html.match(/id="([^"]+)"/)?.[1]||'__missing')) el.closest('.field')?.insertAdjacentHTML('afterend', html);
 }
 function applyV5DOMUpgrades(){
-  document.title='Ximpler EDGE v5.5 · Copiloto de Ejecución Estratégica';
-  const subtitle=document.querySelector('#planningView .subtitle'); if(subtitle) subtitle.textContent='Copiloto estratégico v5 · Trazabilidad ejecutiva: resultado, ejecución, evidencia, gobernanza y comité con reglas duras.';
+  document.title='Ximpler EDGE v5.6 · Copiloto de Ejecución Estratégica';
+  const subtitle=document.querySelector('#planningView .subtitle'); if(subtitle) subtitle.textContent='Copiloto estratégico v5.6 · Semáforo unificado: verde ≥75%, amarillo 51–74%, rojo ≤50%.';
   v5InjectAfter('oBudget', `<div class="field"><label>Peso estratégico %</label><input id="oStrategicWeight" class="input" type="number" min="0" max="100" step="1" value="100"><div class="hint">Define cuánto pesa este objetivo en la planeación. Ya no todos los objetivos valen igual.</div></div>`);
   v5InjectAfter('oExpectedResult', `<div class="field"><label>Hipótesis estratégica</label><input id="oHypothesis" class="input" placeholder="Si hacemos X, esperamos mover Y porque..."></div>`);
   v5InjectAfter('oGap', `<div class="field"><label>Criterio de éxito</label><textarea id="oSuccessCriteria" class="textarea" placeholder="Cómo sabremos que el objetivo se logró con evidencia suficiente."></textarea></div>`);
@@ -4248,7 +4248,7 @@ exportXLS = function(){
     return `<Worksheet ss:Name="${xmlEsc(sheetName(title))}"><Table>${rowXml(headers,'sHeader')}${rows.map(r=>rowXml(r)).join('')}</Table><WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel"><FreezePanes/><FrozenNoSplit/><SplitHorizontal>1</SplitHorizontal><TopRowBottomPane>1</TopRowBottomPane><ActivePane>2</ActivePane></WorksheetOptions></Worksheet>`;
   }
   const workbook=`<?xml version="1.0"?><?mso-application progid="Excel.Sheet"?><Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet" xmlns:html="http://www.w3.org/TR/REC-html40"><DocumentProperties xmlns="urn:schemas-microsoft-com:office:office"><Author>Ximpler EDGE</Author><Created>${new Date().toISOString()}</Created><Version>16.00</Version></DocumentProperties><Styles><Style ss:ID="Default" ss:Name="Normal"><Alignment ss:Vertical="Top"/><Font ss:FontName="Arial" ss:Size="10"/></Style><Style ss:ID="sHeader"><Font ss:FontName="Arial" ss:Size="10" ss:Bold="1"/><Interior ss:Color="#E6F4F0" ss:Pattern="Solid"/><Alignment ss:Vertical="Top" ss:WrapText="1"/></Style></Styles>${sections.map(s=>worksheetXml(s[0],s[1],s[2])).join('')}</Workbook>`;
-  downloadFile(`reporte_general_v5_5_${txt(plan.name).replace(/[^a-z0-9]+/gi,'_')}_${todayISO()}.xls`,workbook,'application/vnd.ms-excel;charset=utf-8');
+  downloadFile(`reporte_general_v5_6_${txt(plan.name).replace(/[^a-z0-9]+/gi,'_')}_${todayISO()}.xls`,workbook,'application/vnd.ms-excel;charset=utf-8');
 };
 
 // Hook de arranque v5
