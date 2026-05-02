@@ -375,6 +375,32 @@ tbody tr:hover td{background:#fafbfc}
 .detail-box-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin-bottom:4px}
 .detail-box-value{font-size:13px;font-weight:700;white-space:pre-wrap;line-height:1.4}
 
+
+/* ── OBJECTIVE DETAIL EXTENDED ── */
+.detail-section-title{font-size:13px;font-weight:800;color:var(--text);margin:0 0 10px;display:flex;align-items:center;gap:6px}
+.detail-section-sub{font-size:11px;color:var(--muted);margin-top:-5px;margin-bottom:10px;line-height:1.4}
+.detail-chip-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.detail-chip{display:inline-flex;align-items:center;gap:4px;border-radius:var(--r-full);background:var(--slate-s);color:var(--slate);font-size:11px;font-weight:700;padding:5px 8px}
+.detail-chip.green{background:var(--em-s);color:var(--em)}
+.detail-chip.blue{background:var(--blue-s);color:var(--blue)}
+.detail-chip.violet{background:var(--violet-s);color:var(--violet)}
+.detail-chip.yellow{background:var(--amber-s);color:var(--amber)}
+.detail-divider{height:1px;background:var(--border);margin:12px 0}
+.rel-detail-card{border:1px solid var(--border);border-radius:var(--r-sm);padding:10px;background:var(--surface);margin-bottom:8px;border-left:3px solid var(--violet)}
+.rel-detail-card:last-child{margin-bottom:0}
+.check-add-row{display:grid;grid-template-columns:1fr 140px auto;gap:8px;align-items:end;margin-bottom:12px}
+@media(max-width:700px){.check-add-row{grid-template-columns:1fr}}
+.checklist-item{border:1px solid var(--border);border-radius:var(--r-sm);padding:10px;background:var(--surface);display:grid;grid-template-columns:auto 1fr auto;gap:9px;align-items:start;margin-bottom:8px}
+.checklist-item.done{opacity:.65;background:var(--surface2)}
+.checklist-item.done .check-title{text-decoration:line-through;color:var(--muted)}
+.check-title{font-weight:700;font-size:13px;line-height:1.35}
+.check-meta{font-size:11px;color:var(--muted);margin-top:3px}
+.file-add-note{font-size:11px;color:var(--muted);line-height:1.4;margin-top:6px}
+.file-card{border:1px solid var(--border);border-radius:var(--r-sm);padding:10px;background:var(--surface);display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:8px}
+.file-name{font-weight:700;font-size:13px;word-break:break-word}
+.file-meta{font-size:11px;color:var(--muted);margin-top:3px}
+.file-actions{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end}
+
 /* ── MISC ── */
 .muted{color:var(--muted)}
 .small{font-size:12px}
@@ -476,6 +502,7 @@ tbody tr:hover td{background:#fafbfc}
         <div class="g2"><div class="field"><label class="required">Nombre del objetivo</label><input id="oName" class="input"></div><div class="field"><label>Código</label><input id="oCode" class="input" placeholder="OE-1"></div></div>
         <div class="field"><label>Descripción</label><textarea id="oDesc" class="textarea"></textarea></div>
         <div class="g4"><div class="field"><label class="required">Líder responsable</label><input id="oLeader" class="input"></div><div class="field"><label>Fecha inicio</label><input id="oStart" class="input" type="date"></div><div class="field"><label>Fecha compromiso</label><input id="oEnd" class="input" type="date"></div><div class="field"><label>Estatus</label><select id="oStatus" class="select"><option value="activo">Activo</option><option value="en_riesgo">En riesgo</option><option value="pausado">Pausado</option><option value="cumplido">Cumplido</option></select></div></div>
+        <div class="g4" style="margin-top:8px"><div class="field"><label>Nombre del creador</label><input id="oCreator" class="input" placeholder="Ej. Dirección General"></div><div class="field"><label>Frecuencia de actualización</label><select id="oUpdateFrequency" class="select"><option>Diaria</option><option>Semanal</option><option selected>Mensual</option><option>Trimestral</option></select></div><div class="field"><label>Última actualización</label><input id="oLastUpdate" class="input" type="date"></div><div class="field"><label>Invitados / involucrados</label><input id="oInvolved" class="input" placeholder="Separar por coma"></div></div>
         <div class="g3"><div class="field"><label>Áreas</label><input id="oAreas" class="input" placeholder="Separar por coma"></div><div class="field"><label>Etiquetas</label><input id="oTags" class="input" placeholder="Separar por coma"></div><div class="field"><label>Proyectos ligados</label><input id="oProjects" class="input" placeholder="Separar por coma"></div></div>
       </div>
       <div class="form-section"><div class="form-section-head"><span class="form-section-title">Arquitectura estratégica</span></div>
@@ -791,7 +818,9 @@ function normalizeObjective(o,planningId){
   const indicators=asArray(first(o.indicators,o.kpis,o.indicadores)).map(normalizeIndicator);
   const initiatives=asArray(first(o.initiatives,o.iniciativas)).map(normalizeInitiative);
   const relations=asArray(first(o.relations,o.relaciones,o.relatedObjectives)).map(normalizeRelation);
-  return { ...o, id, planningId:first(o.planningId,planningId), code:first(o.code,''), name:first(o.name,o.title,o.nombre,'Objetivo sin nombre'), desc:first(o.desc,o.description,''), leader:first(o.leader,o.owner,o.lider,''), start:first(o.start,o.startDate,''), end:first(o.end,o.endDate,''), status:normalizeStatus(first(o.status,'activo')), areas:csvArr(first(o.areas,[])), tags:csvArr(first(o.tags,[])), projects:csvArr(first(o.projects,o.linkedProjects,[])), type:first(o.type,o.tipo,'resultado'), perspective:first(o.perspective,o.perspectiva,'procesos'), level:first(o.level,o.nivel,'Corporativo'), parentId:first(o.parentId,o.parent,''), theme:first(o.theme,''), expectedResult:first(o.expectedResult,''), budget:num(first(o.budget,0)), budgetAlignment:first(o.budgetAlignment,'Medio'), processAlignment:first(o.processAlignment,'Medio'), structureAlignment:first(o.structureAlignment,'Medio'), indicatorAlignment:first(o.indicatorAlignment,'Medio'), evidenceLevel:first(o.evidenceLevel,'Parcial'), alignmentEvidence:first(o.alignmentEvidence,''), correctionAction:first(o.correctionAction,''), currentState:first(o.currentState,''), targetState:first(o.targetState,''), gap:first(o.gap,''), gapRisk:first(o.gapRisk,'Medio'), breakpoint:first(o.breakpoint,''), tomType:first(o.tomType,'Central'), tomRole:first(o.tomRole,''), tomProcess:first(o.tomProcess,''), tomCapabilities:first(o.tomCapabilities,''), tomTech:first(o.tomTech,''), tomGovernance:first(o.tomGovernance,''), decisionFlow:first(o.decisionFlow,''), indicators, kpis:indicators, initiatives, relations };
+  const checklist=asArray(first(o.checklist,o.checklistItems,o.listaChecklist)).map(normalizeChecklistItem);
+  const attachments=asArray(first(o.attachments,o.files,o.archivosAdjuntos)).map(normalizeAttachment);
+  return { ...o, id, planningId:first(o.planningId,planningId), code:first(o.code,''), name:first(o.name,o.title,o.nombre,'Objetivo sin nombre'), desc:first(o.desc,o.description,''), creator:first(o.creator,o.creatorName,o.createdBy,''), leader:first(o.leader,o.owner,o.lider,''), start:first(o.start,o.startDate,''), end:first(o.end,o.endDate,''), status:normalizeStatus(first(o.status,'activo')), updateFrequency:first(o.updateFrequency,o.objectiveFrequency,o.frecuenciaActualizacion,'Mensual'), lastUpdate:first(o.lastUpdate,o.lastUpdated,o.updatedObjectiveAt,''), areas:csvArr(first(o.areas,[])), tags:csvArr(first(o.tags,[])), projects:csvArr(first(o.projects,o.linkedProjects,[])), involved:csvArr(first(o.involved,o.guests,o.invitados,o.involucrados,[])), type:first(o.type,o.tipo,'resultado'), perspective:first(o.perspective,o.perspectiva,'procesos'), level:first(o.level,o.nivel,'Corporativo'), parentId:first(o.parentId,o.parent,''), theme:first(o.theme,''), expectedResult:first(o.expectedResult,''), budget:num(first(o.budget,0)), budgetAlignment:first(o.budgetAlignment,'Medio'), processAlignment:first(o.processAlignment,'Medio'), structureAlignment:first(o.structureAlignment,'Medio'), indicatorAlignment:first(o.indicatorAlignment,'Medio'), evidenceLevel:first(o.evidenceLevel,'Parcial'), alignmentEvidence:first(o.alignmentEvidence,''), correctionAction:first(o.correctionAction,''), currentState:first(o.currentState,''), targetState:first(o.targetState,''), gap:first(o.gap,''), gapRisk:first(o.gapRisk,'Medio'), breakpoint:first(o.breakpoint,''), tomType:first(o.tomType,'Central'), tomRole:first(o.tomRole,''), tomProcess:first(o.tomProcess,''), tomCapabilities:first(o.tomCapabilities,''), tomTech:first(o.tomTech,''), tomGovernance:first(o.tomGovernance,''), decisionFlow:first(o.decisionFlow,''), checklist, attachments, indicators, kpis:indicators, initiatives, relations };
 }
 function normalizeIndicator(k){
   k=k||{};
@@ -811,6 +840,14 @@ function normalizeAction(a){
 function normalizeRelation(r){
   r=r||{};
   return { ...r, id:txt(first(r.id,uid('rel'))), targetId:first(r.targetId,r.target,r.objectiveId,''), type:first(r.type,r.tipo,'Impacta a'), intensity:first(r.intensity,'Media'), risk:first(r.risk,'Medio'), time:first(r.time,'90 días'), owner:first(r.owner,''), evidence:first(r.evidence,r.justification,'') };
+}
+function normalizeChecklistItem(c){
+  c=c||{};
+  return { ...c, id:txt(first(c.id,uid('chk'))), title:first(c.title,c.name,c.text,'Punto de checklist'), dueDate:first(c.dueDate,c.end,''), done:!!first(c.done,c.completed,false), createdAt:first(c.createdAt,new Date().toISOString()) };
+}
+function normalizeAttachment(f){
+  f=f||{};
+  return { ...f, id:txt(first(f.id,uid('file'))), name:first(f.name,f.filename,'Archivo adjunto'), type:first(f.type,f.mimeType,''), size:num(first(f.size,0)), dataUrl:first(f.dataUrl,f.url,''), addedAt:first(f.addedAt,new Date().toISOString()) };
 }
 function normalizeAgendaItem(a){
   a=a||{};
@@ -1063,6 +1100,7 @@ function bindEvents(){
   $('closeAutopsia')?.addEventListener('click',()=>closeModal('autopsiaModal'));
   document.addEventListener('click',handleClick);
   document.addEventListener('input',handleInput);
+  document.addEventListener('change',handleChange);
   qsa('.modal').forEach(m=>m.addEventListener('click',e=>{ if(e.target===m) m.classList.remove('open'); }));
 }
 
@@ -1070,7 +1108,7 @@ function handleClick(e){
   const rb=e.target.closest('.remove-btn'); if(rb){ rb.closest('.repeat-item')?.remove(); return; }
   const rs=e.target.closest('.rel-suggest'); if(rs){ suggestRelation(rs.closest('.relation-row')); return; }
   const act=e.target.closest('[data-action]'); if(!act) return;
-  const a=act.dataset.action, pid=act.dataset.planId, oid=act.dataset.objId, iid=act.dataset.initId, aid=act.dataset.actId, agid=act.dataset.agendaId, cid=act.dataset.commitId, kid=act.dataset.kpiId;
+  const a=act.dataset.action, pid=act.dataset.planId, oid=act.dataset.objId, iid=act.dataset.initId, aid=act.dataset.actId, agid=act.dataset.agendaId, commitId=act.dataset.commitId, cid=act.dataset.checkId, kid=act.dataset.kpiId;
   if(a==='openPlan') openWorkspace(pid);
   if(a==='editPlan') openPlanningModal(state.plannings.find(p=>p.id===pid));
   if(a==='deletePlan') deletePlanning(pid);
@@ -1091,14 +1129,27 @@ function handleClick(e){
   if(a==='editAgenda') openAgendaModal(agid);
   if(a==='delAgenda') deleteAgenda(agid);
   if(a==='addCommit') openCommitModal();
-  if(a==='editCommit') openCommitModal(cid);
-  if(a==='delCommit') deleteCommitment(cid);
-  if(a==='completeCommit') completeCommitment(cid);
+  if(a==='editCommit') openCommitModal(commitId);
+  if(a==='delCommit') deleteCommitment(commitId);
+  if(a==='completeCommit') completeCommitment(commitId);
   if(a==='quickKpi') openQuickKpi(oid,kid);
   if(a==='autopsia') openAutopsia(oid);
+  if(a==='addChecklist') addChecklistItem(oid);
+  if(a==='toggleChecklist') toggleChecklistItem(oid,cid);
+  if(a==='editChecklist') editChecklistItem(oid,cid);
+  if(a==='delChecklist') deleteChecklistItem(oid,cid);
+  if(a==='triggerObjFile') triggerObjectiveFileInput(oid);
+  if(a==='viewObjFile') viewObjectiveAttachment(oid,act.dataset.fileId);
+  if(a==='delObjFile') deleteObjectiveAttachment(oid,act.dataset.fileId);
 }
 function handleInput(e){
   if(e.target.matches('.ind-initial,.ind-current,.ind-target,.ind-action,.ind-weight')) updateIndicatorScore(e.target.closest('.indicator-row'));
+}
+function handleChange(e){
+  if(e.target.matches('.objective-file-input')){
+    addObjectiveFiles(e.target.dataset.objId,e.target.files);
+    e.target.value='';
+  }
 }
 
 // ── PLANNING VIEW ───────────────────────────────────────────────────
@@ -1286,6 +1337,7 @@ function saveQuickKpi(){
   k.history.push({ date:todayISO(), value:k.current, note:'Antes de actualización'+( k.lastUpdate?` (actualizado el ${k.lastUpdate})`:'' ) });
   k.current=num(newVal);
   k.lastUpdate=todayISO();
+  touchObjective(obj);
   if(note) k.history[k.history.length-1].note=note;
   // mantener historial últimas 24 entradas
   if(k.history.length>24) k.history=k.history.slice(-24);
@@ -1519,8 +1571,8 @@ function openObjectiveModal(obj=null){
   openModal('objectiveModal');
 }
 function clearObjForm(){
-  ['oName','oCode','oDesc','oLeader','oStart','oEnd','oAreas','oTags','oProjects','oTheme','oExpectedResult','oBudget','oAlignmentEvidence','oCorrectionAction','oCurrentState','oTargetState','oGap','oBreakpoint','oTomRole','oTomProcess','oTomCapabilities','oTomTech','oTomGovernance','oDecisionFlow'].forEach(id=>{ if($(id)) $(id).value=''; });
-  $('oStatus').value='activo'; $('oType').value='resultado'; $('oPerspective').value='financiera'; $('oLevel').value='Corporativo'; $('oBudgetAlignment').value='Medio'; $('oProcessAlignment').value='Medio'; $('oStructureAlignment').value='Medio'; $('oIndicatorAlignment').value='Medio'; $('oEvidenceLevel').value='Parcial'; $('oGapRisk').value='Medio'; $('oTomType').value='Central';
+  ['oName','oCode','oDesc','oCreator','oLeader','oStart','oEnd','oLastUpdate','oInvolved','oAreas','oTags','oProjects','oTheme','oExpectedResult','oBudget','oAlignmentEvidence','oCorrectionAction','oCurrentState','oTargetState','oGap','oBreakpoint','oTomRole','oTomProcess','oTomCapabilities','oTomTech','oTomGovernance','oDecisionFlow'].forEach(id=>{ if($(id)) $(id).value=''; });
+  $('oStatus').value='activo'; $('oUpdateFrequency').value='Mensual'; $('oLastUpdate').value=todayISO(); $('oType').value='resultado'; $('oPerspective').value='financiera'; $('oLevel').value='Corporativo'; $('oBudgetAlignment').value='Medio'; $('oProcessAlignment').value='Medio'; $('oStructureAlignment').value='Medio'; $('oIndicatorAlignment').value='Medio'; $('oEvidenceLevel').value='Parcial'; $('oGapRisk').value='Medio'; $('oTomType').value='Central';
   $('indicatorsBox').innerHTML=''; $('initiativesBox').innerHTML=''; $('relationsBox').innerHTML='';
   $('oInferredGapTag').classList.add('hidden'); $('oGapDivergeAlert').classList.add('hidden');
 }
@@ -1530,7 +1582,7 @@ function populateParents(excludeId=''){
   sel.innerHTML=`<option value="">— Sin padre —</option>${opts}`;
 }
 function fillObjForm(o){
-  $('oName').value=o.name||''; $('oCode').value=o.code||''; $('oDesc').value=o.desc||''; $('oLeader').value=o.leader||''; $('oStart').value=o.start||''; $('oEnd').value=o.end||''; $('oStatus').value=normalizeStatus(o.status||'activo'); $('oAreas').value=arrCsv(o.areas); $('oTags').value=arrCsv(o.tags); $('oProjects').value=arrCsv(o.projects); $('oType').value=o.type||'resultado'; $('oPerspective').value=o.perspective||'financiera'; $('oLevel').value=o.level||'Corporativo'; $('oParent').value=o.parentId||''; $('oTheme').value=o.theme||''; $('oExpectedResult').value=o.expectedResult||''; $('oBudget').value=o.budget||''; $('oBudgetAlignment').value=o.budgetAlignment||'Medio'; $('oProcessAlignment').value=o.processAlignment||'Medio'; $('oStructureAlignment').value=o.structureAlignment||'Medio'; $('oIndicatorAlignment').value=o.indicatorAlignment||'Medio'; $('oEvidenceLevel').value=o.evidenceLevel||'Parcial'; $('oAlignmentEvidence').value=o.alignmentEvidence||''; $('oCorrectionAction').value=o.correctionAction||''; $('oCurrentState').value=o.currentState||''; $('oTargetState').value=o.targetState||''; $('oGap').value=o.gap||''; $('oGapRisk').value=o.gapRisk||'Medio'; $('oBreakpoint').value=o.breakpoint||''; $('oTomType').value=o.tomType||'Central'; $('oTomRole').value=o.tomRole||''; $('oTomProcess').value=o.tomProcess||''; $('oTomCapabilities').value=o.tomCapabilities||''; $('oTomTech').value=o.tomTech||''; $('oTomGovernance').value=o.tomGovernance||''; $('oDecisionFlow').value=o.decisionFlow||'';
+  $('oName').value=o.name||''; $('oCode').value=o.code||''; $('oDesc').value=o.desc||''; $('oCreator').value=o.creator||''; $('oLeader').value=o.leader||''; $('oStart').value=o.start||''; $('oEnd').value=o.end||''; $('oStatus').value=normalizeStatus(o.status||'activo'); $('oUpdateFrequency').value=o.updateFrequency||'Mensual'; $('oLastUpdate').value=o.lastUpdate||''; $('oInvolved').value=arrCsv(o.involved); $('oAreas').value=arrCsv(o.areas); $('oTags').value=arrCsv(o.tags); $('oProjects').value=arrCsv(o.projects); $('oType').value=o.type||'resultado'; $('oPerspective').value=o.perspective||'financiera'; $('oLevel').value=o.level||'Corporativo'; $('oParent').value=o.parentId||''; $('oTheme').value=o.theme||''; $('oExpectedResult').value=o.expectedResult||''; $('oBudget').value=o.budget||''; $('oBudgetAlignment').value=o.budgetAlignment||'Medio'; $('oProcessAlignment').value=o.processAlignment||'Medio'; $('oStructureAlignment').value=o.structureAlignment||'Medio'; $('oIndicatorAlignment').value=o.indicatorAlignment||'Medio'; $('oEvidenceLevel').value=o.evidenceLevel||'Parcial'; $('oAlignmentEvidence').value=o.alignmentEvidence||''; $('oCorrectionAction').value=o.correctionAction||''; $('oCurrentState').value=o.currentState||''; $('oTargetState').value=o.targetState||''; $('oGap').value=o.gap||''; $('oGapRisk').value=o.gapRisk||'Medio'; $('oBreakpoint').value=o.breakpoint||''; $('oTomType').value=o.tomType||'Central'; $('oTomRole').value=o.tomRole||''; $('oTomProcess').value=o.tomProcess||''; $('oTomCapabilities').value=o.tomCapabilities||''; $('oTomTech').value=o.tomTech||''; $('oTomGovernance').value=o.tomGovernance||''; $('oDecisionFlow').value=o.decisionFlow||'';
   o.indicators.forEach(addIndicatorRow); o.initiatives.forEach(addInitiativeRow); o.relations.forEach(addRelationRow);
   // Mostrar gapRisk inferido
   const inferred=inferGapRisk(o);
@@ -1599,8 +1651,8 @@ function saveObjectiveModal(){
   if(!name) return toast('Captura el nombre.','t-warn');
   if(!leader) return toast('Captura el líder.','t-warn');
   const existing=plan.objectives.find(o=>o.id===editingObjectiveId);
-  const obj=existing||{id:uid('obj'),planningId:plan.id};
-  Object.assign(obj,{code:$('oCode').value.trim(),name,title:name,desc:$('oDesc').value.trim(),leader,owner:leader,start:$('oStart').value,startDate:$('oStart').value,end:$('oEnd').value,endDate:$('oEnd').value,status:$('oStatus').value,areas:csvArr($('oAreas').value),tags:csvArr($('oTags').value),projects:csvArr($('oProjects').value),type:$('oType').value,perspective:$('oPerspective').value,level:$('oLevel').value,parentId:$('oParent').value,theme:$('oTheme').value.trim(),expectedResult:$('oExpectedResult').value.trim(),budget:num($('oBudget').value),budgetAlignment:$('oBudgetAlignment').value,processAlignment:$('oProcessAlignment').value,structureAlignment:$('oStructureAlignment').value,indicatorAlignment:$('oIndicatorAlignment').value,evidenceLevel:$('oEvidenceLevel').value,alignmentEvidence:$('oAlignmentEvidence').value.trim(),correctionAction:$('oCorrectionAction').value.trim(),currentState:$('oCurrentState').value.trim(),targetState:$('oTargetState').value.trim(),gap:$('oGap').value.trim(),gapRisk:$('oGapRisk').value,breakpoint:$('oBreakpoint').value.trim(),tomType:$('oTomType').value,tomRole:$('oTomRole').value.trim(),tomProcess:$('oTomProcess').value.trim(),tomCapabilities:$('oTomCapabilities').value.trim(),tomTech:$('oTomTech').value.trim(),tomGovernance:$('oTomGovernance').value.trim(),decisionFlow:$('oDecisionFlow').value.trim(),
+  const obj=existing||{id:uid('obj'),planningId:plan.id,checklist:[],attachments:[]};
+  Object.assign(obj,{code:$('oCode').value.trim(),name,title:name,desc:$('oDesc').value.trim(),creator:$('oCreator').value.trim(),leader,owner:leader,start:$('oStart').value,startDate:$('oStart').value,end:$('oEnd').value,endDate:$('oEnd').value,status:$('oStatus').value,updateFrequency:$('oUpdateFrequency').value,lastUpdate:$('oLastUpdate').value||todayISO(),areas:csvArr($('oAreas').value),tags:csvArr($('oTags').value),projects:csvArr($('oProjects').value),involved:csvArr($('oInvolved').value),type:$('oType').value,perspective:$('oPerspective').value,level:$('oLevel').value,parentId:$('oParent').value,theme:$('oTheme').value.trim(),expectedResult:$('oExpectedResult').value.trim(),budget:num($('oBudget').value),budgetAlignment:$('oBudgetAlignment').value,processAlignment:$('oProcessAlignment').value,structureAlignment:$('oStructureAlignment').value,indicatorAlignment:$('oIndicatorAlignment').value,evidenceLevel:$('oEvidenceLevel').value,alignmentEvidence:$('oAlignmentEvidence').value.trim(),correctionAction:$('oCorrectionAction').value.trim(),currentState:$('oCurrentState').value.trim(),targetState:$('oTargetState').value.trim(),gap:$('oGap').value.trim(),gapRisk:$('oGapRisk').value,breakpoint:$('oBreakpoint').value.trim(),tomType:$('oTomType').value,tomRole:$('oTomRole').value.trim(),tomProcess:$('oTomProcess').value.trim(),tomCapabilities:$('oTomCapabilities').value.trim(),tomTech:$('oTomTech').value.trim(),tomGovernance:$('oTomGovernance').value.trim(),decisionFlow:$('oDecisionFlow').value.trim(),
     indicators:qsa('#indicatorsBox .indicator-row').map(readIndicatorRow).filter(k=>k.name),
     initiatives:qsa('#initiativesBox .initiative-row').map(readInitiativeRow).filter(i=>i.name),
     relations:qsa('#relationsBox .relation-row').map(readRelationRow).filter(r=>r.targetId)
@@ -1612,12 +1664,174 @@ function saveObjectiveModal(){
 }
 function deleteObjective(id){ if(!confirm('¿Eliminar objetivo?')) return; const plan=currentPlan(); plan.objectives=plan.objectives.filter(o=>o.id!==id); saveState(); renderWorkspace(); toast('Objetivo eliminado.','t-ok'); }
 
+
+function touchObjective(obj){
+  if(!obj) return;
+  obj.lastUpdate=todayISO();
+  obj.updatedAt=new Date().toISOString();
+  const plan=currentPlan(); if(plan) plan.updatedAt=new Date().toISOString();
+}
+function chipsHtml(items,empty='Sin registro',color=''){
+  const arr=asArray(items);
+  if(!arr.length) return `<span class="muted small">${esc(empty)}</span>`;
+  return `<div class="detail-chip-row">${arr.map(x=>`<span class="detail-chip ${color}">${esc(x)}</span>`).join('')}</div>`;
+}
+function detailValue(label,value,extra=''){
+  return `<div class="detail-box"><div class="detail-box-label">${esc(label)}</div><div class="detail-box-value">${value?esc(value):'—'}</div>${extra}</div>`;
+}
+function addChecklistItem(objId){
+  const obj=findObjective(objId); if(!obj) return;
+  const titleEl=$(`checkText-${objId}`), dueEl=$(`checkDue-${objId}`);
+  const title=titleEl?.value.trim();
+  if(!title) return toast('Escribe el punto del checklist.','t-warn');
+  if(!Array.isArray(obj.checklist)) obj.checklist=[];
+  obj.checklist.push({id:uid('chk'),title,dueDate:dueEl?.value||'',done:false,createdAt:new Date().toISOString()});
+  touchObjective(obj); saveState(); viewObjective(objId); renderActiveTab(); toast('Punto agregado al checklist.','t-ok');
+}
+function toggleChecklistItem(objId,checkId){
+  const obj=findObjective(objId); const item=obj?.checklist?.find(c=>c.id===checkId); if(!item) return;
+  item.done=!item.done; touchObjective(obj); saveState(); viewObjective(objId); renderActiveTab();
+}
+function editChecklistItem(objId,checkId){
+  const obj=findObjective(objId); const item=obj?.checklist?.find(c=>c.id===checkId); if(!item) return;
+  const title=prompt('Editar punto del checklist:',item.title);
+  if(title===null) return;
+  const clean=title.trim(); if(!clean) return toast('El punto no puede quedar vacío.','t-warn');
+  const due=prompt('Fecha compromiso (YYYY-MM-DD):',item.dueDate||'');
+  if(due===null) return;
+  item.title=clean; item.dueDate=due.trim(); touchObjective(obj); saveState(); viewObjective(objId); renderActiveTab(); toast('Checklist actualizado.','t-ok');
+}
+function deleteChecklistItem(objId,checkId){
+  const obj=findObjective(objId); if(!obj) return;
+  if(!confirm('¿Eliminar este punto del checklist?')) return;
+  obj.checklist=asArray(obj.checklist).filter(c=>c.id!==checkId); touchObjective(obj); saveState(); viewObjective(objId); renderActiveTab(); toast('Punto eliminado.','t-ok');
+}
+function triggerObjectiveFileInput(objId){
+  const input=document.getElementById(`objFileInput-${objId}`); if(input) input.click();
+}
+function addObjectiveFiles(objId,files){
+  const obj=findObjective(objId); if(!obj||!files||!files.length) return;
+  if(!Array.isArray(obj.attachments)) obj.attachments=[];
+  Array.from(files).forEach(file=>{
+    if(file.size>900000){ toast(`Archivo omitido por tamaño: ${file.name}. Usa archivos menores a 900 KB para evitar llenar el navegador.`, 't-warn'); return; }
+    const reader=new FileReader();
+    reader.onload=()=>{
+      obj.attachments.push({id:uid('file'),name:file.name,type:file.type||'application/octet-stream',size:file.size,dataUrl:reader.result,addedAt:new Date().toISOString()});
+      touchObjective(obj); saveState(); viewObjective(objId); renderActiveTab(); toast('Archivo adjunto agregado.','t-ok');
+    };
+    reader.onerror=()=>toast(`No se pudo leer ${file.name}.`,'t-err');
+    reader.readAsDataURL(file);
+  });
+}
+function viewObjectiveAttachment(objId,fileId){
+  const obj=findObjective(objId); const f=obj?.attachments?.find(x=>x.id===fileId); if(!f||!f.dataUrl) return toast('No hay archivo disponible para visualizar.','t-warn');
+  const win=window.open('','_blank');
+  if(!win) return toast('Habilita ventanas emergentes para visualizar archivos.','t-warn');
+  if((f.type||'').startsWith('image/')) win.document.write(`<title>${esc(f.name)}</title><img src="${f.dataUrl}" style="max-width:100%;height:auto;display:block;margin:auto">`);
+  else if((f.type||'').includes('pdf')) win.document.write(`<title>${esc(f.name)}</title><iframe src="${f.dataUrl}" style="width:100%;height:100vh;border:0"></iframe>`);
+  else win.document.write(`<title>${esc(f.name)}</title><p style="font-family:Arial;padding:20px">Vista previa no disponible. Usa Descargar.</p><a download="${esc(f.name)}" href="${f.dataUrl}">Descargar archivo</a>`);
+}
+function deleteObjectiveAttachment(objId,fileId){
+  const obj=findObjective(objId); if(!obj) return;
+  if(!confirm('¿Eliminar este archivo adjunto?')) return;
+  obj.attachments=asArray(obj.attachments).filter(f=>f.id!==fileId); touchObjective(obj); saveState(); viewObjective(objId); renderActiveTab(); toast('Archivo eliminado.','t-ok');
+}
+function checklistHtml(o){
+  const list=asArray(o.checklist);
+  return `<div class="check-add-row"><div><label>Nuevo punto</label><input id="checkText-${esc(o.id)}" class="input" placeholder="Ej. Validar presupuesto con Finanzas"></div><div><label>Fecha compromiso</label><input id="checkDue-${esc(o.id)}" type="date" class="input"></div><button class="btn btn-primary btn-sm" data-action="addChecklist" data-obj-id="${esc(o.id)}">+ Agregar</button></div>
+  ${list.length?list.map(c=>`<div class="checklist-item ${c.done?'done':''}"><input type="checkbox" ${c.done?'checked':''} data-action="toggleChecklist" data-obj-id="${esc(o.id)}" data-check-id="${esc(c.id)}" style="margin-top:3px"><div><div class="check-title">${esc(c.title)}</div><div class="check-meta">Compromiso: ${esc(c.dueDate||'s/f')} · ${daysText(c.dueDate)} · ${c.done?'Completado':'Pendiente'}</div></div><div style="display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end"><button class="btn btn-secondary btn-xs" data-action="editChecklist" data-obj-id="${esc(o.id)}" data-check-id="${esc(c.id)}">Editar</button><button class="btn btn-danger btn-xs" data-action="delChecklist" data-obj-id="${esc(o.id)}" data-check-id="${esc(c.id)}">Eliminar</button></div></div>`).join(''):'<div class="empty-box">Sin puntos de checklist.</div>'}`;
+}
+function attachmentsHtml(o){
+  const files=asArray(o.attachments);
+  return `<input id="objFileInput-${esc(o.id)}" class="hidden objective-file-input" data-obj-id="${esc(o.id)}" type="file" multiple>
+  <button class="btn btn-secondary btn-sm" data-action="triggerObjFile" data-obj-id="${esc(o.id)}">+ Agregar archivos</button>
+  <div class="file-add-note">Los archivos se guardan en este navegador junto con la planeación. Para evitar saturar localStorage, usa archivos ligeros.</div>
+  <div style="margin-top:12px">${files.length?files.map(f=>`<div class="file-card"><div><div class="file-name">📎 ${esc(f.name)}</div><div class="file-meta">${esc(f.type||'archivo')} · ${fmtNum((num(f.size)/1024),1)} KB · ${new Date(f.addedAt||Date.now()).toLocaleDateString('es-MX')}</div></div><div class="file-actions"><button class="btn btn-secondary btn-xs" data-action="viewObjFile" data-obj-id="${esc(o.id)}" data-file-id="${esc(f.id)}">Ver</button><a class="btn btn-secondary btn-xs" href="${esc(f.dataUrl)}" download="${esc(f.name)}">Descargar</a><button class="btn btn-danger btn-xs" data-action="delObjFile" data-obj-id="${esc(o.id)}" data-file-id="${esc(f.id)}">Eliminar</button></div></div>`).join(''):'<div class="empty-box">Sin archivos adjuntos.</div>'}</div>`;
+}
+function relationsDetailHtml(o){
+  const rels=asArray(o.relations);
+  if(!rels.length) return '<div class="empty-box">Sin relaciones estratégicas registradas.</div>';
+  return rels.map(r=>`<div class="rel-detail-card"><div style="font-weight:700;font-size:13px">${esc(r.type)} → ${esc(objectiveName(r.targetId)||'Objetivo no encontrado')}</div><div class="detail-chip-row" style="margin-top:7px"><span class="detail-chip violet">Intensidad: ${esc(r.intensity)}</span><span class="detail-chip yellow">Riesgo relación: ${esc(r.risk)}</span><span class="detail-chip blue">Impacto: ${esc(r.time)}</span></div><div class="obj-sub" style="margin-top:6px">Responsable: ${esc(r.owner||'—')} · Justificación: ${esc(r.evidence||'—')}</div></div>`).join('');
+}
+
 // ── DETAIL VIEW ──────────────────────────────────────────────────────
 function viewObjective(id){
   const o=findObjective(id); if(!o) return;
-  $('detailTitle').textContent=o.name; $('detailSubtitle').textContent=`${o.code||''} · ${o.leader||''}`; $('editDetail').dataset.objId=o.id;
+  $('detailTitle').textContent=o.name;
+  $('detailSubtitle').textContent=`${o.code||'Sin código'} · ${o.leader||'Sin responsable'}`;
+  $('editDetail').dataset.objId=o.id;
   const isVen=isOverdue(o.end,o.status)&&Math.round(calcObjectiveScore(o))<90;
-  $('detailBody').innerHTML=`<div class="detail-layout"><div class="detail-left"><div class="detail-panel"><h3>Resumen ejecutivo</h3><div class="kv-grid"><div class="kv-item"><div class="kv-label">IGEE</div><div class="kv-value">${Math.round(calcObjectiveScore(o))}%</div></div><div class="kv-item"><div class="kv-label">Estatus</div><div class="kv-value">${esc(o.status)}</div></div><div class="kv-item"><div class="kv-label">Compromiso</div><div class="kv-value">${esc(o.end||'s/f')}</div></div></div>${isVen?`<div style="margin-top:10px"><button class="btn btn-sm" style="background:var(--amber-s);color:var(--amber);border:1px solid var(--amber-b)" data-action="autopsia" data-obj-id="${esc(o.id)}">⚠ Ver Autopsia del objetivo</button></div>`:''}<p class="small muted" style="margin-top:8px">${esc(o.desc)}</p></div><div class="detail-panel"><h3>KPIs</h3><div class="mini-list">${o.indicators.map(k=>`<div class="mini-card"><div class="mini-head"><div><div class="mini-title">${esc(k.name)}</div><div class="mini-sub">${fmtNum(k.initial)} → ${fmtNum(k.current)} / ${fmtNum(k.target)} ${esc(k.unit)}</div>${sparklineHtml(k.history||[],k.current,k.target,k.action)}</div><span class="badge b-${kpiState(calcIndicatorScore(k)).color==='ok'?'green':kpiState(calcIndicatorScore(k)).color==='warn'?'yellow':'red'}">${Math.round(calcIndicatorScore(k))}%</span></div></div>`).join('')||'<div class="empty-box">Sin KPIs</div>'}</div></div></div><div><div class="detail-panel"><h3>Brecha / TOM</h3><div class="detail-grid"><div class="detail-box full"><div class="detail-box-label">Brecha</div><div class="detail-box-value">${esc(o.gap)}</div></div><div class="detail-box"><div class="detail-box-label">Riesgo declarado</div><div class="detail-box-value">${esc(o.gapRisk)}</div></div><div class="detail-box"><div class="detail-box-label">Riesgo inferido</div><div class="detail-box-value">${esc(inferGapRisk(o))}</div></div><div class="detail-box full"><div class="detail-box-label">Proceso TOM</div><div class="detail-box-value">${esc(o.tomProcess)}</div></div></div></div></div></div>`;
+  const parentName=o.parentId?objectiveName(o.parentId):'';
+  const checklistCount=asArray(o.checklist).length;
+  const checklistDone=asArray(o.checklist).filter(c=>c.done).length;
+  $('detailBody').innerHTML=`<div class="detail-layout">
+    <div class="detail-left">
+      <div class="detail-panel">
+        <div class="detail-section-title">🎯 Identidad del objetivo</div>
+        <div class="detail-grid">
+          ${detailValue('Nombre del objetivo',o.name)}
+          ${detailValue('Código',o.code)}
+          <div class="detail-box full"><div class="detail-box-label">Descripción</div><div class="detail-box-value">${esc(o.desc||'—')}</div></div>
+        </div>
+        ${isVen?`<div style="margin-top:10px"><button class="btn btn-sm" style="background:var(--amber-s);color:var(--amber);border:1px solid var(--amber-b)" data-action="autopsia" data-obj-id="${esc(o.id)}">⚠ Ver Autopsia del objetivo</button></div>`:''}
+      </div>
+      <div class="detail-panel">
+        <div class="detail-section-title">🗓️ Gobierno, fechas y actualización</div>
+        <div class="detail-grid">
+          ${detailValue('Fecha de inicio',o.start)}
+          ${detailValue('Fecha compromiso',o.end,`<div class="check-meta">${daysText(o.end)}</div>`)}
+          ${detailValue('Estatus',o.status)}
+          ${detailValue('Nombre del creador',o.creator)}
+          ${detailValue('Responsable',o.leader)}
+          ${detailValue('IGEE',`${Math.round(calcObjectiveScore(o))}%`)}
+          ${detailValue('Frecuencia de actualización',o.updateFrequency)}
+          ${detailValue('Fecha de última actualización',o.lastUpdate)}
+        </div>
+      </div>
+      <div class="detail-panel">
+        <div class="detail-section-title">👥 Alcance operativo</div>
+        <div class="detail-grid">
+          <div class="detail-box full"><div class="detail-box-label">Áreas involucradas</div>${chipsHtml(o.areas,'Sin áreas','green')}</div>
+          <div class="detail-box full"><div class="detail-box-label">Etiquetas</div>${chipsHtml(o.tags,'Sin etiquetas','blue')}</div>
+          <div class="detail-box full"><div class="detail-box-label">Proyectos ligados</div>${chipsHtml(o.projects,'Sin proyectos ligados','violet')}</div>
+          <div class="detail-box full"><div class="detail-box-label">Invitados / involucrados</div>${chipsHtml(o.involved,'Sin invitados / involucrados','yellow')}</div>
+        </div>
+      </div>
+      <div class="detail-panel">
+        <div class="detail-section-title">🏗️ Arquitectura estratégica</div>
+        <div class="detail-grid">
+          ${detailValue('Tipo',o.type)}
+          ${detailValue('Perspectiva',o.perspective)}
+          ${detailValue('Nivel',o.level)}
+          ${detailValue('Objetivo padre',parentName||'—')}
+          ${detailValue('Tema estratégico',o.theme)}
+          ${detailValue('Resultado esperado',o.expectedResult)}
+          ${detailValue('Presupuesto',fmtMoney(o.budget))}
+          ${detailValue('Evidencia',o.evidenceLevel)}
+          ${detailValue('Alineación presupuesto',o.budgetAlignment)}
+          ${detailValue('Alineación procesos',o.processAlignment)}
+          ${detailValue('Alineación estructura',o.structureAlignment)}
+          ${detailValue('Alineación indicadores',o.indicatorAlignment)}
+          <div class="detail-box full"><div class="detail-box-label">Notas de evidencia / acción correctiva</div><div class="detail-box-value">${esc([o.alignmentEvidence,o.correctionAction].filter(Boolean).join('\n')||'—')}</div></div>
+        </div>
+      </div>
+      <div class="detail-panel">
+        <div class="detail-section-title">🔗 Relaciones estratégicas</div>
+        ${relationsDetailHtml(o)}
+      </div>
+    </div>
+    <div>
+      <div class="detail-panel">
+        <div class="detail-section-title">✅ Checklist editable</div>
+        <div class="detail-section-sub">${checklistDone} de ${checklistCount} puntos completados.</div>
+        ${checklistHtml(o)}
+      </div>
+      <div class="detail-panel">
+        <div class="detail-section-title">📎 Archivos adjuntos</div>
+        ${attachmentsHtml(o)}
+      </div>
+    </div>
+  </div>`;
   openModal('detailModal');
 }
 
@@ -1642,9 +1856,10 @@ function saveInitiativeEditor(){
   const init=existing||{id:uid('init'),actions:[]};
   Object.assign(init,{name,title:name,owner:$('initiativeOwner').value.trim(),dueDate:$('initiativeDueDate').value,status:$('initiativeStatus').value,expectedImpact:num($('initiativeExpectedImpact').value),realImpact:num($('initiativeRealImpact').value),priority:$('initiativePriority').value,redundant:$('initiativeRedundant').value,competes:$('initiativeCompetes').value,impactKpi:$('initiativeImpactKpi').value,budget:num($('initiativeBudget').value),spent:num($('initiativeSpent').value),benefitExpected:$('initiativeBenefitExpected').value.trim(),benefitReal:$('initiativeBenefitReal').value.trim(),benefitOwner:$('initiativeBenefitOwner').value.trim(),benefitDate:$('initiativeBenefitDate').value,detail:$('initiativeDetail').value.trim()});
   init.progress=calcActionsProgress(init.actions); if(!existing) obj.initiatives.push(init);
+  touchObjective(obj);
   saveState(); closeModal('initiativeEditorModal'); renderWorkspace(); toast(existing?'Iniciativa actualizada.':'Iniciativa creada.','t-ok');
 }
-function deleteInitiative(objId,initId){ if(!confirm('¿Eliminar iniciativa?')) return; const obj=findObjective(objId); obj.initiatives=obj.initiatives.filter(i=>i.id!==initId); saveState(); renderWorkspace(); toast('Iniciativa eliminada.','t-ok'); }
+function deleteInitiative(objId,initId){ if(!confirm('¿Eliminar iniciativa?')) return; const obj=findObjective(objId); obj.initiatives=obj.initiatives.filter(i=>i.id!==initId); touchObjective(obj); saveState(); renderWorkspace(); toast('Iniciativa eliminada.','t-ok'); }
 function viewInitiative(objId,initId){
   const init=findInitiative(objId,initId); if(!init) return; initiativeCtx={objectiveId:objId,initiativeId:initId};
   $('initiativeViewTitle').textContent=init.name; $('initiativeViewSubtitle').textContent=findObjective(objId)?.name||'';
@@ -1676,6 +1891,7 @@ function saveActionEditor(){
   const existing=init.actions.find(a=>a.id===actionCtx.actionId); const act=existing||{id:uid('act')};
   Object.assign(act,{title,responsible:$('actionResponsible').value.trim(),dueDate:$('actionDueDate').value,status:$('actionStatus').value,detail:$('actionDetail').value.trim()});
   if(!existing) init.actions.push(act); init.progress=calcActionsProgress(init.actions);
+  touchObjective(findObjective(actionCtx.objectiveId));
   saveState(); closeModal('actionEditorModal'); renderActionsBody(); renderWorkspace(); toast(existing?'Acción actualizada.':'Acción creada.','t-ok');
 }
 function viewAction(objId,initId,actId){
@@ -1684,8 +1900,8 @@ function viewAction(objId,initId,actId){
   $('actionViewBody').innerHTML=`<div class="detail-grid"><div class="detail-box"><div class="detail-box-label">Responsable</div><div class="detail-box-value">${esc(a.responsible)}</div></div><div class="detail-box"><div class="detail-box-label">Estatus</div><div class="detail-box-value">${esc(a.status)}</div></div><div class="detail-box"><div class="detail-box-label">Compromiso</div><div class="detail-box-value">${esc(a.dueDate)} · ${daysText(a.dueDate)}</div></div><div class="detail-box full"><div class="detail-box-label">Detalle</div><div class="detail-box-value">${esc(a.detail)}</div></div></div>`;
   openModal('actionViewModal');
 }
-function deleteAction(objId,initId,actId){ if(!confirm('¿Eliminar acción?')) return; const init=findInitiative(objId,initId); init.actions=init.actions.filter(a=>a.id!==actId); init.progress=calcActionsProgress(init.actions); saveState(); renderActionsBody(); renderWorkspace(); }
-function completeAction(objId,initId,actId){ const a=findAction(objId,initId,actId); if(a){ a.status='Terminada'; const init=findInitiative(objId,initId); init.progress=calcActionsProgress(init.actions); saveState(); renderActionsBody(); renderWorkspace(); toast('Acción terminada.','t-ok'); } }
+function deleteAction(objId,initId,actId){ if(!confirm('¿Eliminar acción?')) return; const init=findInitiative(objId,initId); init.actions=init.actions.filter(a=>a.id!==actId); init.progress=calcActionsProgress(init.actions); touchObjective(findObjective(objId)); saveState(); renderActionsBody(); renderWorkspace(); }
+function completeAction(objId,initId,actId){ const a=findAction(objId,initId,actId); if(a){ a.status='Terminada'; const init=findInitiative(objId,initId); init.progress=calcActionsProgress(init.actions); touchObjective(findObjective(objId)); saveState(); renderActionsBody(); renderWorkspace(); toast('Acción terminada.','t-ok'); } }
 
 // ── AGENDA ───────────────────────────────────────────────────────────
 function openAgendaModal(id=null){
