@@ -1163,8 +1163,16 @@ function calcStrategicAlignmentBreakdown(obj){
     {key:'Avance operativo',score:operational,weight:10,source:'Promedio de avance de iniciativas por acciones terminadas'},
     {key:'Evidencia',score:evidenceAlignmentScore(obj.evidenceLevel),weight:10,source:`Nivel de evidencia: ${obj.evidenceLevel||'Parcial'}`}
   ];
-  const score=Math.round(clamp(items.reduce((acc,i)=>acc+(i.score*(i.weight/100)),0),0,100));
-  return {score,items};
+  // La fórmula SÍ usa los pesos: cada componente aporta score × peso / 100.
+  // Ejemplo: Procesos 25% con peso 15% aporta 3.75 puntos al IAE, no 25 puntos completos.
+  items.forEach(i=>{
+    i.points=Number((i.score*(i.weight/100)).toFixed(2));
+    i.maxPoints=i.weight;
+    i.calcLabel=`${Math.round(i.score)}% × ${i.weight}% = ${i.points.toFixed(1)} pts`;
+  });
+  const raw=items.reduce((acc,i)=>acc+i.points,0);
+  const score=Math.round(clamp(raw,0,100));
+  return {score,raw:Number(raw.toFixed(2)),items};
 }
 function alignmentAlertFlags(obj){
   const flags=[];
@@ -1192,10 +1200,11 @@ function alignmentAssessment(obj){
   else { reading='Desalineación crítica'; tone='low'; }
   if(flags.length&&score>=70){ reading='Alineación condicionada por alertas operativas'; tone='mid'; }
   else if(flags.length&&score<70){ reading='Alineación comprometida por señales operativas'; tone='low'; }
-  const weakest=[...bd.items].sort((a,b)=>a.score-b.score).slice(0,3).map(i=>`${i.key} ${Math.round(i.score)}%`).join(', ');
-  const formula='IAE = Presupuesto 15% + Procesos 15% + Estructura/Responsable 15% + KPIs 20% + TOM 15% + Avance operativo 10% + Evidencia 10%';
-  const why=`Resultado ${score}% calculado con ponderación ejecutiva. Factores que más presionan la calificación: ${weakest||'sin debilidades relevantes'}. ${flags.length?`Alertas consideradas: ${flags.join('; ')}.`:'No se detectaron alertas operativas críticas.'}`;
-  return {score,reading,tone,formula,why,items:bd.items,flags};
+  const weakest=[...bd.items].sort((a,b)=>a.points-b.points).slice(0,3).map(i=>`${i.key}: ${Math.round(i.score)}% aporta ${i.points.toFixed(1)} de ${i.maxPoints} pts`).join('; ');
+  const formula='IAE ponderado = Σ (calificación del componente × peso del componente). Pesos: Presupuesto 15, Procesos 15, Estructura/Responsable 15, KPIs 20, TOM 15, Avance operativo 10, Evidencia 10.';
+  const breakdown=bd.items.map(i=>`${i.key}: ${i.calcLabel}`).join(' + ');
+  const why=`Resultado ${score}% porque la suma ponderada fue ${bd.raw.toFixed(1)} puntos. Desglose: ${breakdown}. Componentes que más presionan la calificación: ${weakest||'sin debilidades relevantes'}. ${flags.length?`Alertas consideradas: ${flags.join('; ')}.`:'No se detectaron alertas operativas críticas.'}`;
+  return {score,reading,tone,formula,why,items:bd.items,flags,raw:bd.raw};
 }
 function calcAlignmentScore(obj){
   return alignmentAssessment(obj).score;
@@ -1793,7 +1802,7 @@ function alignPill(v,extra=''){
 function alignmentRowClass(score){ return score>=75?'high':score>=50?'mid':'low'; }
 function alignComponentMini(item){
   const cls=item.score>=75?'align-high':item.score>=50?'align-mid':'align-low';
-  return `<div class="align-component" title="${esc(item.source)}"><div class="align-component-top"><span>${esc(item.key)}</span><strong>${Math.round(item.score)}%</strong></div><div class="align-component-track"><div class="align-component-fill" style="width:${clamp(item.score)}%;background:${progressColor(item.score)}"></div></div><div class="align-component-weight ${cls}">${item.weight}% peso</div></div>`;
+  return `<div class="align-component" title="${esc(item.source)} · ${esc(item.calcLabel||'')}"><div class="align-component-top"><span>${esc(item.key)}</span><strong>${Math.round(item.score)}%</strong></div><div class="align-component-track"><div class="align-component-fill" style="width:${clamp(item.score)}%;background:${progressColor(item.score)}"></div></div><div class="align-component-weight ${cls}">Peso ${item.weight}%</div><div class="align-component-weight" style="margin-top:4px;background:#f1f5f9;color:#475569;border:1px solid #e2e8f0">Aporta ${Number(item.points||0).toFixed(1)} / ${item.maxPoints||item.weight} pts</div></div>`;
 }
 function renderAlineacion(){
   const plan=currentPlan();
@@ -1801,7 +1810,7 @@ function renderAlineacion(){
     const ass=alignmentAssessment(o);
     const cls=ass.score>=75?'align-high':ass.score>=50?'align-mid':'align-low';
     const note=o.alignmentEvidence||o.correctionAction||'Sin notas de evidencia/corrección registradas.';
-    return `<tr class="align-row-risk ${alignmentRowClass(ass.score)}"><td><div class="align-obj-cell"><div class="align-obj-title" data-action="viewObj" data-obj-id="${esc(o.id)}">${esc(o.name)}</div><div class="obj-sub">${esc(o.theme||objectiveTypeLabel(o.type))}</div><div class="align-score-wrap"><span class="align-pill ${cls}">IAE ${ass.score}%</span><div class="align-progress"><div class="align-progress-fill" style="width:${clamp(ass.score)}%;background:${progressColor(ass.score)}"></div></div></div><div class="align-actions"><button class="btn btn-secondary btn-xs" data-action="viewObj" data-obj-id="${esc(o.id)}">Ver detalle</button></div></div></td><td><div class="align-components-grid">${ass.items.map(alignComponentMini).join('')}</div></td><td>${alignPill(o.evidenceLevel,'align-evidence')}<div class="align-evidence-note">${esc(note)}</div></td><td class="align-reco"><div class="align-reading ${ass.tone}">${esc(ass.reading)}</div><div class="align-why"><strong>Cómo se calculó:</strong> ${esc(ass.formula)}.</div><div class="align-why"><strong>Por qué llegó a esta lectura:</strong> ${esc(ass.why)}</div>${ass.flags.length?`<div class="align-flags">${ass.flags.map(f=>`<span class="badge b-red">${esc(f)}</span>`).join('')}</div>`:''}</td></tr>`;
+    return `<tr class="align-row-risk ${alignmentRowClass(ass.score)}"><td><div class="align-obj-cell"><div class="align-obj-title" data-action="viewObj" data-obj-id="${esc(o.id)}">${esc(o.name)}</div><div class="obj-sub">${esc(o.theme||objectiveTypeLabel(o.type))}</div><div class="align-score-wrap"><span class="align-pill ${cls}">IAE ${ass.score}%</span><div class="align-progress"><div class="align-progress-fill" style="width:${clamp(ass.score)}%;background:${progressColor(ass.score)}"></div></div></div><div class="align-actions"><button class="btn btn-secondary btn-xs" data-action="viewObj" data-obj-id="${esc(o.id)}">Ver detalle</button></div></div></td><td><div class="align-components-grid">${ass.items.map(alignComponentMini).join('')}</div></td><td>${alignPill(o.evidenceLevel,'align-evidence')}<div class="align-evidence-note">${esc(note)}</div></td><td class="align-reco"><div class="align-reading ${ass.tone}">${esc(ass.reading)}</div><div class="align-why"><strong>Cómo se calculó:</strong> ${esc(ass.formula)}</div><div class="align-why"><strong>Por qué llegó a esta lectura:</strong> ${esc(ass.why)}</div>${ass.flags.length?`<div class="align-flags">${ass.flags.map(f=>`<span class="badge b-red">${esc(f)}</span>`).join('')}</div>`:''}</td></tr>`;
   }).join('');
   $('viewAlineacion').innerHTML=`<div class="section-hero"><h2>Alineación estratégica</h2><p>La lectura ahora usa el IAE: Índice de Alineación Estratégica. Combina diseño estratégico, ejecución operativa, TOM, KPIs y evidencia; además explica por qué se llegó a cada interpretación.</p></div><div class="card table-wrap"><table><thead><tr><th>Objetivo</th><th>Componentes del IAE</th><th>Evidencia</th><th>Lectura ejecutiva y lógica</th></tr></thead><tbody>${rows||`<tr><td colspan="4"><div class="empty-box">Sin objetivos registrados.</div></td></tr>`}</tbody></table></div>`;
 }
