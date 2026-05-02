@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>Ximpler EDGE v5 · Copiloto Estratégico</title>
+<title>Ximpler EDGE v5.1 · Copiloto Estratégico</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -742,6 +742,10 @@ tbody tr:hover td{background:#fafbfc}
 .v5-critical-box{background:var(--rose-s);border:1px solid var(--rose-b);border-radius:var(--r-sm);padding:9px 10px;font-size:12px;color:var(--rose);font-weight:700;line-height:1.45;margin-top:8px}
 .v5-field-hint{font-size:10px;color:var(--muted);line-height:1.35;margin-top:4px}
 .v5-form-note{font-size:12px;color:var(--text2);background:var(--blue-s);border:1px solid var(--blue-b);border-radius:var(--r-sm);padding:9px 10px;margin-bottom:12px;line-height:1.45}
+.v5-weight-explain{font-size:10px;color:var(--muted);line-height:1.35;margin-top:6px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:6px 8px}
+.v5-weight-explain strong{color:var(--text2)}
+.v5-action-weight{display:inline-flex;align-items:center;gap:4px;border-radius:var(--r-full);padding:4px 8px;font-size:10px;font-weight:900;background:var(--blue-s);color:var(--blue);white-space:nowrap}
+.v5-trace-note{font-size:10px;color:var(--muted);line-height:1.35;margin-top:5px}
 
 </style>
 </head>
@@ -752,8 +756,8 @@ tbody tr:hover td{background:#fafbfc}
 <div class="page" id="planningView">
   <div class="topbar">
     <div class="tl">
-      <h1>Ximpler EDGE <span style="font-weight:400;color:var(--muted);font-size:22px">v5</span></h1>
-      <p class="subtitle">Copiloto estratégico v5 · Trazabilidad ejecutiva · Resultado, ejecución, evidencia y comité con reglas duras.</p>
+      <h1>Ximpler EDGE <span style="font-weight:400;color:var(--muted);font-size:22px">v5.1</span></h1>
+      <p class="subtitle">Copiloto estratégico v5.1 · Alineación visible, trazabilidad ejecutiva y avance ponderado explicado.</p>
     </div>
     <div class="tr">
       <button id="newPlanningBtn" class="btn btn-primary">+ Nueva Planeación</button>
@@ -3515,6 +3519,22 @@ function v5ActionWeight(action){
   const w=num(action?.weight,1);
   return w>0?w:1;
 }
+function v5ActionsProgressDetail(actions){
+  actions=asArray(actions).filter(a=>!a?._empty);
+  if(!actions.length) return {progress:0,totalWeight:0,doneWeight:0,openWeight:0,totalActions:0,doneActions:0};
+  const totalWeight=actions.reduce((sum,a)=>sum+v5ActionWeight(a),0)||actions.length;
+  const doneActions=actions.filter(a=>v5IsDone(a.status));
+  const doneWeight=doneActions.reduce((sum,a)=>sum+v5ActionWeight(a),0);
+  const progress=Math.round(clamp((doneWeight/totalWeight)*100,0,100));
+  return {progress,totalWeight,doneWeight,openWeight:Math.max(0,totalWeight-doneWeight),totalActions:actions.length,doneActions:doneActions.length};
+}
+function v5ActionContribution(action,actions){
+  const detail=v5ActionsProgressDetail(actions);
+  if(!detail.totalWeight) return 0;
+  return Math.round((v5ActionWeight(action)/detail.totalWeight)*100);
+}
+const _calcActionsProgressV4 = calcActionsProgress;
+calcActionsProgress = function(actions){ return v5ActionsProgressDetail(actions).progress; };
 function v5ActionEvidenceScore(action){
   if(!v5IsDone(action?.status)) return 0;
   const required=txt(action?.evidenceRequired||action?.closeCriteria).trim();
@@ -3567,17 +3587,47 @@ function v5KpiCompletenessScore(k){
   if(num(k?.weight,0)>0) pts+=14;
   return clamp(pts,0,100);
 }
-function v5ObjectiveTraceabilityScore(obj){
+function v5ObjectiveTraceabilityBreakdown(obj){
   const kpis=asArray(obj?.indicators||obj?.kpis);
   const inits=asArray(obj?.initiatives);
   const actions=inits.flatMap(i=>asArray(i.actions));
-  let components=[];
-  components.push(kpis.length?100:0);
-  components.push(inits.length?100:0);
-  components.push(inits.length?Math.round(inits.filter(v5InitiativeIsExecutable).length/inits.length*100):0);
-  components.push(actions.length?Math.round(actions.filter(a=>txt(a.responsible).trim()&&txt(a.dueDate).trim()).length/actions.length*100):0);
-  components.push(txt(obj?.successCriteria).trim()?100:55);
-  return Math.round(components.reduce((a,b)=>a+b,0)/components.length);
+  const kpiNames=new Set(kpis.map(k=>txt(k.name).trim().toLowerCase()).filter(Boolean));
+  const alignment=alignmentAssessment(obj).score;
+  const kpiInitiativeLink=inits.length
+    ? Math.round(inits.filter(i=>txt(i.impactKpi).trim() && kpiNames.has(txt(i.impactKpi).trim().toLowerCase())).length/inits.length*100)
+    : (kpis.length?35:0);
+  const actionTrace=actions.length
+    ? Math.round(actions.reduce((sum,a)=>{
+        let pts=0;
+        if(txt(a.responsible).trim()) pts+=25;
+        if(txt(a.dueDate).trim()) pts+=20;
+        if(v5ActionWeight(a)>0) pts+=15;
+        if(txt(a.closeCriteria||a.evidenceRequired).trim()) pts+=25;
+        if(v5IsDone(a.status)) pts+=txt(a.evidence).trim()?15:5;
+        else pts+=10;
+        return sum+pts;
+      },0)/actions.length)
+    : 0;
+  const kpiEvidence=kpis.length?Math.round(kpis.reduce((sum,k)=>sum+v5KpiCompletenessScore(k),0)/kpis.length):0;
+  const initiativeEvidence=inits.length?Math.round(inits.filter(i=>txt(i.evidenceRequired||i.successCriteria||i.benefitExpected).trim()).length/inits.length*100):0;
+  const evidenceTrace=Math.round((kpiEvidence*.55)+(initiativeEvidence*.45));
+  const successCriteria=txt(obj?.successCriteria).trim()?100:50;
+  const items=[
+    {key:'Alineación IAE',score:alignment,weight:30,source:'Alineación estratégica ponderada'},
+    {key:'KPI ↔ iniciativas',score:kpiInitiativeLink,weight:25,source:'Iniciativas conectadas a KPIs existentes del objetivo'},
+    {key:'Acciones trazables',score:actionTrace,weight:20,source:'Acciones con responsable, fecha, peso, criterio y evidencia'},
+    {key:'Evidencia/fuentes',score:evidenceTrace,weight:15,source:'Fuente/fórmula/validador de KPI y evidencia requerida en iniciativas'},
+    {key:'Criterio de éxito',score:successCriteria,weight:10,source:'Criterio ejecutivo de cierre del objetivo'}
+  ];
+  items.forEach(i=>{ i.points=Number((i.score*(i.weight/100)).toFixed(2)); });
+  const score=Math.round(clamp(items.reduce((acc,i)=>acc+i.points,0),0,100));
+  return {score,items};
+}
+function v5ObjectiveTraceabilityScore(obj){ return v5ObjectiveTraceabilityBreakdown(obj).score; }
+function v5TraceabilityNote(obj){
+  const bd=v5ObjectiveTraceabilityBreakdown(obj);
+  const weakest=bd.items.slice().sort((a,b)=>a.score-b.score).slice(0,2).map(i=>`${i.key}: ${Math.round(i.score)}%`).join(' · ');
+  return `Trazabilidad ejecutiva ${bd.score}% · ${weakest||'sin brechas relevantes'}`;
 }
 function v5ObjectiveEvidenceScore(obj){
   const kpis=asArray(obj?.indicators||obj?.kpis);
@@ -3602,6 +3652,8 @@ function v5ObjectiveExecutionScore(obj){
   },0)/totalW;
   return Math.round(clamp(score,0,100));
 }
+const _calcObjectiveOperationalProgressV4 = calcObjectiveOperationalProgress;
+calcObjectiveOperationalProgress = function(obj){ return v5ObjectiveExecutionScore(obj); };
 function v5ObjectiveResultScore(obj){
   const kpis=asArray(obj?.indicators||obj?.kpis);
   if(!kpis.length) return 0;
@@ -3950,12 +4002,12 @@ renderSummaryStrip = function(plan){
 renderObjetivos = function(){
   const plan=currentPlan();
   const rows=plan.objectives.map(obj=>{
-    const bd=v5ObjectiveScoreBreakdown(obj); const score=Math.round(bd.igee); const impact=Math.round(calcImpactScore(obj)); const risk=Math.round(calcRiskScore(obj)); const tom=Math.round(tomScore(obj)); const expanded=expandedObjectives.has(obj.id); const inits=obj.initiatives||[]; const isVencido=isOverdue(obj.end,obj.status); const shouldAutopsia=isVencido&&score<90; const redundant=detectRedundantInitiatives(obj); const initHtml=inits.length?`<div class="cascade-zone"><div class="cascade-header"><div style="font-weight:700;font-size:13px;color:var(--text2)">Iniciativas · madurez v5</div><div style="display:flex;gap:8px;align-items:center"><button class="btn btn-primary btn-sm" data-action="newInit" data-obj-id="${esc(obj.id)}">+ Iniciativa</button></div></div><div class="init-list">${inits.map(i=>initCardHtml(obj,i,redundant)).join('')}</div></div>`:`<div class="cascade-zone"><div class="empty-box">Sin iniciativas. <button class="btn btn-primary btn-sm" data-action="newInit" data-obj-id="${esc(obj.id)}" style="margin-left:8px">+ Crear</button></div></div>`;
+    const bd=v5ObjectiveScoreBreakdown(obj); const score=Math.round(bd.igee); const align=Math.round(alignmentAssessment(obj).score); const impact=Math.round(calcImpactScore(obj)); const risk=Math.round(calcRiskScore(obj)); const tom=Math.round(tomScore(obj)); const expanded=expandedObjectives.has(obj.id); const inits=obj.initiatives||[]; const isVencido=isOverdue(obj.end,obj.status); const shouldAutopsia=isVencido&&score<90; const redundant=detectRedundantInitiatives(obj); const initHtml=inits.length?`<div class="cascade-zone"><div class="cascade-header"><div style="font-weight:700;font-size:13px;color:var(--text2)">Iniciativas · madurez v5</div><div style="display:flex;gap:8px;align-items:center"><button class="btn btn-primary btn-sm" data-action="newInit" data-obj-id="${esc(obj.id)}">+ Iniciativa</button></div></div><div class="init-list">${inits.map(i=>initCardHtml(obj,i,redundant)).join('')}</div></div>`:`<div class="cascade-zone"><div class="empty-box">Sin iniciativas. <button class="btn btn-primary btn-sm" data-action="newInit" data-obj-id="${esc(obj.id)}" style="margin-left:8px">+ Crear</button></div></div>`;
     return `<tr style="${isVencido&&score<90?'border-left:4px solid var(--rose)':''}">
-      <td><div class="obj-cell"><button class="obj-toggle" data-action="toggleObj" data-obj-id="${esc(obj.id)}">${expanded?'▾':'▸'}</button><div><div class="obj-name" data-action="viewObj" data-obj-id="${esc(obj.id)}">${esc(obj.code?obj.code+' · ':'')}${esc(obj.name)}</div><div class="obj-sub">${esc(obj.leader||'Sin líder')} · Peso ${num(obj.strategicWeight,100)}% · ${esc(objectiveTypeLabel(obj.type))} · ${esc(obj.level)}</div><div class="v5-score-stack">${v5Pill('Resultado',bd.resultado+'%',v5Tone(bd.resultado))}${v5Pill('Ejecución',bd.ejecucion+'%',v5Tone(bd.ejecucion))}${v5Pill('Evidencia',bd.evidencia+'%',v5Tone(bd.evidencia))}${bd.sobre?v5Pill('Sobre','+'+bd.sobre+'%','blue'):''}</div>${v5BlockingSummary(obj)}${shouldAutopsia?`<button class="btn btn-sm" style="background:var(--amber-s);color:var(--amber);border:1px solid var(--amber-b);margin-top:4px" data-action="autopsia" data-obj-id="${esc(obj.id)}">⚠ Ver Autopsia</button>`:''}</div></div></td>
-      <td>${statusBadge(obj.status)}</td><td>${objMetricRing(score,'IGEE v5')}</td><td>${objMetricRing(impact,'Impacto')}</td><td>${objMetricRing(bd.trazabilidad,'Trazabilidad')}</td><td>${objMetricRing(risk,'Riesgo',{risk:true})}</td><td>${objMetricRing(tom,'TOM')}</td><td>${esc(obj.end||'s/f')}<div class="obj-sub">${daysText(obj.end)}</div></td><td>${obj.indicators.length} KPIs<br><span class="obj-sub">${inits.length} init · ${inits.reduce((a,i)=>a+i.actions.length,0)} acc</span></td><td><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn btn-secondary btn-xs" data-action="viewObj" data-obj-id="${esc(obj.id)}">Ver</button><button class="btn btn-secondary btn-xs" data-action="editObj" data-obj-id="${esc(obj.id)}">Editar</button><button class="btn btn-danger btn-xs" data-action="deleteObj" data-obj-id="${esc(obj.id)}">Eliminar</button></div></td></tr><tr class="${expanded?'':'hidden'}"><td colspan="10" style="padding:0">${initHtml}</td></tr>`;
+      <td><div class="obj-cell"><button class="obj-toggle" data-action="toggleObj" data-obj-id="${esc(obj.id)}">${expanded?'▾':'▸'}</button><div><div class="obj-name" data-action="viewObj" data-obj-id="${esc(obj.id)}">${esc(obj.code?obj.code+' · ':'')}${esc(obj.name)}</div><div class="obj-sub">${esc(obj.leader||'Sin líder')} · Peso ${num(obj.strategicWeight,100)}% · ${esc(objectiveTypeLabel(obj.type))} · ${esc(obj.level)}</div><div class="v5-score-stack">${v5Pill('Resultado',bd.resultado+'%',v5Tone(bd.resultado))}${v5Pill('Ejecución',bd.ejecucion+'%',v5Tone(bd.ejecucion))}${v5Pill('Evidencia',bd.evidencia+'%',v5Tone(bd.evidencia))}${v5Pill('Trazabilidad',bd.trazabilidad+'%',v5Tone(bd.trazabilidad),v5TraceabilityNote(obj))}${bd.sobre?v5Pill('Sobre','+'+bd.sobre+'%','blue'):''}</div>${v5BlockingSummary(obj)}${shouldAutopsia?`<button class="btn btn-sm" style="background:var(--amber-s);color:var(--amber);border:1px solid var(--amber-b);margin-top:4px" data-action="autopsia" data-obj-id="${esc(obj.id)}">⚠ Ver Autopsia</button>`:''}</div></div></td>
+      <td>${statusBadge(obj.status)}</td><td>${objMetricRing(score,'IGEE v5')}</td><td>${objMetricRing(impact,'Impacto')}</td><td>${objMetricRing(align,'Alineación')}</td><td>${objMetricRing(risk,'Riesgo',{risk:true})}</td><td>${objMetricRing(tom,'TOM')}</td><td>${esc(obj.end||'s/f')}<div class="obj-sub">${daysText(obj.end)}</div></td><td>${obj.indicators.length} KPIs<br><span class="obj-sub">${inits.length} init · ${inits.reduce((a,i)=>a+i.actions.length,0)} acc</span></td><td><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn btn-secondary btn-xs" data-action="viewObj" data-obj-id="${esc(obj.id)}">Ver</button><button class="btn btn-secondary btn-xs" data-action="editObj" data-obj-id="${esc(obj.id)}">Editar</button><button class="btn btn-danger btn-xs" data-action="deleteObj" data-obj-id="${esc(obj.id)}">Eliminar</button></div></td></tr><tr class="${expanded?'':'hidden'}"><td colspan="10" style="padding:0">${initHtml}</td></tr>`;
   }).join('');
-  $('viewObjetivos').innerHTML=`<div class="v5-rule-card"><div class="v5-rule-title">Reglas duras v5</div><div class="v5-rule-text"><strong>Objetivo sin KPI = intención.</strong> Iniciativa sin KPI/responsable/fecha = borrador. Acción terminada sin evidencia = cierre débil. El IGEE v5 separa Resultado, Ejecución, Evidencia, Trazabilidad y Gobernanza.</div></div><div class="section-hero"><h2>Objetivos estratégicos · v5</h2><p>Vista ejecutiva con peso estratégico, score de resultado, avance ponderado, evidencia y trazabilidad. El riesgo se lee de forma inversa: 0% verde = riesgo controlado; 100% rojo = riesgo crítico.</p></div><div class="card table-wrap"><table><thead><tr><th>Objetivo</th><th>Estatus</th><th>IGEE</th><th>Impacto</th><th>Trazabilidad</th><th>Riesgo</th><th>TOM</th><th>Compromiso</th><th>Alcance</th><th>Acciones</th></tr></thead><tbody>${rows||`<tr><td colspan="10"><div class="empty-box">Sin objetivos. Usa "+ Nuevo Objetivo".</div></td></tr>`}</tbody></table></div>`;
+  $('viewObjetivos').innerHTML=`<div class="v5-rule-card"><div class="v5-rule-title">Reglas duras v5</div><div class="v5-rule-text"><strong>Objetivo sin KPI = intención.</strong> Iniciativa sin KPI/responsable/fecha = borrador. Acción terminada sin evidencia = cierre débil. El IGEE v5 separa Resultado, Ejecución, Evidencia, Trazabilidad y Gobernanza.</div></div><div class="section-hero"><h2>Objetivos estratégicos · v5</h2><p>Vista ejecutiva con peso estratégico, resultado, ejecución, evidencia y alineación. La trazabilidad ejecutiva queda dentro del desglose del IGEE v5; la alineación visible corresponde al IAE.</p></div><div class="card table-wrap"><table><thead><tr><th>Objetivo</th><th>Estatus</th><th>IGEE</th><th>Impacto</th><th>Alineación</th><th>Riesgo</th><th>TOM</th><th>Compromiso</th><th>Alcance</th><th>Acciones</th></tr></thead><tbody>${rows||`<tr><td colspan="10"><div class="empty-box">Sin objetivos. Usa "+ Nuevo Objetivo".</div></td></tr>`}</tbody></table></div>`;
 };
 initCardHtml = function(obj,init,redundant){
   const progress=Math.round(calcActionsProgress(init.actions)); const overdue=asArray(init.actions).some(a=>isOverdue(a.dueDate,a.status)); const disconnected=!init.impactKpi; const maturity=v5InitiativeMaturity(init); const kpiBadge=init.impactKpi?`<span class="redund-badge">KPI: ${esc(init.impactKpi)}</span>`:'<span class="disc-badge">Sin KPI impactado</span>';
@@ -3964,6 +4016,58 @@ initCardHtml = function(obj,init,redundant){
 renderActionsBody = function(){
   const init=findInitiative(actionCtx.objectiveId,actionCtx.initiativeId);
   $('initiativeActionsBody').innerHTML=`<div class="v5-rule-card"><div class="v5-rule-title">Cierre con evidencia</div><div class="v5-rule-text">El avance operativo se calcula por peso de acción. Terminar sin evidencia reduce la calidad de cierre y afecta el IGEE v5.</div></div><div class="action-list">${(init?.actions||[]).map(a=>`<div class="action-item ${isOverdue(a.dueDate,a.status)?'overdue-action':''}"><div style="font-weight:700;font-size:14px">${esc(a.title)}</div><div class="obj-sub">${esc(a.responsible||'Sin responsable')} · ${esc(a.status)} · Peso ${num(a.weight,1)} · ${esc(a.criticality||'Media')} · ${esc(a.dueDate||'s/f')} · ${daysText(a.dueDate)}</div><div class="v5-score-stack">${v5Pill('Cierre',v5ActionCloseQuality(a),v5ActionEvidenceScore(a)>=90?'green':v5ActionEvidenceScore(a)>=60?'yellow':'red')}${a.blocker?v5Pill('Bloqueador',a.blocker,'red'):''}${a.dependency?v5Pill('Depende de',a.dependency,'blue'):''}</div><div style="font-size:13px;color:var(--text2);margin-top:6px;white-space:pre-wrap">${esc(a.detail)}</div>${a.evidenceRequired||a.closeCriteria||a.evidence?`<div class="v5-evidence-box"><strong>Evidencia requerida:</strong> ${esc(a.evidenceRequired||'—')}<br><strong>Criterio:</strong> ${esc(a.closeCriteria||'—')}<br><strong>Evidencia:</strong> ${esc(a.evidence||'—')}</div>`:''}<div class="action-item-foot"><button class="btn btn-secondary btn-xs" data-action="viewAct" data-obj-id="${esc(actionCtx.objectiveId)}" data-init-id="${esc(actionCtx.initiativeId)}" data-act-id="${esc(a.id)}">Ver</button><button class="btn btn-secondary btn-xs" data-action="editAct" data-obj-id="${esc(actionCtx.objectiveId)}" data-init-id="${esc(actionCtx.initiativeId)}" data-act-id="${esc(a.id)}">Editar</button><button class="btn btn-primary btn-xs" data-action="completeAct" data-obj-id="${esc(actionCtx.objectiveId)}" data-init-id="${esc(actionCtx.initiativeId)}" data-act-id="${esc(a.id)}">✓ Terminar</button><button class="btn btn-danger btn-xs" data-action="delAct" data-obj-id="${esc(actionCtx.objectiveId)}" data-init-id="${esc(actionCtx.initiativeId)}" data-act-id="${esc(a.id)}">Eliminar</button></div></div>`).join('')||'<div class="empty-box">Sin acciones. Usa "+ Nueva Acción".</div>'}</div>`;
+};
+buildOperativoRows = function(){
+  const plan=currentPlan();
+  const query=txt(operativoSearchTerm).trim().toLowerCase();
+  const rows=[];
+  plan.objectives.forEach(obj=>{
+    let opPrinted=false;
+    const objBd=v5ObjectiveScoreBreakdown(obj);
+    const objScore=Math.round(objBd.igee);
+    const objProgress=Math.round(objBd.ejecucion);
+    obj.initiatives.forEach(init=>{
+      let initPrinted=false;
+      const initDetail=v5ActionsProgressDetail(init.actions);
+      const initProgress=initDetail.progress;
+      const maturity=v5InitiativeMaturity(init);
+      const acts=init.actions.length?init.actions:[{id:'',title:'Sin acciones registradas',responsible:'',dueDate:init.dueDate,status:init.status,detail:'',_empty:true,weight:1}];
+      acts.forEach(act=>{
+        const haystack=[obj.code,obj.name,obj.leader,init.name,init.owner,act.title,act.detail,act.responsible,act.status,act.criticality,act.blocker,act.dependency].join(' ').toLowerCase();
+        if(query && !haystack.includes(query)) return;
+        const objectiveControls=`<div class="op-inline-actions"><button class="btn btn-secondary btn-xs" data-action="viewObj" data-obj-id="${esc(obj.id)}">Ver detalle</button><button class="btn btn-primary btn-xs" data-action="newInit" data-obj-id="${esc(obj.id)}">+ Iniciativa</button></div>`;
+        const initiativeControls=`<div class="op-inline-actions"><button class="btn btn-primary btn-xs" data-action="newAct" data-obj-id="${esc(obj.id)}" data-init-id="${esc(init.id)}">+ Acción</button><button class="btn btn-secondary btn-xs" data-action="editInit" data-obj-id="${esc(obj.id)}" data-init-id="${esc(init.id)}">Editar</button><button class="btn btn-danger btn-xs" data-action="delInit" data-obj-id="${esc(obj.id)}" data-init-id="${esc(init.id)}">Eliminar</button></div>`;
+        const actionControls=act._empty
+          ? `<div class="op-inline-actions"><button class="btn btn-primary btn-xs" data-action="newAct" data-obj-id="${esc(obj.id)}" data-init-id="${esc(init.id)}">+ Acción</button></div>`
+          : `<div class="op-inline-actions"><button class="btn btn-secondary btn-xs" data-action="editAct" data-obj-id="${esc(obj.id)}" data-init-id="${esc(init.id)}" data-act-id="${esc(act.id)}">Editar</button><button class="btn btn-danger btn-xs" data-action="delAct" data-obj-id="${esc(obj.id)}" data-init-id="${esc(init.id)}" data-act-id="${esc(act.id)}">Eliminar</button></div>`;
+        const contribution=act._empty?0:v5ActionContribution(act,init.actions);
+        const weightHtml=act._empty?'<span class="v5-action-weight">Sin peso</span>':`<span class="v5-action-weight">Peso ${fmtNum(v5ActionWeight(act),1)} · ${v5IsDone(act.status)?'aporta':'aportará'} ${contribution}%</span><div class="v5-weight-explain">Fórmula: peso de esta acción / peso total de la iniciativa.</div>`;
+        rows.push(`<tr>
+          <td>${opPrinted?'':`<div class="op-obj-cell"><div class="op-label">Objetivo</div><div class="op-name" data-action="viewObj" data-obj-id="${esc(obj.id)}" style="cursor:pointer">${esc(obj.name)}</div><div class="op-sub">${esc((obj.code?obj.code+' · ':'') + (obj.leader||''))}</div><div class="op-meta-row"><span class="igee-pill ${scoreClass(objScore)}">IGEE v5 ${objScore}%</span>${opProgressPill(objProgress,'Ejecución')}</div>${opProgressBar(objProgress)}${objectiveControls}</div>`}</td>
+          <td>${initPrinted?'':`<div class="op-init-cell"><div class="op-label">Iniciativa</div><div class="op-name">${esc(init.name)}</div><div class="op-sub">${esc(init.owner||'Sin responsable')} · ${esc(maturity.level)}</div><div class="op-meta-row">${opProgressPill(initProgress,'Avance ponderado')}</div>${opProgressBar(initProgress)}<div class="v5-weight-explain"><strong>Cálculo:</strong> ${fmtNum(initDetail.doneWeight,1)} / ${fmtNum(initDetail.totalWeight,1)} pts cerrados · ${initDetail.doneActions}/${initDetail.totalActions} acciones terminadas.</div>${initiativeControls}</div>`}</td>
+          <td><div class="op-action-box"><div class="op-action-title">${esc(act.title)}</div><div class="op-sub">${esc(act.detail||'')}</div>${actionControls}</div></td>
+          <td>${esc(act.responsible||init.owner||'')}</td>
+          <td>${opStatusPill(act.status||'Sin estatus')}</td>
+          <td>${opDateCell(act.dueDate||init.dueDate,act.status||init.status)}</td>
+          <td>${weightHtml}</td>
+          <td>${opMoneyCell(init.budget)}</td>
+          <td>${opMoneyCell(init.spent)}</td>
+        </tr>`);
+        opPrinted=true; initPrinted=true;
+      });
+    });
+  });
+  return {rows,query};
+};
+renderOperativoRowsOnly = function(){
+  const tb=$('operativoRows');
+  if(!tb){ renderOperativo(); return; }
+  const {rows,query}=buildOperativoRows();
+  tb.innerHTML=rows.join('')||`<tr><td colspan="9"><div class="empty-box">${query?'No hay coincidencias para la búsqueda.':'No hay acciones.'}</div></td></tr>`;
+};
+renderOperativo = function(){
+  const {rows,query}=buildOperativoRows();
+  $('viewOperativo').innerHTML=`<div class="v5-rule-card"><div class="v5-rule-title">Avance operativo ponderado</div><div class="v5-rule-text"><strong>Avance de iniciativa = Σ peso de acciones terminadas / Σ peso total de acciones.</strong> Por eso una acción crítica con peso 5 puede mover más el avance que tres acciones menores con peso 1. El tablero ahora muestra el peso cerrado, el peso total y el aporte de cada acción.</div></div><div class="section-hero"><h2>Tablero Operativo</h2><p>Vista de ejecución con explicación del peso de cada acción y su efecto en el avance ponderado de la iniciativa.</p></div><div class="op-search-wrap"><input id="operativoSearch" class="op-search-input" type="search" placeholder="Buscar objetivo, iniciativa, acción o responsable" value="${esc(operativoSearchTerm)}"></div><div class="card table-wrap"><table><thead><tr><th>Objetivo</th><th>Iniciativa</th><th>Acción</th><th>Responsable</th><th>Estatus</th><th>Compromiso</th><th>Peso / aporte</th><th>Presupuesto</th><th>Gastado</th></tr></thead><tbody id="operativoRows">${rows.join('')||`<tr><td colspan="9"><div class="empty-box">${query?'No hay coincidencias para la búsqueda.':'No hay acciones.'}</div></td></tr>`}</tbody></table></div>`;
 };
 viewAction = function(objId,initId,actId){
   const a=findAction(objId,initId,actId); if(!a) return; actionCtx={objectiveId:objId,initiativeId:initId,actionId:actId};
