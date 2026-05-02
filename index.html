@@ -367,10 +367,24 @@ tbody tr:hover td{background:#fafbfc}
 
 /* ── MAPA ── */
 .map-layers{display:flex;flex-direction:column;gap:14px}
-.map-layer{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:13px}
-.map-layer-title{font-size:13px;font-weight:700;color:var(--em);margin-bottom:10px}
-.map-nodes{display:flex;flex-wrap:wrap;gap:8px}
-.map-node{border:1px solid var(--border2);background:var(--surface2);border-radius:var(--r-sm);padding:9px 11px;min-width:180px;max-width:250px}
+.map-layer{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px;box-shadow:var(--sh-sm)}
+.map-layer-title{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:13px;font-weight:800;color:var(--em);margin-bottom:12px}
+.map-layer-sub{font-size:11px;color:var(--muted);font-weight:600}
+.map-nodes{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
+.map-node{position:relative;border:1px solid var(--border2);background:linear-gradient(180deg,#fff,#f8fafc);border-radius:var(--r);padding:12px;min-height:112px;transition:var(--tr);cursor:pointer;overflow:hidden}
+.map-node:hover{transform:translateY(-1px);box-shadow:var(--sh);border-color:var(--blue-b)}
+.map-node::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--em)}
+.map-node-title{font-weight:800;font-size:12px;line-height:1.35;padding-left:2px}
+.map-node-meta{font-size:11px;color:var(--muted);margin-top:5px;line-height:1.35}
+.map-node-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-top:10px}
+.map-relation-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px}
+.map-rel-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:12px;border-left:4px solid var(--violet);transition:var(--tr)}
+.map-rel-card:hover{box-shadow:var(--sh);border-color:var(--border2)}
+.map-rel-top{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.map-rel-source{font-weight:800;font-size:13px;line-height:1.35}
+.map-rel-target{font-size:12px;color:var(--muted);line-height:1.35;margin-top:5px}
+.map-rel-arrow{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:var(--violet-s);color:var(--violet);font-weight:800;margin-right:4px}
+.map-rel-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
 
 /* ── AGENDA ── */
 .agenda-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px}
@@ -384,6 +398,22 @@ tbody tr:hover td{background:#fafbfc}
 
 /* ── ALINEACIÓN ── */
 .align-reco{font-size:12px;color:var(--text2);line-height:1.45}
+.align-obj-cell{display:flex;flex-direction:column;gap:5px;min-width:280px}
+.align-obj-title{font-weight:800;font-size:13px;line-height:1.35;color:var(--text)}
+.align-obj-title:hover{text-decoration:underline;color:var(--em);cursor:pointer}
+.align-score-wrap{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:4px}
+.align-pill{display:inline-flex;align-items:center;justify-content:center;border-radius:var(--r-full);padding:5px 9px;font-size:11px;font-weight:800;white-space:nowrap}
+.align-high{background:var(--em-s);color:var(--em)}
+.align-mid{background:var(--amber-s);color:var(--amber)}
+.align-low{background:var(--rose-s);color:var(--rose)}
+.align-evidence{background:var(--blue-s);color:var(--blue)}
+.align-progress{height:6px;width:110px;border-radius:var(--r-full);background:#e5e7eb;overflow:hidden}
+.align-progress-fill{height:100%;border-radius:var(--r-full)}
+.align-row-risk{border-left:3px solid transparent}
+.align-row-risk.low{border-left-color:var(--rose)}
+.align-row-risk.mid{border-left-color:var(--amber)}
+.align-row-risk.high{border-left-color:var(--em)}
+.align-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}
 
 /* ── GAP RIESGO INFERIDO ── */
 .gap-diverge-alert{background:var(--amber-s);border:1px solid var(--amber-b);border-radius:var(--r-sm);padding:7px 9px;font-size:11px;color:var(--amber);font-weight:600;margin-top:6px}
@@ -1270,7 +1300,7 @@ function handleClick(e){
 }
 function handleInput(e){
   if(e.target.matches('.ind-initial,.ind-current,.ind-target,.ind-action,.ind-weight')) updateIndicatorScore(e.target.closest('.indicator-row'));
-  if(e.target.id==='operativoSearch'){ operativoSearchTerm=e.target.value||''; renderOperativo(); }
+  if(e.target.id==='operativoSearch'){ operativoSearchTerm=e.target.value||''; renderOperativoRowsOnly(); }
 }
 function handleChange(e){
   if(e.target.matches('.objective-file-input')){
@@ -1601,7 +1631,7 @@ function opDateCell(dateStr,status=''){
   const soon=!overdue && match && Number(match[1])<=7;
   return `<div class="op-date-main">${esc(dateStr||'s/f')}</div><div class="op-date-meta ${overdue?'overdue':soon?'soon':''}">${esc(meta)}</div>`;
 }
-function renderOperativo(){
+function buildOperativoRows(){
   const plan=currentPlan();
   const query=txt(operativoSearchTerm).trim().toLowerCase();
   const rows=[];
@@ -1616,13 +1646,13 @@ function renderOperativo(){
       acts.forEach(act=>{
         const haystack=[obj.code,obj.name,obj.leader,init.name,init.owner,act.title,act.detail,act.responsible,act.status].join(' ').toLowerCase();
         if(query && !haystack.includes(query)) return;
-        const objectiveControls=`<div class="op-inline-actions"><button class="btn btn-primary btn-xs" data-action="newInit" data-obj-id="${esc(obj.id)}">+ Iniciativa</button></div>`;
+        const objectiveControls=`<div class="op-inline-actions"><button class="btn btn-secondary btn-xs" data-action="viewObj" data-obj-id="${esc(obj.id)}">Ver detalle</button><button class="btn btn-primary btn-xs" data-action="newInit" data-obj-id="${esc(obj.id)}">+ Iniciativa</button></div>`;
         const initiativeControls=`<div class="op-inline-actions"><button class="btn btn-primary btn-xs" data-action="newAct" data-obj-id="${esc(obj.id)}" data-init-id="${esc(init.id)}">+ Acción</button><button class="btn btn-secondary btn-xs" data-action="editInit" data-obj-id="${esc(obj.id)}" data-init-id="${esc(init.id)}">Editar</button><button class="btn btn-danger btn-xs" data-action="delInit" data-obj-id="${esc(obj.id)}" data-init-id="${esc(init.id)}">Eliminar</button></div>`;
         const actionControls=act._empty
           ? `<div class="op-inline-actions"><button class="btn btn-primary btn-xs" data-action="newAct" data-obj-id="${esc(obj.id)}" data-init-id="${esc(init.id)}">+ Acción</button></div>`
           : `<div class="op-inline-actions"><button class="btn btn-secondary btn-xs" data-action="editAct" data-obj-id="${esc(obj.id)}" data-init-id="${esc(init.id)}" data-act-id="${esc(act.id)}">Editar</button><button class="btn btn-danger btn-xs" data-action="delAct" data-obj-id="${esc(obj.id)}" data-init-id="${esc(init.id)}" data-act-id="${esc(act.id)}">Eliminar</button></div>`;
         rows.push(`<tr>
-          <td>${opPrinted?'':`<div class="op-obj-cell"><div class="op-label">Objetivo</div><div class="op-name">${esc(obj.name)}</div><div class="op-sub">${esc((obj.code?obj.code+' · ':'') + (obj.leader||''))}</div><div class="op-meta-row"><span class="igee-pill ${scoreClass(objScore)}">IGEE ${objScore}%</span>${opProgressPill(objProgress,'Avance')}</div>${opProgressBar(objProgress)}${objectiveControls}</div>`}</td>
+          <td>${opPrinted?'':`<div class="op-obj-cell"><div class="op-label">Objetivo</div><div class="op-name" data-action="viewObj" data-obj-id="${esc(obj.id)}" style="cursor:pointer">${esc(obj.name)}</div><div class="op-sub">${esc((obj.code?obj.code+' · ':'') + (obj.leader||''))}</div><div class="op-meta-row"><span class="igee-pill ${scoreClass(objScore)}">IGEE ${objScore}%</span>${opProgressPill(objProgress,'Avance')}</div>${opProgressBar(objProgress)}${objectiveControls}</div>`}</td>
           <td>${initPrinted?'':`<div class="op-init-cell"><div class="op-label">Iniciativa</div><div class="op-name">${esc(init.name)}</div><div class="op-sub">${esc(init.owner||'Sin responsable')}</div><div class="op-meta-row">${opProgressPill(initProgress,'Avance')}</div>${opProgressBar(initProgress)}${initiativeControls}</div>`}</td>
           <td><div class="op-action-box"><div class="op-action-title">${esc(act.title)}</div><div class="op-sub">${esc(act.detail||'')}</div>${actionControls}</div></td>
           <td>${esc(act.responsible||init.owner||'')}</td>
@@ -1636,28 +1666,69 @@ function renderOperativo(){
       });
     });
   });
-  $('viewOperativo').innerHTML=`<div class="section-hero"><h2>Tablero Operativo</h2></div><div class="op-search-wrap"><input id="operativoSearch" class="op-search-input" type="search" placeholder="Buscar objetivo, iniciativa, acción o responsable" value="${esc(operativoSearchTerm)}"></div><div class="card table-wrap"><table><thead><tr><th>Objetivo</th><th>Iniciativa</th><th>Acción</th><th>Responsable</th><th>Estatus</th><th>Compromiso</th><th>Presupuesto</th><th>Gastado</th></tr></thead><tbody>${rows.join('')||`<tr><td colspan="8"><div class="empty-box">${query?'No hay coincidencias para la búsqueda.':'No hay acciones.'}</div></td></tr>`}</tbody></table></div>`;
+  return { rows, query };
+}
+function renderOperativoRowsOnly(){
+  const tb=$('operativoRows');
+  if(!tb){ renderOperativo(); return; }
+  const {rows,query}=buildOperativoRows();
+  tb.innerHTML=rows.join('')||`<tr><td colspan="8"><div class="empty-box">${query?'No hay coincidencias para la búsqueda.':'No hay acciones.'}</div></td></tr>`;
+}
+function renderOperativo(){
+  const {rows,query}=buildOperativoRows();
+  $('viewOperativo').innerHTML=`<div class="section-hero"><h2>Tablero Operativo</h2></div><div class="op-search-wrap"><input id="operativoSearch" class="op-search-input" type="search" placeholder="Buscar objetivo, iniciativa, acción o responsable" value="${esc(operativoSearchTerm)}"></div><div class="card table-wrap"><table><thead><tr><th>Objetivo</th><th>Iniciativa</th><th>Acción</th><th>Responsable</th><th>Estatus</th><th>Compromiso</th><th>Presupuesto</th><th>Gastado</th></tr></thead><tbody id="operativoRows">${rows.join('')||`<tr><td colspan="8"><div class="empty-box">${query?'No hay coincidencias para la búsqueda.':'No hay acciones.'}</div></td></tr>`}</tbody></table></div>`;
 }
 
 // ── MAPA ─────────────────────────────────────────────────────────────
+function mapRiskClass(risk){
+  const r=txt(risk).toLowerCase();
+  if(r.includes('crítico')||r.includes('alto')) return 'b-red';
+  if(r.includes('medio')) return 'b-yellow';
+  return 'b-green';
+}
+function relationCardHtml(obj,r){
+  const target=findObjective(r.targetId);
+  const targetName=target?.name||objectiveName(r.targetId)||r.targetId||'Sin objetivo';
+  return `<div class="map-rel-card">
+    <div class="map-rel-top"><div><div class="map-rel-source">${esc(obj.name)}</div><div class="map-rel-target"><span class="map-rel-arrow">→</span>${esc(targetName)}</div></div><span class="badge ${mapRiskClass(r.risk)}">Riesgo ${esc(r.risk||'Medio')}</span></div>
+    <div class="chip-row" style="margin-top:10px"><span class="chip">${esc(r.type||'Relación')}</span><span class="chip">${esc(r.intensity||'Media')}</span><span class="chip">${esc(r.time||'90 días')}</span></div>
+    ${r.evidence?`<div class="obj-sub" style="margin-top:8px">${esc(r.evidence)}</div>`:''}
+    <div class="map-rel-actions"><button class="btn btn-secondary btn-xs" data-action="viewObj" data-obj-id="${esc(obj.id)}">Ver origen</button>${target?`<button class="btn btn-secondary btn-xs" data-action="viewObj" data-obj-id="${esc(target.id)}">Ver destino</button>`:''}</div>
+  </div>`;
+}
 function renderMapa(){
   const plan=currentPlan();
   const byType={};
   plan.objectives.forEach(obj=>obj.relations.forEach(r=>{ const k=r.type||'Relación'; byType[k]=byType[k]||[]; byType[k].push({obj,r}); }));
-  const layers=plan.objectives.length?`<div class="map-layer"><div class="map-layer-title">Objetivos por tipo</div><div class="map-nodes">${plan.objectives.map(o=>`<div class="map-node"><div style="font-weight:700;font-size:12px">${esc(o.code?o.code+' · ':'')}${esc(o.name)}</div><div class="obj-sub">${esc(objectiveTypeLabel(o.type))} · IGEE ${Math.round(calcObjectiveScore(o))}%</div></div>`).join('')}</div></div>`:'';
-  const rels=Object.entries(byType).map(([type,items])=>`<div class="map-layer"><div class="map-layer-title">${esc(type)}</div><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px">${items.map(({obj,r})=>`<div style="border-left:3px solid var(--violet);background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:11px"><strong>${esc(obj.name)}</strong><div class="obj-sub">→ ${esc(objectiveName(r.targetId)||r.targetId||'Sin objetivo')}</div><div class="chip-row"><span class="chip">${esc(r.intensity)}</span><span class="chip">Riesgo ${esc(r.risk)}</span><span class="chip">${esc(r.time)}</span></div></div>`).join('')}</div></div>`).join('');
-  $('viewMapa').innerHTML=`<div class="section-hero"><h2>Mapa de relaciones estratégicas</h2></div><div class="map-layers">${layers}${rels||'<div class="empty-box">No hay relaciones.</div>'}</div>`;
+  const objectiveCards=plan.objectives.length?`<div class="map-layer"><div class="map-layer-title"><span>Objetivos por tipo</span><span class="map-layer-sub">Click en cualquier tarjeta para ver detalle</span></div><div class="map-nodes">${plan.objectives.map(o=>{const score=Math.round(calcObjectiveScore(o));const op=calcObjectiveOperationalProgress(o);return `<div class="map-node" data-action="viewObj" data-obj-id="${esc(o.id)}"><div class="map-node-title">${esc(o.code?o.code+' · ':'')}${esc(o.name)}</div><div class="map-node-meta">${esc(objectiveTypeLabel(o.type))} · ${esc(o.leader||'Sin responsable')}</div><div class="map-node-foot"><span class="igee-pill ${scoreClass(score)}">IGEE ${score}%</span><span class="op-progress-pill op-progress-${opProgressClass(op)}">Avance ${op}%</span></div></div>`;}).join('')}</div></div>`:'';
+  const relationLayers=Object.entries(byType).map(([type,items])=>`<div class="map-layer"><div class="map-layer-title"><span>${esc(type)}</span><span class="map-layer-sub">${items.length} relación(es)</span></div><div class="map-relation-grid">${items.map(({obj,r})=>relationCardHtml(obj,r)).join('')}</div></div>`).join('');
+  $('viewMapa').innerHTML=`<div class="section-hero"><h2>Mapa de relaciones estratégicas</h2></div><div class="map-layers">${objectiveCards}${relationLayers||'<div class="empty-box">No hay relaciones.</div>'}</div>`;
 }
 
 // ── ALINEACIÓN ───────────────────────────────────────────────────────
+function alignLevelClass(v){
+  const s=txt(v).toLowerCase();
+  if(s==='alto'||s==='validada'||s==='documentada') return 'align-high';
+  if(s==='bajo'||s==='sin evidencia') return 'align-low';
+  return 'align-mid';
+}
+function alignPill(v,extra=''){
+  return `<span class="align-pill ${extra||alignLevelClass(v)}">${esc(v||'—')}</span>`;
+}
+function alignmentScore(o){
+  const vals=[o.budgetAlignment,o.processAlignment,o.structureAlignment,o.indicatorAlignment].map(v=>txt(v).toLowerCase()==='alto'?100:txt(v).toLowerCase()==='medio'?60:25);
+  return Math.round(vals.reduce((a,b)=>a+b,0)/vals.length);
+}
+function alignmentRowClass(score){ return score>=75?'high':score>=50?'mid':'low'; }
 function renderAlineacion(){
   const plan=currentPlan();
   const rows=plan.objectives.map(o=>{
     const levels=[o.budgetAlignment,o.processAlignment,o.structureAlignment,o.indicatorAlignment];
     const low=levels.filter(x=>txt(x).toLowerCase()==='bajo').length;
     const high=levels.filter(x=>txt(x).toLowerCase()==='alto').length;
+    const score=alignmentScore(o);
     const reco=low>0?'Requiere intervención ejecutiva.':high>=3?'Alineación sólida.':'Alineación parcial; revisar.';
-    return `<tr><td><strong>${esc(o.name)}</strong><div class="align-reco" style="margin-top:3px;color:var(--muted)">${esc(o.theme||objectiveTypeLabel(o.type))}</div></td><td>${esc(o.budgetAlignment)}</td><td>${esc(o.processAlignment)}</td><td>${esc(o.structureAlignment)}</td><td>${esc(o.indicatorAlignment)}</td><td>${esc(o.evidenceLevel)}</td><td class="align-reco">${esc(reco)}<div style="margin-top:3px;font-size:11px;color:var(--muted)">${esc(o.alignmentEvidence||o.correctionAction)}</div></td></tr>`;
+    return `<tr class="align-row-risk ${alignmentRowClass(score)}"><td><div class="align-obj-cell"><div class="align-obj-title" data-action="viewObj" data-obj-id="${esc(o.id)}">${esc(o.name)}</div><div class="obj-sub">${esc(o.theme||objectiveTypeLabel(o.type))}</div><div class="align-score-wrap"><span class="align-pill ${score>=75?'align-high':score>=50?'align-mid':'align-low'}">Alineación ${score}%</span><div class="align-progress"><div class="align-progress-fill" style="width:${clamp(score)}%;background:${progressColor(score)}"></div></div></div><div class="align-actions"><button class="btn btn-secondary btn-xs" data-action="viewObj" data-obj-id="${esc(o.id)}">Ver detalle</button></div></div></td><td>${alignPill(o.budgetAlignment)}</td><td>${alignPill(o.processAlignment)}</td><td>${alignPill(o.structureAlignment)}</td><td>${alignPill(o.indicatorAlignment)}</td><td>${alignPill(o.evidenceLevel,'align-evidence')}</td><td class="align-reco"><strong>${esc(reco)}</strong><div style="margin-top:5px;font-size:11px;color:var(--muted)">${esc(o.alignmentEvidence||o.correctionAction||'Sin notas de evidencia/corrección.')}</div></td></tr>`;
   }).join('');
   $('viewAlineacion').innerHTML=`<div class="section-hero"><h2>Alineación estratégica</h2></div><div class="card table-wrap"><table><thead><tr><th>Objetivo</th><th>Presupuesto</th><th>Procesos</th><th>Estructura</th><th>Indicadores</th><th>Evidencia</th><th>Lectura ejecutiva</th></tr></thead><tbody>${rows}</tbody></table></div>`;
 }
