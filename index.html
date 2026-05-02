@@ -104,6 +104,11 @@ label{display:block;margin-bottom:5px;font-size:11px;font-weight:600;color:var(-
 .ring{--val:0;--color:var(--em-l);width:48px;height:48px;border-radius:50%;display:grid;place-items:center;position:relative;background:conic-gradient(var(--color) calc(var(--val)*1%),#e5e7eb 0);font-weight:700;font-size:11px}
 .ring::after{content:"";position:absolute;width:36px;height:36px;border-radius:50%;background:var(--surface)}
 .ring span{position:relative;z-index:1}
+.obj-mini-metric{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-width:48px}
+.obj-mini-ring{--val:0;--color:var(--em-l);width:44px;height:44px;border-radius:50%;display:grid;place-items:center;position:relative;background:conic-gradient(var(--color) calc(var(--val)*1%),#e5e7eb 0);font-weight:700;font-size:10px}
+.obj-mini-ring::after{content:"";position:absolute;width:32px;height:32px;border-radius:50%;background:var(--surface)}
+.obj-mini-ring span{position:relative;z-index:1}
+.obj-mini-label{font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
 
 /* ── PROGRESS BAR ── */
 .pb-wrap{display:flex;flex-direction:column;gap:5px}
@@ -931,6 +936,50 @@ function tomScore(o){
 const scoreClass = score => score>=80?'igee-ok':score>=55?'igee-risk':'igee-critical';
 const kpiState = score => { if(score>=85) return {label:'Verde',cls:'kpi-state-green',color:'ok'}; if(score>=60) return {label:'Amarillo',cls:'kpi-state-yellow',color:'warn'}; return {label:'Rojo',cls:'kpi-state-red',color:'bad'}; };
 const progressColor = v => v>=80?'var(--em-l)':v>=50?'var(--amber)':'var(--rose)';
+const riskColor = v => v>=75?'var(--rose)':v>=45?'var(--amber)':'var(--em-l)';
+
+function calcImpactScore(obj){
+  const inits=asArray(obj.initiatives);
+  if(!inits.length) return 0;
+  const expected=inits.reduce((a,i)=>a+Math.max(0,num(i.expectedImpact)),0);
+  const real=inits.reduce((a,i)=>a+Math.max(0,num(i.realImpact)),0);
+  if(expected>0) return clamp((real/expected)*100,0,100);
+  const avgProgress=inits.reduce((a,i)=>a+calcActionsProgress(i.actions),0)/inits.length;
+  return clamp(avgProgress,0,100);
+}
+
+function calcAlignmentScore(obj){
+  const map={alto:100,medio:60,bajo:25};
+  const evidenceMap={'sin evidencia':0,'declarativa':25,'parcial':55,'documentada':80,'validada':100};
+  const levels=[obj.budgetAlignment,obj.processAlignment,obj.structureAlignment,obj.indicatorAlignment];
+  const base=levels.reduce((a,x)=>a+(map[txt(x).toLowerCase()]??60),0)/(levels.length||1);
+  const evidence=evidenceMap[txt(obj.evidenceLevel).toLowerCase()]??55;
+  return clamp((base*0.8)+(evidence*0.2),0,100);
+}
+
+function riskLevelValue(level){
+  const s=txt(level).toLowerCase();
+  if(s.includes('crít')||s.includes('crit')) return 100;
+  if(s.includes('alto')) return 75;
+  if(s.includes('medio')) return 50;
+  if(s.includes('bajo')) return 0;
+  return 0;
+}
+
+function calcRiskScore(obj){
+  let risk=Math.max(riskLevelValue(obj.gapRisk),riskLevelValue(inferGapRisk(obj)));
+  const stale=(obj.indicators||[]).filter(k=>kpiConfidence(k).level==='stale').length;
+  const disconnected=(obj.initiatives||[]).filter(i=>!i.impactKpi).length;
+  if(stale) risk+=Math.min(15,stale*5);
+  if(disconnected) risk+=Math.min(10,disconnected*5);
+  return clamp(risk,0,100);
+}
+
+function objMetricRing(value,label,{risk=false}={}){
+  const v=Math.round(clamp(value));
+  const color=risk?riskColor(v):progressColor(v);
+  return `<div class="obj-mini-metric" title="${esc(label)}: ${v}%"><div class="obj-mini-ring" style="--val:${v};--color:${color}"><span>${v}%</span></div><div class="obj-mini-label">${esc(label)}</div></div>`;
+}
 
 function statusBadge(status){
   const s=normalizeStatus(status);
@@ -1141,6 +1190,10 @@ function renderObjetivos(){
   const plan=currentPlan();
   const rows=plan.objectives.map(obj=>{
     const score=Math.round(calcObjectiveScore(obj));
+    const impact=Math.round(calcImpactScore(obj));
+    const alignment=Math.round(calcAlignmentScore(obj));
+    const risk=Math.round(calcRiskScore(obj));
+    const tom=Math.round(tomScore(obj));
     const expanded=expandedObjectives.has(obj.id);
     const inits=obj.initiatives||[];
     const isVencido=isOverdue(obj.end,obj.status);
@@ -1150,22 +1203,26 @@ function renderObjetivos(){
     return `<tr style="${isVencido&&score<90?'border-left:4px solid var(--rose)':''}">
       <td><div class="obj-cell"><button class="obj-toggle" data-action="toggleObj" data-obj-id="${esc(obj.id)}">${expanded?'▾':'▸'}</button><div><div class="obj-name" data-action="viewObj" data-obj-id="${esc(obj.id)}">${esc(obj.code?obj.code+' · ':'')}${esc(obj.name)}</div><div class="obj-sub">${esc(obj.leader||'Sin líder')} · ${esc(obj.perspective)} · ${esc(obj.level)}</div>${shouldAutopsia?`<button class="btn btn-sm" style="background:var(--amber-s);color:var(--amber);border:1px solid var(--amber-b);margin-top:4px" data-action="autopsia" data-obj-id="${esc(obj.id)}">⚠ Ver Autopsia</button>`:''}</div></div></td>
       <td>${statusBadge(obj.status)}</td>
-      <td><div class="ring" style="--val:${clamp(score)};--color:${progressColor(score)}"><span>${score}%</span></div></td>
+      <td>${objMetricRing(score,'IGEE')}</td>
+      <td>${objMetricRing(impact,'Impacto')}</td>
+      <td>${objMetricRing(alignment,'Alineación')}</td>
+      <td>${objMetricRing(risk,'Riesgo',{risk:true})}</td>
+      <td>${objMetricRing(tom,'TOM')}</td>
       <td>${esc(obj.end||'s/f')}<div class="obj-sub">${daysText(obj.end)}</div></td>
       <td>${obj.indicators.length} KPIs<br><span class="obj-sub">${inits.length} init · ${inits.reduce((a,i)=>a+i.actions.length,0)} acc</span></td>
       <td><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn btn-secondary btn-xs" data-action="viewObj" data-obj-id="${esc(obj.id)}">Ver</button><button class="btn btn-secondary btn-xs" data-action="editObj" data-obj-id="${esc(obj.id)}">Editar</button><button class="btn btn-danger btn-xs" data-action="deleteObj" data-obj-id="${esc(obj.id)}">Eliminar</button></div></td>
-    </tr><tr class="${expanded?'':'hidden'}"><td colspan="6" style="padding:0">${initHtml}</td></tr>`;
+    </tr><tr class="${expanded?'':'hidden'}"><td colspan="10" style="padding:0">${initHtml}</td></tr>`;
   }).join('');
-  $('viewObjetivos').innerHTML=`<div class="section-hero"><h2>Objetivos estratégicos</h2><p>Vista con cascada de iniciativas. Objetivos vencidos muestran acceso a Autopsia. Iniciativas con KPI compartido se marcan automáticamente como posibles redundancias.</p></div><div class="card table-wrap"><table><thead><tr><th>Objetivo</th><th>Estatus</th><th>IGEE</th><th>Compromiso</th><th>Alcance</th><th>Acciones</th></tr></thead><tbody>${rows||`<tr><td colspan="6"><div class="empty-box">Sin objetivos. Usa "+ Nuevo Objetivo".</div></td></tr>`}</tbody></table></div>`;
+  $('viewObjetivos').innerHTML=`<div class="section-hero"><h2>Objetivos estratégicos</h2><p>Vista con cascada de iniciativas. Ahora la tabla integra IGEE, Impacto, Alineación, Riesgo y TOM. El riesgo se lee de forma inversa: 0% verde = riesgo controlado; 100% rojo = riesgo crítico.</p></div><div class="card table-wrap"><table><thead><tr><th>Objetivo</th><th>Estatus</th><th>IGEE</th><th>Impacto</th><th>Alineación</th><th>Riesgo</th><th>TOM</th><th>Compromiso</th><th>Alcance</th><th>Acciones</th></tr></thead><tbody>${rows||`<tr><td colspan="10"><div class="empty-box">Sin objetivos. Usa "+ Nuevo Objetivo".</div></td></tr>`}</tbody></table></div>`;
 }
 
 function initCardHtml(obj,init,redundant){
   const progress=Math.round(calcActionsProgress(init.actions));
   const overdue=init.actions.some(a=>isOverdue(a.dueDate,a.status));
   const disconnected=!init.impactKpi;
-  const isRedundant=redundant.has(init.id);
-  return `<div class="init-card ${disconnected||isRedundant?'disc':''} ${overdue?'overdue-card':''}">
-    <div><div style="font-weight:700;font-size:13px">${esc(init.name)}</div><div class="obj-sub">${esc(init.owner||'Sin responsable')} · ${esc(init.priority)} · ${esc(init.status)}</div>${disconnected?'<span class="disc-badge">Sin KPI impactado</span>':''}${isRedundant?'<span class="redund-badge">⚠ KPI compartido</span>':''}</div>
+  const kpiBadge=init.impactKpi?`<span class="redund-badge">KPI: ${esc(init.impactKpi)}</span>`:'<span class="disc-badge">Sin KPI impactado</span>';
+  return `<div class="init-card ${disconnected?'disc':''} ${overdue?'overdue-card':''}">
+    <div><div style="font-weight:700;font-size:13px">${esc(init.name)}</div><div class="obj-sub">${esc(init.owner||'Sin responsable')} · ${esc(init.priority)} · ${esc(init.status)}</div>${kpiBadge}</div>
     <div><div class="op-label">Fecha</div><div class="op-name">${esc(init.dueDate||'s/f')}</div><div class="obj-sub">${daysText(init.dueDate)}</div></div>
     <div><div class="pb-wrap"><div class="pb-top"><span>Avance</span><span>${progress}%</span></div><div class="pb"><div class="pb-fill" style="width:${clamp(progress)}%;background:${progressColor(progress)}"></div></div></div></div>
     <div><div class="op-label">Beneficio</div><div class="op-name">${esc(init.benefitReal||init.benefitExpected||'Sin registro')}</div><div class="obj-sub">${init.actions.length} acciones</div></div>
@@ -1669,7 +1726,7 @@ function importJSON(e){
 function exportXLS(){
   const plan=currentPlan(); if(!plan) return;
   const sections=[];
-  sections.push(['Objetivos',['Código','Objetivo','Líder','Estatus','IGEE','Compromiso','Brecha','Riesgo declarado','Riesgo inferido'],plan.objectives.map(o=>[o.code,o.name,o.leader,o.status,Math.round(calcObjectiveScore(o))+'%',o.end,o.gap,o.gapRisk,inferGapRisk(o)])]);
+  sections.push(['Objetivos',['Código','Objetivo','Líder','Estatus','IGEE','Impacto','Alineación','Riesgo %','TOM','Compromiso','Alcance','Brecha','Riesgo declarado','Riesgo inferido'],plan.objectives.map(o=>[o.code,o.name,o.leader,o.status,Math.round(calcObjectiveScore(o))+'%',Math.round(calcImpactScore(o))+'%',Math.round(calcAlignmentScore(o))+'%',Math.round(calcRiskScore(o))+'%',Math.round(tomScore(o))+'%',o.end,`${o.indicators.length} KPIs · ${o.initiatives.length} iniciativas · ${o.initiatives.reduce((a,i)=>a+i.actions.length,0)} acciones`,o.gap,o.gapRisk,inferGapRisk(o)])]);
   sections.push(['KPIs',['Objetivo','KPI','Acción','Inicial','Actual','Meta','Unidad','Avance','Confianza','Última actualización'],plan.objectives.flatMap(o=>o.indicators.map(k=>{const conf=kpiConfidence(k);return[o.name,k.name,k.action,k.initial,k.current,k.target,k.unit,Math.round(calcIndicatorScore(k))+'%',conf.label,k.lastUpdate||'Sin fecha'];}))]);
   sections.push(['Iniciativas',['Objetivo','Iniciativa','Responsable','Estatus','Avance','KPI impactado','Impacto esperado','Impacto real','Redundante','Presupuesto','Gastado'],plan.objectives.flatMap(o=>o.initiatives.map(i=>[o.name,i.name,i.owner,i.status,calcActionsProgress(i.actions)+'%',i.impactKpi,(i.expectedImpact||0)+'%',(i.realImpact||0)+'%',i.redundant,i.budget,i.spent]))]);
   sections.push(['Acciones',['Objetivo','Iniciativa','Acción','Responsable','Estatus','Compromiso','Vencida'],plan.objectives.flatMap(o=>o.initiatives.flatMap(i=>i.actions.map(a=>[o.name,i.name,a.title,a.responsible,a.status,a.dueDate,isOverdue(a.dueDate,a.status)?'Sí':'No'])))]);
