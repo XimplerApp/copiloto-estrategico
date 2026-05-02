@@ -318,6 +318,28 @@ tbody tr:hover td{background:#fafbfc}
 .op-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
 .op-name{font-weight:700;font-size:13px;margin-top:3px;line-height:1.3}
 .op-sub{font-size:11px;color:var(--muted);margin-top:3px}
+.op-meta-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.op-progress-pill,.op-status-pill{display:inline-flex;align-items:center;justify-content:center;border-radius:var(--r-full);padding:5px 9px;font-size:11px;font-weight:800;white-space:nowrap}
+.op-status-ok,.op-progress-ok{background:var(--em-s);color:var(--em)}
+.op-status-mid,.op-progress-mid{background:var(--amber-s);color:var(--amber)}
+.op-status-bad,.op-progress-bad{background:var(--rose-s);color:var(--rose)}
+.op-status-info{background:var(--blue-s);color:var(--blue)}
+.op-status-neutral{background:var(--slate-s);color:var(--slate)}
+.op-progress-track{height:8px;background:var(--border);border-radius:999px;overflow:hidden;margin-top:7px;max-width:220px}
+.op-progress-fill{height:100%;border-radius:999px;background:var(--em)}
+.op-progress-fill.mid{background:var(--amber)}
+.op-progress-fill.bad{background:var(--rose)}
+.op-date-main{font-weight:700;font-size:13px;line-height:1.25}
+.op-date-meta{font-size:11px;margin-top:4px;color:var(--muted);font-weight:700}
+.op-date-meta.overdue{color:var(--rose)}
+.op-date-meta.soon{color:var(--amber)}
+.op-money-main{font-weight:800;font-size:13px;line-height:1.25;color:var(--text)}
+.op-search-wrap{margin:14px 0 12px}
+.op-search-input{width:100%;border:1px solid var(--border2);background:var(--surface);border-radius:14px;padding:14px 16px;font-size:14px;outline:none;transition:var(--tr)}
+.op-search-input:focus{border-color:var(--blue-b);box-shadow:0 0 0 3px rgba(37,99,235,.08)}
+.op-action-title{font-weight:800;font-size:13px;line-height:1.35}
+.op-action-box{display:flex;flex-direction:column;gap:2px}
+.op-cell-empty{color:var(--muted)}
 
 /* ── TOM ── */
 .tom-mini-box{border:1px solid var(--border);background:var(--surface2);border-radius:var(--r-sm);padding:8px;margin-bottom:6px}
@@ -763,6 +785,7 @@ let actionCtx = { objectiveId:null, initiativeId:null, actionId:null };
 let agendaEditId = null;
 let commitEditId = null;
 let quickKpiCtx = { objectiveId:null, kpiId:null };
+let operativoSearchTerm = '';
 
 const TABS = [
   {id:'objetivos',label:'Objetivos',panel:'viewObjetivos'},
@@ -1243,6 +1266,7 @@ function handleClick(e){
 }
 function handleInput(e){
   if(e.target.matches('.ind-initial,.ind-current,.ind-target,.ind-action,.ind-weight')) updateIndicatorScore(e.target.closest('.indicator-row'));
+  if(e.target.id==='operativoSearch'){ operativoSearchTerm=e.target.value||''; renderOperativo(); }
 }
 function handleChange(e){
   if(e.target.matches('.objective-file-input')){
@@ -1544,20 +1568,66 @@ function exportAgendaPDF(){
 }
 
 // ── OPERATIVO ────────────────────────────────────────────────────────
+function calcObjectiveOperationalProgress(obj){
+  const inits=asArray(obj?.initiatives);
+  if(!inits.length) return 0;
+  return Math.round(inits.reduce((acc,init)=>acc+calcActionsProgress(init.actions),0)/inits.length);
+}
+function opProgressClass(val){ return val>=80?'ok':val>=50?'mid':'bad'; }
+function opProgressPill(val,label='Avance'){ return `<span class="op-progress-pill op-progress-${opProgressClass(val)}">${esc(label)} ${val}%</span>`; }
+function opProgressBar(val){ return `<div class="op-progress-track"><div class="op-progress-fill ${opProgressClass(val)}" style="width:${clamp(val)}%"></div></div>`; }
+function opStatusTone(status){
+  const s=txt(status).toLowerCase().trim();
+  if(['terminada','finalizada','completada','cumplido','done'].includes(s)) return 'ok';
+  if(['en progreso','en proceso','activa','activo'].includes(s)) return 'info';
+  if(['por hacer','pendiente','abierta','abierto','sin iniciar'].includes(s)) return 'neutral';
+  if(['pausada','pausado','en riesgo'].includes(s)) return 'mid';
+  return 'neutral';
+}
+function opStatusPill(status){ return `<span class="op-status-pill op-status-${opStatusTone(status)}">${esc(status||'Sin estatus')}</span>`; }
+function opMoneyCell(value){
+  const n=num(value);
+  const compact=fmtMetricValue(n,'$');
+  return `<div class="op-money-main" title="${esc(fmtMoney(n))}">${esc(compact)}</div><div class="op-sub">${esc(fmtMoney(n))}</div>`;
+}
+function opDateCell(dateStr,status=''){
+  const meta=daysText(dateStr);
+  const overdue=isOverdue(dateStr,status);
+  const match=meta.match(/En (\d+)d/);
+  const soon=!overdue && match && Number(match[1])<=7;
+  return `<div class="op-date-main">${esc(dateStr||'s/f')}</div><div class="op-date-meta ${overdue?'overdue':soon?'soon':''}">${esc(meta)}</div>`;
+}
 function renderOperativo(){
-  const plan=currentPlan(); const rows=[];
+  const plan=currentPlan();
+  const query=txt(operativoSearchTerm).trim().toLowerCase();
+  const rows=[];
   plan.objectives.forEach(obj=>{
     let opPrinted=false;
+    const objScore=Math.round(calcObjectiveScore(obj));
+    const objProgress=calcObjectiveOperationalProgress(obj);
     obj.initiatives.forEach(init=>{
       let initPrinted=false;
+      const initProgress=calcActionsProgress(init.actions);
       const acts=init.actions.length?init.actions:[{id:'',title:'Sin acciones registradas',responsible:'',dueDate:init.dueDate,status:init.status,detail:''}];
       acts.forEach(act=>{
-        rows.push(`<tr><td>${opPrinted?'':`<div class="op-obj-cell"><div class="op-label">Objetivo</div><div class="op-name">${esc(obj.name)}</div><div class="op-sub">${esc(obj.leader||'')}</div></div>`}</td><td>${initPrinted?'':`<div class="op-init-cell"><div class="op-label">Iniciativa</div><div class="op-name">${esc(init.name)}</div><div class="op-sub">${esc(init.owner||'')}</div></div>`}</td><td><strong>${esc(act.title)}</strong><div class="op-sub">${esc(act.detail||'')}</div></td><td>${esc(act.responsible||init.owner||'')}</td><td>${esc(act.status)}</td><td>${esc(act.dueDate||init.dueDate||'s/f')}<div class="op-sub">${daysText(act.dueDate||init.dueDate)}</div></td><td>${fmtMoney(init.budget)}</td><td>${fmtMoney(init.spent)}</td></tr>`);
-        opPrinted=true; initPrinted=true;
+        const haystack=[obj.code,obj.name,obj.leader,init.name,init.owner,act.title,act.detail,act.responsible,act.status].join(' ').toLowerCase();
+        if(query && !haystack.includes(query)) return;
+        rows.push(`<tr>
+          <td>${opPrinted?'':`<div class="op-obj-cell"><div class="op-label">Objetivo</div><div class="op-name">${esc(obj.name)}</div><div class="op-sub">${esc((obj.code?obj.code+' · ':'') + (obj.leader||''))}</div><div class="op-meta-row"><span class="igee-pill ${scoreClass(objScore)}">IGEE ${objScore}%</span>${opProgressPill(objProgress,'Avance')}</div>${opProgressBar(objProgress)}</div>`}</td>
+          <td>${initPrinted?'':`<div class="op-init-cell"><div class="op-label">Iniciativa</div><div class="op-name">${esc(init.name)}</div><div class="op-sub">${esc(init.owner||'Sin responsable')}</div><div class="op-meta-row">${opProgressPill(initProgress,'Avance')}</div>${opProgressBar(initProgress)}</div>`}</td>
+          <td><div class="op-action-box"><div class="op-action-title">${esc(act.title)}</div><div class="op-sub">${esc(act.detail||'')}</div></div></td>
+          <td>${esc(act.responsible||init.owner||'')}</td>
+          <td>${opStatusPill(act.status||'Sin estatus')}</td>
+          <td>${opDateCell(act.dueDate||init.dueDate,act.status||init.status)}</td>
+          <td>${opMoneyCell(init.budget)}</td>
+          <td>${opMoneyCell(init.spent)}</td>
+        </tr>`);
+        opPrinted=true;
+        initPrinted=true;
       });
     });
   });
-  $('viewOperativo').innerHTML=`<div class="section-hero"><h2>Tablero Operativo</h2><p>Vista objetivo → iniciativa → acción. Objetivo e iniciativa se muestran una sola vez para evitar redundancia visual.</p></div><div class="card table-wrap"><table><thead><tr><th>Objetivo</th><th>Iniciativa</th><th>Acción</th><th>Responsable</th><th>Estatus</th><th>Compromiso</th><th>Presupuesto</th><th>Gastado</th></tr></thead><tbody>${rows.join('')||`<tr><td colspan="8"><div class="empty-box">No hay acciones.</div></td></tr>`}</tbody></table></div>`;
+  $('viewOperativo').innerHTML=`<div class="section-hero"><h2>Tablero Operativo</h2></div><div class="op-search-wrap"><input id="operativoSearch" class="op-search-input" type="search" placeholder="Buscar objetivo, iniciativa, acción o responsable" value="${esc(operativoSearchTerm)}"></div><div class="card table-wrap"><table><thead><tr><th>Objetivo</th><th>Iniciativa</th><th>Acción</th><th>Responsable</th><th>Estatus</th><th>Compromiso</th><th>Presupuesto</th><th>Gastado</th></tr></thead><tbody>${rows.join('')||`<tr><td colspan="8"><div class="empty-box">${query?'No hay coincidencias para la búsqueda.':'No hay acciones.'}</div></td></tr>`}</tbody></table></div>`;
 }
 
 // ── MAPA ─────────────────────────────────────────────────────────────
