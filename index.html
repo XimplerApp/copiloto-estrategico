@@ -246,6 +246,48 @@ tbody tr:hover td{background:#fafbfc}
 .metric-value{font-size:24px;font-weight:700;line-height:1}
 .metric-note{font-size:11px;color:var(--muted);margin-top:3px;line-height:1.3}
 
+
+
+/* ── COMITÉ: TEMAS Y COMPROMISOS ── */
+.committee-flow-note{background:linear-gradient(135deg,var(--em-ss),#fff);border:1px solid var(--em-s);border-radius:var(--r-lg);padding:13px 16px;margin-bottom:14px;display:flex;gap:10px;align-items:flex-start;box-shadow:var(--sh-sm)}
+.committee-flow-icon{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--em);color:#fff;font-weight:800;flex:0 0 auto}
+.committee-flow-title{font-size:13px;font-weight:800;color:var(--em);margin-bottom:3px}
+.committee-flow-text{font-size:12px;color:var(--text2);line-height:1.45}
+.committee-section-title{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px 16px;margin:14px 0 10px;box-shadow:var(--sh-sm)}
+.committee-section-title h2{font-size:17px;margin:0}
+.committee-section-title p{font-size:12px;color:var(--muted);margin-top:3px}
+.committee-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:12px;margin-bottom:18px}
+.committee-topic-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:var(--sh-sm);overflow:hidden;border-left:4px solid var(--blue)}
+.committee-topic-card.p-critical{border-left-color:var(--rose)}
+.committee-topic-card.p-high{border-left-color:var(--amber)}
+.committee-topic-card.p-medium{border-left-color:var(--blue)}
+.committee-topic-card.p-low{border-left-color:var(--em-l)}
+.committee-topic-head{padding:13px 14px;border-bottom:1px solid var(--border);background:linear-gradient(180deg,#fff,var(--surface2));display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.committee-topic-title{font-weight:800;font-size:14px;line-height:1.25;color:var(--text)}
+.committee-topic-meta{font-size:11px;color:var(--muted);margin-top:4px;line-height:1.4}
+.committee-topic-body{padding:12px 14px;display:flex;flex-direction:column;gap:9px}
+.committee-box{border:1px solid var(--border);background:var(--surface2);border-radius:var(--r-sm);padding:9px 10px}
+.committee-box-title{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:5px}
+.committee-box-text{font-size:12px;color:var(--text2);line-height:1.45;white-space:pre-wrap}
+.committee-decision-box{border-color:var(--blue-b);background:var(--blue-s)}
+.committee-decision-box .committee-box-text{color:#0f3f9f;font-weight:650}
+.committee-chip-row{display:flex;flex-wrap:wrap;gap:6px}
+.committee-chip{display:inline-flex;align-items:center;gap:4px;background:var(--slate-s);color:var(--slate);border-radius:var(--r-full);padding:4px 8px;font-size:10px;font-weight:700;line-height:1.1}
+.committee-chip.red{background:var(--rose-s);color:var(--rose)}
+.committee-chip.amber{background:var(--amber-s);color:var(--amber)}
+.committee-chip.green{background:var(--em-s);color:var(--em)}
+.committee-chip.blue{background:var(--blue-s);color:var(--blue)}
+.committee-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:2px;justify-content:flex-end}
+.followup-list{display:flex;flex-direction:column;gap:10px;margin-bottom:18px}
+.followup-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:var(--sh-sm);padding:13px 14px;border-left:4px solid var(--teal)}
+.followup-card.overdue{border-left-color:var(--rose)}
+.followup-card.done{opacity:.68;border-left-color:var(--em-l)}
+.followup-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap}
+.followup-title{font-weight:800;font-size:14px;line-height:1.3;color:var(--text)}
+.followup-meta{font-size:11px;color:var(--muted);margin-top:4px;line-height:1.4}
+.followup-body{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+@media(max-width:900px){.followup-body{grid-template-columns:1fr}.committee-grid{grid-template-columns:1fr}}
+
 /* ── ALERTAS ── */
 .alert-board{display:flex;flex-direction:column;gap:12px}
 .alert-exec-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:var(--sh-sm);overflow:hidden}
@@ -872,23 +914,23 @@ tbody tr:hover td{background:#fafbfc}
 <!-- Action View Modal -->
 <div id="actionViewModal" class="modal"><div class="modal-card modal-sm"><div class="modal-header"><div class="modal-title"><h2 id="actionViewTitle">Detalle de Acción</h2><p id="actionViewSubtitle"></p></div><div class="modal-actions"><button id="closeActionView" class="btn btn-secondary btn-sm">Cerrar</button><button id="editActionFromView" class="btn btn-primary btn-sm">Editar</button></div></div><div id="actionViewBody" class="form-body"></div></div></div>
 
-<!-- Manual Agenda Modal -->
-<div id="manualAgendaModal" class="modal"><div class="modal-card modal-md"><div class="modal-header"><div class="modal-title"><h2 id="manualAgendaModalTitle">Nuevo punto de agenda</h2></div><div class="modal-actions"><button id="closeManualAgendaModal" class="btn btn-secondary btn-sm">Cancelar</button><button id="saveManualAgenda" class="btn btn-primary btn-sm">Guardar</button></div></div><div class="form-body">
+<!-- Tema de Comité Modal -->
+<div id="manualAgendaModal" class="modal"><div class="modal-card modal-md"><div class="modal-header"><div class="modal-title"><h2 id="manualAgendaModalTitle">Nuevo tema de Comité</h2></div><div class="modal-actions"><button id="closeManualAgendaModal" class="btn btn-secondary btn-sm">Cancelar</button><button id="saveManualAgenda" class="btn btn-primary btn-sm">Guardar</button></div></div><div class="form-body">
   <div class="g3"><div class="field"><label class="required">Tipo</label><select id="agendaType" class="select"><option>Objetivo</option><option>KPI</option><option>Iniciativa</option><option>Acción</option><option>Alerta</option><option>Decisión</option><option>Tema libre</option></select></div><div class="field"><label>Prioridad</label><select id="agendaPriority" class="select"><option>Crítica</option><option>Alta</option><option selected>Media</option><option>Baja</option></select></div><div class="field"><label>Estatus</label><select id="agendaStatus" class="select"><option selected>Pendiente</option><option>En revisión</option><option>Aprobado</option><option>Rechazado</option><option>Resuelto</option><option>Pospuesto</option></select></div></div>
   <div class="field"><label class="required">Título</label><input id="agendaTitle" class="input"></div>
   <div class="g3"><div class="field"><label>Responsable</label><input id="agendaOwner" class="input"></div><div class="field"><label>Fecha</label><input id="agendaDueDate" type="date" class="input"></div><div class="field"><label>Tiempo</label><input id="agendaDuration" class="input" placeholder="10 min"></div></div>
   <div class="g2"><div class="field"><label>Objetivo relacionado</label><select id="agendaLinkedObjective" class="select"></select></div><div class="field"><label>Iniciativa relacionada</label><select id="agendaLinkedInitiative" class="select"></select></div></div>
-  <div class="g2"><div class="field"><label>Contexto</label><textarea id="agendaContext" class="textarea"></textarea></div><div class="field"><label>Decisión esperada</label><textarea id="agendaDecision" class="textarea"></textarea></div></div>
-  <div class="field"><label>Notas</label><textarea id="agendaNotes" class="textarea"></textarea></div>
+  <div class="g2"><div class="field"><label>Qué está pasando / por qué importa</label><textarea id="agendaContext" class="textarea"></textarea></div><div class="field"><label>Decisión requerida</label><textarea id="agendaDecision" class="textarea"></textarea></div></div>
+  <div class="field"><label>Salida esperada / seguimiento</label><textarea id="agendaNotes" class="textarea"></textarea></div>
 </div></div></div>
 
-<!-- Compromiso Comité Modal -->
-<div id="commitModal" class="modal"><div class="modal-card modal-sm"><div class="modal-header"><div class="modal-title"><h2 id="commitModalTitle">Nuevo Compromiso de Comité</h2><p>Acuerdos horizontales que no caben en una iniciativa existente.</p></div><div class="modal-actions"><button id="closeCommitModal" class="btn btn-secondary btn-sm">Cancelar</button><button id="saveCommit" class="btn btn-primary btn-sm">Guardar</button></div></div><div class="form-body">
+<!-- Compromiso de Seguimiento Modal -->
+<div id="commitModal" class="modal"><div class="modal-card modal-sm"><div class="modal-header"><div class="modal-title"><h2 id="commitModalTitle">Nuevo Compromiso de Seguimiento</h2><p>Acuerdo tomado por el comité que requiere responsable, fecha y criterio de cierre.</p></div><div class="modal-actions"><button id="closeCommitModal" class="btn btn-secondary btn-sm">Cancelar</button><button id="saveCommit" class="btn btn-primary btn-sm">Guardar</button></div></div><div class="form-body">
   <div class="field"><label class="required">Título del compromiso</label><input id="commitTitle" class="input" placeholder="Ej. Definir protocolo de escalamiento entre ventas y operaciones"></div>
   <div class="g2"><div class="field"><label class="required">Responsable principal</label><input id="commitOwner" class="input"></div><div class="field"><label>Área involucrada</label><input id="commitArea" class="input" placeholder="Ej. Ventas + Logística"></div></div>
   <div class="g3"><div class="field"><label>Fecha compromiso</label><input id="commitDue" type="date" class="input"></div><div class="field"><label>Prioridad</label><select id="commitPriority" class="select"><option>Crítica</option><option>Alta</option><option selected>Media</option><option>Baja</option></select></div><div class="field"><label>Estatus</label><select id="commitStatus" class="select"><option selected>Abierto</option><option>En seguimiento</option><option>Bloqueado</option><option>Cumplido</option></select></div></div>
   <div class="field"><label>Criterio de cierre</label><input id="commitCriteria" class="input" placeholder="Ej. Protocolo documentado y aprobado por ambas áreas"></div>
-  <div class="field"><label>Contexto / acuerdo del comité</label><textarea id="commitContext" class="textarea" placeholder="Descripción del acuerdo tomado en comité."></textarea></div>
+  <div class="field"><label>Acuerdo / evidencia requerida</label><textarea id="commitContext" class="textarea" placeholder="Descripción del acuerdo tomado en comité."></textarea></div>
 </div></div></div>
 
 <!-- Autopsia Modal -->
@@ -1150,7 +1192,7 @@ function normalizeHistoryItem(h){
 }
 function normalizeAgendaItem(a){
   a=a||{};
-  return { ...a, id:txt(first(a.id,uid('agenda'))), type:first(a.type,'Tema libre'), origin:first(a.origin,a.origen,'Manual'), priority:first(a.priority,'Media'), status:first(a.status,'Pendiente'), title:first(a.title,'Punto de agenda'), owner:first(a.owner,''), dueDate:first(a.dueDate,''), duration:first(a.duration,'10 min'), linkedObjective:first(a.linkedObjective,''), linkedInitiative:first(a.linkedInitiative,''), context:first(a.context,''), decision:first(a.decision,''), notes:first(a.notes,'') };
+  return { ...a, id:txt(first(a.id,uid('agenda'))), type:first(a.type,'Tema libre'), origin:first(a.origin,a.origen,'Manual'), priority:first(a.priority,'Media'), status:first(a.status,'Pendiente'), title:first(a.title,'Tema de Comité'), owner:first(a.owner,''), dueDate:first(a.dueDate,''), duration:first(a.duration,'10 min'), linkedObjective:first(a.linkedObjective,''), linkedInitiative:first(a.linkedInitiative,''), context:first(a.context,''), decision:first(a.decision,''), notes:first(a.notes,'') };
 }
 function normalizeCommitment(c){
   c=c||{};
@@ -1556,6 +1598,7 @@ function handleClick(e){
   if(a==='editAgenda') openAgendaModal(agid);
   if(a==='delAgenda') deleteAgenda(agid);
   if(a==='addCommit') openCommitModal();
+  if(a==='createCommitFromAgenda') openCommitFromAgenda(agid);
   if(a==='editCommit') openCommitModal(commitId);
   if(a==='delCommit') deleteCommitment(commitId);
   if(a==='completeCommit') completeCommitment(commitId);
@@ -1829,9 +1872,23 @@ function openAutopsia(objId){
 function renderCompromisos(){ renderComite(); }
 function openCommitModal(id=null){
   commitEditId=id; const plan=currentPlan(); const item=id?plan.commitments.find(c=>c.id===id):null;
-  $('commitModalTitle').textContent=item?'Editar Compromiso':'Nuevo Compromiso de Comité';
+  $('commitModalTitle').textContent=item?'Editar Compromiso de Seguimiento':'Nuevo Compromiso de Seguimiento';
   $('commitTitle').value=item?.title||''; $('commitOwner').value=item?.owner||''; $('commitArea').value=item?.area||''; $('commitDue').value=item?.dueDate||''; $('commitPriority').value=item?.priority||'Media'; $('commitStatus').value=item?.status||'Abierto'; $('commitCriteria').value=item?.criteria||''; $('commitContext').value=item?.context||'';
   openModal('commitModal');
+}
+function openCommitFromAgenda(agendaId){
+  const plan=currentPlan(); if(!plan) return;
+  const a=(plan.agenda||[]).find(x=>x.id===agendaId); if(!a) return toast('No se encontró el tema de Comité.','t-warn');
+  openCommitModal();
+  const obj=a.linkedObjective?findObjective(a.linkedObjective):null;
+  $('commitTitle').value=`Seguimiento: ${a.title}`;
+  $('commitOwner').value=a.owner||obj?.leader||'';
+  $('commitArea').value=asArray(obj?.areas).join(', ');
+  $('commitDue').value=a.dueDate||'';
+  $('commitPriority').value=a.priority||'Media';
+  $('commitStatus').value='Abierto';
+  $('commitCriteria').value=a.expectedOutput||'Entregable validado con evidencia y responsable de cierre definido.';
+  $('commitContext').value=`Derivado del tema de Comité: ${a.title}\n\nDecisión requerida: ${a.decision||'—'}\n\nInformación crítica: ${(committeeCriticalInfoFromAgenda(a)||[]).join(' · ')}\n\nSalida esperada: ${a.expectedOutput||a.notes||'—'}`;
 }
 function saveCommitment(){
   const plan=currentPlan(); if(!plan) return;
@@ -1841,7 +1898,7 @@ function saveCommitment(){
   const item=existing||{id:uid('commit'),createdAt:new Date().toISOString()};
   Object.assign(item,{title,owner:$('commitOwner').value.trim(),area:$('commitArea').value.trim(),dueDate:$('commitDue').value,priority:$('commitPriority').value,status:$('commitStatus').value,criteria:$('commitCriteria').value.trim(),context:$('commitContext').value.trim()});
   if(!existing) plan.commitments.push(item);
-  saveState(); closeModal('commitModal'); if(activeTab==='comite') renderComite(); else renderWorkspace(); toast(existing?'Compromiso actualizado.':'Compromiso registrado.','t-ok');
+  saveState(); closeModal('commitModal'); if(activeTab==='comite') renderComite(); else renderWorkspace(); toast(existing?'Compromiso de seguimiento actualizado.':'Compromiso de seguimiento registrado.','t-ok');
 }
 function deleteCommitment(id){ if(!confirm('¿Eliminar compromiso?')) return; const plan=currentPlan(); plan.commitments=plan.commitments.filter(c=>c.id!==id); saveState(); renderComite(); }
 function completeCommitment(id){ const plan=currentPlan(); const c=plan.commitments.find(c=>c.id===id); if(c){ c.status='Cumplido'; saveState(); renderComite(); toast('Compromiso marcado como cumplido.','t-ok'); } }
@@ -2467,17 +2524,38 @@ function sendAlertToCommittee(index){
   if(!Array.isArray(plan.agenda)) plan.agenda=[];
   const exists=plan.agenda.some(a=>a.origin==='Alerta'&&a.linkedObjective===al.obj?.id&&a.title===al.title&&a.status!=='Resuelto');
   if(exists) return toast('Esta alerta ya está en Comité.','t-warn');
+  const obj=al.obj||{};
+  const criticalInfo=committeeCriticalInfoFromAlert(al).join(' · ');
   plan.agenda.push(normalizeAgendaItem({
-    type:'Alerta',origin:'Alerta',priority:alertPriority(al.level),status:'Pendiente',title:al.title,
-    owner:al.obj?.leader||al.init?.owner||al.act?.responsible||'',dueDate:todayISO(),duration:al.level==='critical'?'15 min':'10 min',
-    linkedObjective:al.obj?.id||'',linkedInitiative:al.init?.id||'',linkedAction:al.act?.id||'',
-    context:`Causa: ${al.cause}\n\nImpacto potencial: ${al.impact}\n\nRazonamiento: ${alertReasonBullets(al).join(' ')}`,
+    type:alertCommitteeType(al),
+    origin:'Alerta',
+    priority:alertPriority(al.level),
+    status:'Pendiente',
+    title:al.title,
+    owner:obj.leader||al.init?.owner||al.act?.responsible||'',
+    dueDate:todayISO(),
+    duration:al.level==='critical'?'15 min':'10 min',
+    linkedObjective:obj.id||'',
+    linkedInitiative:al.init?.id||'',
+    linkedAction:al.act?.id||'',
+    context:`Qué pasa: ${al.cause}
+
+Por qué importa: ${al.impact}`,
     decision:al.decision,
-    notes:`Promovida desde Alertas Ejecutivas el ${todayISO()}. Señales: ${asArray(al.signals).join(' · ')}. Etiquetas: ${alertSeverityLabel(al.level)} / ${alertCauseLabel(al.kind)}.`
+    notes:`Salida esperada: ${committeeExpectedOutput(al)}
+
+Información crítica para decidir: ${criticalInfo}
+
+Origen: promovida desde Alertas Ejecutivas el ${todayISO()}.`,
+    expectedOutput:committeeExpectedOutput(al),
+    criticalInfo,
+    nextStep:committeeNextStep(al),
+    alertKind:al.kind,
+    alertLevel:al.level
   }));
   plan.manualAgenda=plan.agenda;
   saveState();
-  toast('Alerta enviada a Comité.','t-ok');
+  toast('Alerta enviada a Comité como tema para decidir.','t-ok');
   renderAlertas();
 }
 function renderAlertas(){
@@ -2526,29 +2604,125 @@ function renderAlertas(){
     <div class="alert-board">${cards||'<div class="empty-box">Sin alertas críticas.</div>'}</div>`;
 }
 
+
+function alertCommitteeType(al){
+  if(!al) return 'Alerta';
+  if(al.kind==='action_overdue') return 'Acción vencida';
+  if(al.kind==='gap_high'||al.kind==='gap_inferred') return 'Brecha / Riesgo';
+  if(al.kind==='kpi_low'||al.kind==='kpi_stale') return 'KPI';
+  if(al.kind==='init_disconnected'||al.kind==='overspend') return 'Iniciativa';
+  return 'Alerta';
+}
+function committeeExpectedOutput(al){
+  const k=al?.kind||'';
+  if(k==='action_overdue') return 'Definir responsable final, nueva fecha justificada, criterio de cierre y evidencia mínima para considerar la acción terminada.';
+  if(k==='gap_high') return 'Aprobar dueño end-to-end de la brecha, acción correctiva, fecha de validación y evidencia requerida.';
+  if(k==='gap_inferred') return 'Reclasificar o ratificar el riesgo con evidencia; decidir si requiere intervención ejecutiva o solo seguimiento operativo.';
+  if(k==='kpi_low') return 'Decidir si se corrige la iniciativa, se reasignan recursos, se ajusta la meta o se escala el bajo desempeño del KPI.';
+  if(k==='kpi_stale') return 'Actualizar fuente, dueño y fecha de corte del KPI antes de usarlo como base de decisión.';
+  if(k==='init_disconnected') return 'Asignar KPI impactado o decidir eliminar/fusionar la iniciativa si no mueve un resultado medible.';
+  if(k==='overspend') return 'Autorizar ampliación, recortar alcance, congelar gasto o exigir evidencia de beneficio antes de continuar.';
+  return 'Tomar una decisión explícita, convertirla en compromiso de seguimiento y definir fecha de cierre.';
+}
+function committeeNextStep(al){
+  const k=al?.kind||'';
+  if(k==='action_overdue') return 'Después del comité: actualizar la acción o crear compromiso de seguimiento si la decisión requiere validación posterior.';
+  if(k==='gap_high'||k==='gap_inferred') return 'Después del comité: registrar un compromiso con dueño end-to-end, criterio de cierre y evidencia requerida.';
+  if(k==='kpi_low'||k==='kpi_stale') return 'Después del comité: actualizar KPI, evidencia y plan de recuperación antes del siguiente corte.';
+  return 'Después del comité: cerrar el tema como resuelto o convertirlo en compromiso de seguimiento.';
+}
+function committeeCriticalInfoFromAlert(al){
+  const obj=al?.obj||{};
+  const init=al?.init||null;
+  const act=al?.act||null;
+  const chips=[];
+  if(obj.code||obj.name) chips.push(`Objetivo ${obj.code||''} ${obj.name||''}`.trim());
+  if(obj.leader) chips.push(`Responsable objetivo: ${obj.leader}`);
+  if(Number.isFinite(calcObjectiveScore(obj))) chips.push(`IGEE ${Math.round(calcObjectiveScore(obj))}%`);
+  if(Number.isFinite(tomScore(obj))) chips.push(`TOM ${tomScore(obj)}%`);
+  const op=objectiveActionStats(obj); if(op.total) chips.push(`Avance operativo ${op.progress}%`);
+  if(init?.name) chips.push(`Iniciativa: ${init.name}`);
+  if(init?.impactKpi) chips.push(`KPI impactado: ${init.impactKpi}`);
+  if(init && (init.expectedImpact||init.realImpact)) chips.push(`Impacto ${num(init.realImpact)}% real / ${num(init.expectedImpact)}% esperado`);
+  if(act?.title) chips.push(`Acción: ${act.title}`);
+  if(act?.responsible) chips.push(`Responsable acción: ${act.responsible}`);
+  if(act?.dueDate) chips.push(`Fecha acción: ${act.dueDate} (${daysText(act.dueDate)})`);
+  asArray(al?.signals).forEach(x=>{ if(x&&!chips.includes(x)) chips.push(x); });
+  return chips.slice(0,10);
+}
+function committeeCriticalInfoFromAgenda(a){
+  const obj=a.linkedObjective?findObjective(a.linkedObjective):null;
+  const init=obj&&a.linkedInitiative?obj.initiatives.find(i=>i.id===a.linkedInitiative):null;
+  const act=init&&a.linkedAction?init.actions.find(ac=>ac.id===a.linkedAction):null;
+  const chips=[];
+  if(a.origin) chips.push(`Origen: ${a.origin}`);
+  if(a.type) chips.push(`Tipo: ${a.type}`);
+  if(a.priority) chips.push(`Prioridad: ${a.priority}`);
+  if(a.status) chips.push(`Estatus: ${a.status}`);
+  if(a.owner) chips.push(`Responsable: ${a.owner}`);
+  if(a.dueDate) chips.push(`Fecha comité: ${a.dueDate}`);
+  if(obj){ chips.push(`Objetivo: ${obj.code||''} ${obj.name}`.trim()); chips.push(`IGEE ${Math.round(calcObjectiveScore(obj))}%`); chips.push(`TOM ${tomScore(obj)}%`); }
+  if(init){ chips.push(`Iniciativa: ${init.name}`); if(init.impactKpi) chips.push(`KPI: ${init.impactKpi}`); chips.push(`Avance iniciativa ${calcActionsProgress(init.actions)}%`); }
+  if(act){ chips.push(`Acción: ${act.title}`); if(act.responsible) chips.push(`Resp. acción: ${act.responsible}`); if(act.dueDate) chips.push(`Compromiso acción: ${act.dueDate} (${daysText(act.dueDate)})`); }
+  if(a.criticalInfo) asArray(String(a.criticalInfo).split(' · ')).forEach(x=>{ if(x&&!chips.includes(x)) chips.push(x); });
+  return chips.filter(Boolean).slice(0,12);
+}
+function agendaViewButton(a){
+  if(a.linkedObjective&&a.linkedInitiative&&a.linkedAction) return `<button class="btn btn-secondary btn-xs" data-action="viewAct" data-obj-id="${esc(a.linkedObjective)}" data-init-id="${esc(a.linkedInitiative)}" data-act-id="${esc(a.linkedAction)}">Ver acción</button>`;
+  if(a.linkedObjective&&a.linkedInitiative) return `<button class="btn btn-secondary btn-xs" data-action="viewInit" data-obj-id="${esc(a.linkedObjective)}" data-init-id="${esc(a.linkedInitiative)}">Ver iniciativa</button>`;
+  if(a.linkedObjective) return `<button class="btn btn-secondary btn-xs" data-action="viewObj" data-obj-id="${esc(a.linkedObjective)}">Ver objetivo</button>`;
+  return '';
+}
+function agendaStatusPill(a){
+  const st=txt(a.status,'Pendiente');
+  const cls=st==='Resuelto'||st==='Aprobado'?'green':st==='Rechazado'?'red':st==='En revisión'?'blue':st==='Pospuesto'?'amber':'gray';
+  return `<span class="committee-chip ${cls}">${esc(st)}</span>`;
+}
+
 // ── COMITÉ ─────────────────────────────────────────────────────────
 function renderComite(){
   const plan=currentPlan(); if(!plan) return;
   const agenda=asArray(plan.agenda).map(normalizeAgendaItem);
   const commits=asArray(plan.commitments).map(normalizeCommitment);
-  const pendingAgenda=agenda.filter(a=>!['Resuelto','Aprobado','Rechazado'].includes(a.status));
+  const openTopics=agenda.filter(a=>!['Resuelto','Aprobado','Rechazado'].includes(a.status));
+  const closedTopics=agenda.filter(a=>['Resuelto','Aprobado','Rechazado'].includes(a.status));
   const openCommits=commits.filter(c=>c.status!=='Cumplido');
-  const criticalAgenda=pendingAgenda.filter(a=>a.priority==='Crítica').length;
+  const criticalAgenda=openTopics.filter(a=>a.priority==='Crítica').length;
   const overdueCommits=openCommits.filter(c=>isOverdue(c.dueDate,c.status)).length;
-  const agendaCards=agenda.length?agenda.map(a=>{
-    const linkedObj=a.linkedObjective?findObjective(a.linkedObjective):null;
-    return `<div class="agenda-card p-${priorityClass(a.priority)}">
-      <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><div><div style="font-weight:800;font-size:14px;line-height:1.25">${esc(a.title)}</div><div class="obj-sub">${esc(a.origin||'Manual')} · ${esc(a.type)} · ${esc(a.priority)} · ${esc(a.status)} · ${esc(a.duration||'')}</div></div>${linkedObj?`<button class="btn btn-secondary btn-xs" data-action="viewObj" data-obj-id="${esc(linkedObj.id)}">Ver objetivo</button>`:''}</div>
-      <div class="agenda-context-box">${esc(a.context||a.notes||'Sin contexto')}</div>
-      <div class="agenda-decision-box">${esc(a.decision||'Sin decisión requerida')}</div>
-      <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap"><button class="btn btn-secondary btn-xs" data-action="editAgenda" data-agenda-id="${esc(a.id)}">Editar</button><button class="btn btn-danger btn-xs" data-action="delAgenda" data-agenda-id="${esc(a.id)}">Eliminar</button></div>
+
+  const topicCards=openTopics.length?openTopics.map(a=>{
+    const chips=committeeCriticalInfoFromAgenda(a);
+    return `<div class="committee-topic-card p-${priorityClass(a.priority)}">
+      <div class="committee-topic-head">
+        <div>
+          <div class="committee-topic-title">${esc(a.title)}</div>
+          <div class="committee-topic-meta">${esc(a.origin||'Manual')} · ${esc(a.type)} · ${esc(a.priority)} · ${esc(a.duration||'')} · ${esc(a.owner||'Sin responsable')}</div>
+          <div class="committee-chip-row" style="margin-top:7px">${agendaStatusPill(a)}<span class="committee-chip blue">Tema para decidir</span></div>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">${agendaViewButton(a)}</div>
+      </div>
+      <div class="committee-topic-body">
+        <div class="committee-box"><div class="committee-box-title">Qué pasa y por qué importa</div><div class="committee-box-text">${esc(a.context||'Sin contexto registrado.')}</div></div>
+        <div class="committee-box committee-decision-box"><div class="committee-box-title">Decisión requerida</div><div class="committee-box-text">${esc(a.decision||'Definir decisión ejecutiva, responsable, fecha y criterio de cierre.')}</div></div>
+        <div class="committee-box"><div class="committee-box-title">Información crítica para decidir</div><div class="committee-chip-row">${chips.map((c,i)=>`<span class="committee-chip ${i<3?'blue':''}">${esc(c)}</span>`).join('')||'<span class="committee-chip">Sin datos ligados</span>'}</div></div>
+        <div class="committee-box"><div class="committee-box-title">Qué debe salir del comité</div><div class="committee-box-text">${esc(a.expectedOutput||a.notes||'Decisión tomada o compromiso de seguimiento con responsable, fecha y evidencia requerida.')}</div></div>
+        <div class="committee-actions"><button class="btn btn-primary btn-xs" data-action="createCommitFromAgenda" data-agenda-id="${esc(a.id)}">Crear compromiso</button><button class="btn btn-secondary btn-xs" data-action="editAgenda" data-agenda-id="${esc(a.id)}">Editar tema</button><button class="btn btn-danger btn-xs" data-action="delAgenda" data-agenda-id="${esc(a.id)}">Eliminar</button></div>
+      </div>
     </div>`;
-  }).join(''):'<div class="empty-box">Sin temas de comité. Puedes crear un punto manual o enviar una alerta a Comité.</div>';
-  const commitRows=commits.length?`<div style="display:flex;flex-direction:column;gap:10px">${commits.map(c=>{const statusCls=c.status==='Cumplido'?'cs-done':c.status==='Bloqueado'?'cs-blocked':'cs-open';return `<div class="commit-card" style="${c.status==='Cumplido'?'opacity:.65':''}"><div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px"><div><div class="commit-title">${esc(c.title)}</div><div class="commit-meta">Responsable: ${esc(c.owner||'—')} · Área: ${esc(c.area||'—')} · Fecha: ${esc(c.dueDate||'s/f')} (${daysText(c.dueDate)})</div><span class="commit-status ${statusCls}">${esc(c.status)}</span><span class="badge b-${c.priority==='Crítica'?'red':c.priority==='Alta'?'yellow':c.priority==='Baja'?'green':'blue'}" style="margin-left:6px">${esc(c.priority)}</span>${c.criteria?`<div class="obj-sub" style="margin-top:5px">Criterio de cierre: ${esc(c.criteria)}</div>`:''}</div><div style="display:flex;gap:6px;flex-wrap:wrap">${c.status!=='Cumplido'?`<button class="btn btn-teal btn-xs" data-action="completeCommit" data-commit-id="${esc(c.id)}">✓ Cumplido</button>`:''}${c.status!=='Cumplido'?`<button class="btn btn-secondary btn-xs" data-action="editCommit" data-commit-id="${esc(c.id)}">Editar</button>`:''}<button class="btn btn-danger btn-xs" data-action="delCommit" data-commit-id="${esc(c.id)}">Eliminar</button></div></div>${c.context?`<div class="agenda-context-box" style="margin-top:8px">${esc(c.context)}</div>`:''}</div>`;}).join('')}</div>`:'<div class="empty-box">Sin compromisos registrados.</div>';
-  $('viewComite').innerHTML=`<div class="section-hero"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px"><div><h2>Comité</h2><p class="subtitle">Agenda ejecutiva y compromisos en una sola vista. Las alertas no entran automáticamente: se agregan con “Enviar a Comité”.</p></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-primary btn-sm" data-action="addAgenda">+ Punto manual</button><button class="btn btn-secondary btn-sm" data-action="addCommit">+ Compromiso</button></div></div></div>
-    <div class="metric-strip"><div class="metric-card"><div class="metric-label">Temas pendientes</div><div class="metric-value">${pendingAgenda.length}</div><div class="metric-note">Agenda activa</div></div><div class="metric-card"><div class="metric-label">Temas críticos</div><div class="metric-value" style="color:var(--rose)">${criticalAgenda}</div><div class="metric-note">Requieren decisión</div></div><div class="metric-card"><div class="metric-label">Compromisos abiertos</div><div class="metric-value">${openCommits.length}</div><div class="metric-note">Seguimiento ejecutivo</div></div><div class="metric-card"><div class="metric-label">Compromisos vencidos</div><div class="metric-value" style="color:${overdueCommits?'var(--rose)':'var(--em)'}">${overdueCommits}</div><div class="metric-note">Fuera de fecha</div></div></div>
-    <div class="section-hero" style="margin-top:14px"><h2 style="font-size:17px">Agenda del comité</h2></div><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:10px;margin-bottom:18px">${agendaCards}</div>
-    <div class="section-hero"><h2 style="font-size:17px">Compromisos del comité</h2></div>${commitRows}`;
+  }).join(''):'<div class="empty-box">Sin temas para decidir. Puedes crear un tema de Comité o enviar una alerta a Comité.</div>';
+
+  const followupCards=commits.length?`<div class="followup-list">${commits.map(c=>{const statusCls=c.status==='Cumplido'?'cs-done':c.status==='Bloqueado'?'cs-blocked':'cs-open';const overdue=isOverdue(c.dueDate,c.status);return `<div class="followup-card ${overdue?'overdue':''} ${c.status==='Cumplido'?'done':''}">
+    <div class="followup-head"><div><div class="followup-title">${esc(c.title)}</div><div class="followup-meta">Responsable: ${esc(c.owner||'—')} · Área: ${esc(c.area||'—')} · Fecha: ${esc(c.dueDate||'s/f')} (${daysText(c.dueDate)})</div><div class="committee-chip-row" style="margin-top:7px"><span class="commit-status ${statusCls}">${esc(c.status)}</span><span class="badge b-${c.priority==='Crítica'?'red':c.priority==='Alta'?'yellow':c.priority==='Baja'?'green':'blue'}">${esc(c.priority)}</span>${overdue?'<span class="committee-chip red">Vencido</span>':''}</div></div><div style="display:flex;gap:6px;flex-wrap:wrap">${c.status!=='Cumplido'?`<button class="btn btn-teal btn-xs" data-action="completeCommit" data-commit-id="${esc(c.id)}">✓ Cumplido</button>`:''}${c.status!=='Cumplido'?`<button class="btn btn-secondary btn-xs" data-action="editCommit" data-commit-id="${esc(c.id)}">Editar</button>`:''}<button class="btn btn-danger btn-xs" data-action="delCommit" data-commit-id="${esc(c.id)}">Eliminar</button></div></div>
+    <div class="followup-body"><div class="committee-box"><div class="committee-box-title">Criterio de cierre</div><div class="committee-box-text">${esc(c.criteria||'Sin criterio de cierre registrado.')}</div></div><div class="committee-box"><div class="committee-box-title">Acuerdo / evidencia requerida</div><div class="committee-box-text">${esc(c.context||'Sin evidencia requerida registrada.')}</div></div></div>
+  </div>`;}).join('')}</div>`:'<div class="empty-box">Sin compromisos de seguimiento registrados.</div>';
+
+  $('viewComite').innerHTML=`<div class="section-hero"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px"><div><h2>Comité</h2><p class="subtitle">Convierte señales y temas en decisiones; convierte decisiones en compromisos de seguimiento.</p></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-primary btn-sm" data-action="addAgenda">+ Tema de Comité</button><button class="btn btn-secondary btn-sm" data-action="addCommit">+ Compromiso de Seguimiento</button></div></div></div>
+    <div class="committee-flow-note"><div class="committee-flow-icon">↳</div><div><div class="committee-flow-title">Flujo recomendado</div><div class="committee-flow-text"><strong>Alerta / tema</strong> → <strong>Comité decide</strong> → <strong>Compromiso de seguimiento</strong> → <strong>Evidencia de cierre</strong>. Un tema es para decidir; un compromiso es para dar seguimiento a lo que ya se acordó.</div></div></div>
+    <div class="metric-strip"><div class="metric-card"><div class="metric-label">Temas por decidir</div><div class="metric-value">${openTopics.length}</div><div class="metric-note">Pendientes de comité</div></div><div class="metric-card"><div class="metric-label">Temas críticos</div><div class="metric-value" style="color:var(--rose)">${criticalAgenda}</div><div class="metric-note">Requieren decisión prioritaria</div></div><div class="metric-card"><div class="metric-label">Compromisos abiertos</div><div class="metric-value">${openCommits.length}</div><div class="metric-note">Seguimiento ejecutivo</div></div><div class="metric-card"><div class="metric-label">Compromisos vencidos</div><div class="metric-value" style="color:${overdueCommits?'var(--rose)':'var(--em)'}">${overdueCommits}</div><div class="metric-note">Fuera de fecha</div></div></div>
+    <div class="committee-section-title"><div><h2>Temas para decidir</h2><p>Problemas, alertas o puntos manuales que requieren criterio ejecutivo, autorización o definición de responsables.</p></div></div>
+    <div class="committee-grid">${topicCards}</div>
+    ${closedTopics.length?`<div class="committee-section-title"><div><h2>Temas cerrados</h2><p>Decisiones ya resueltas, aprobadas o rechazadas.</p></div></div><div class="committee-grid">${closedTopics.map(a=>`<div class="committee-topic-card p-low"><div class="committee-topic-head"><div><div class="committee-topic-title">${esc(a.title)}</div><div class="committee-topic-meta">${esc(a.origin||'Manual')} · ${esc(a.type)} · ${esc(a.status)}</div></div>${agendaViewButton(a)}</div><div class="committee-topic-body"><div class="committee-box"><div class="committee-box-title">Cierre / salida</div><div class="committee-box-text">${esc(a.notes||a.decision||'Sin cierre registrado.')}</div></div></div></div>`).join('')}</div>`:''}
+    <div class="committee-section-title"><div><h2>Compromisos de seguimiento</h2><p>Acuerdos ya tomados: quién responde, para cuándo, con qué evidencia y cómo se cierra.</p></div></div>${followupCards}`;
 }
 const priorityClass = p => { p=txt(p).toLowerCase(); if(p.includes('crít')||p.includes('crit')) return 'critical'; if(p.includes('alta')) return 'high'; if(p.includes('baja')) return 'low'; return 'medium'; };
 
@@ -2998,7 +3172,7 @@ function completeAction(objId,initId,actId){ const a=findAction(objId,initId,act
 // ── AGENDA ───────────────────────────────────────────────────────────
 function openAgendaModal(id=null){
   agendaEditId=id; const plan=currentPlan(); const item=id?plan.agenda.find(a=>a.id===id):null;
-  $('manualAgendaModalTitle').textContent=item?'Editar punto':'Nuevo punto de agenda';
+  $('manualAgendaModalTitle').textContent=item?'Editar tema de Comité':'Nuevo tema de Comité';
   $('agendaType').value=item?.type||'Tema libre'; $('agendaPriority').value=item?.priority||'Media'; $('agendaStatus').value=item?.status||'Pendiente'; $('agendaTitle').value=item?.title||''; $('agendaOwner').value=item?.owner||''; $('agendaDueDate').value=item?.dueDate||''; $('agendaDuration').value=item?.duration||'10 min'; $('agendaContext').value=item?.context||''; $('agendaDecision').value=item?.decision||''; $('agendaNotes').value=item?.notes||'';
   $('agendaLinkedObjective').innerHTML=`<option value="">— Sin objetivo —</option>${plan.objectives.map(o=>`<option value="${esc(o.id)}">${esc(o.name)}</option>`).join('')}`; $('agendaLinkedObjective').value=item?.linkedObjective||'';
   populateAgendaInit(item?.linkedObjective,item?.linkedInitiative); $('agendaLinkedObjective').onchange=()=>populateAgendaInit($('agendaLinkedObjective').value,''); openModal('manualAgendaModal');
@@ -3009,9 +3183,9 @@ function populateAgendaInit(objId,selected=''){
 function saveAgenda(){
   const plan=currentPlan(); const title=$('agendaTitle').value.trim(); if(!title) return toast('Ingresa el título.','t-warn');
   const existing=plan.agenda.find(a=>a.id===agendaEditId); const item=existing||{id:uid('agenda')};
-  Object.assign(item,{type:$('agendaType').value,priority:$('agendaPriority').value,status:$('agendaStatus').value,title,owner:$('agendaOwner').value.trim(),dueDate:$('agendaDueDate').value,duration:$('agendaDuration').value.trim(),linkedObjective:$('agendaLinkedObjective').value,linkedInitiative:$('agendaLinkedInitiative').value,context:$('agendaContext').value.trim(),decision:$('agendaDecision').value.trim(),notes:$('agendaNotes').value.trim()});
+  Object.assign(item,{origin:item.origin||'Manual',type:$('agendaType').value,priority:$('agendaPriority').value,status:$('agendaStatus').value,title,owner:$('agendaOwner').value.trim(),dueDate:$('agendaDueDate').value,duration:$('agendaDuration').value.trim(),linkedObjective:$('agendaLinkedObjective').value,linkedInitiative:$('agendaLinkedInitiative').value,context:$('agendaContext').value.trim(),decision:$('agendaDecision').value.trim(),notes:$('agendaNotes').value.trim(),expectedOutput:$('agendaNotes').value.trim()});
   if(!existing) plan.agenda.push(item); plan.manualAgenda=plan.agenda;
-  saveState(); closeModal('manualAgendaModal'); renderComite(); toast(existing?'Punto actualizado.':'Punto agregado.','t-ok');
+  saveState(); closeModal('manualAgendaModal'); renderComite(); toast(existing?'Tema de Comité actualizado.':'Tema de Comité agregado.','t-ok');
 }
 function deleteAgenda(id){ if(!confirm('¿Eliminar punto?')) return; const plan=currentPlan(); plan.agenda=plan.agenda.filter(a=>a.id!==id); plan.manualAgenda=plan.agenda; saveState(); renderComite(); }
 
@@ -3038,8 +3212,8 @@ function exportXLS(){
   sections.push(['KPIs',['Objetivo','KPI','Acción','Inicial','Actual','Meta','Unidad','Avance','Confianza','Última actualización'],plan.objectives.flatMap(o=>o.indicators.map(k=>{const conf=kpiConfidence(k);return[o.name,k.name,k.action,k.initial,k.current,k.target,k.unit,Math.round(calcIndicatorScore(k))+'%',conf.label,k.lastUpdate||'Sin fecha'];}))]);
   sections.push(['Iniciativas',['Objetivo','Iniciativa','Responsable','Estatus','Avance','KPI impactado','Impacto esperado','Impacto real','Redundante','Presupuesto','Gastado'],plan.objectives.flatMap(o=>o.initiatives.map(i=>[o.name,i.name,i.owner,i.status,calcActionsProgress(i.actions)+'%',i.impactKpi,(i.expectedImpact||0)+'%',(i.realImpact||0)+'%',i.redundant,i.budget,i.spent]))]);
   sections.push(['Acciones',['Objetivo','Iniciativa','Acción','Responsable','Estatus','Compromiso','Vencida'],plan.objectives.flatMap(o=>o.initiatives.flatMap(i=>i.actions.map(a=>[o.name,i.name,a.title,a.responsible,a.status,a.dueDate,isOverdue(a.dueDate,a.status)?'Sí':'No'])))]);
-  sections.push(['Agenda Comité',['Título','Origen','Tipo','Prioridad','Estatus','Responsable','Fecha','Duración','Contexto','Decisión'],(plan.agenda||[]).map(a=>[a.title,a.origin||'Manual',a.type,a.priority,a.status,a.owner,a.dueDate,a.duration,a.context,a.decision])]);
-  sections.push(['Compromisos Comité',['Título','Responsable','Área','Prioridad','Estatus','Compromiso','Criterio de cierre','Contexto'],(plan.commitments||[]).map(c=>[c.title,c.owner,c.area,c.priority,c.status,c.dueDate,c.criteria,c.context])]);
+  sections.push(['Temas Comité',['Título','Origen','Tipo','Prioridad','Estatus','Responsable','Fecha','Duración','Contexto','Decisión'],(plan.agenda||[]).map(a=>[a.title,a.origin||'Manual',a.type,a.priority,a.status,a.owner,a.dueDate,a.duration,a.context,a.decision])]);
+  sections.push(['Compromisos Seguimiento',['Título','Responsable','Área','Prioridad','Estatus','Compromiso','Criterio de cierre','Contexto'],(plan.commitments||[]).map(c=>[c.title,c.owner,c.area,c.priority,c.status,c.dueDate,c.criteria,c.context])]);
   const html=`<html><head><meta charset="UTF-8"></head><body>${sections.map(([title,headers,rows])=>`<h2>${esc(title)}</h2><table border="1"><thead><tr>${headers.map(h=>`<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${r.map(c=>`<td>${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table><br>`).join('')}</body></html>`;
   downloadFile(`reporte_${txt(plan.name).replace(/[^a-z0-9]+/gi,'_')}_${todayISO()}.xls`,html,'application/vnd.ms-excel;charset=utf-8');
 }
