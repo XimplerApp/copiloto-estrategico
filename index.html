@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>Ximpler EDGE v5.4 · Copiloto Estratégico</title>
+<title>Ximpler EDGE v5.5 · Copiloto Estratégico</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -1084,7 +1084,7 @@ tbody tr:hover td{background:#fafbfc}
 'use strict';
 
 // ── CONSTANTES ──────────────────────────────────────────────────────
-const STORAGE_KEY = 'ximpler_edge_v5_4';
+const STORAGE_KEY = 'ximpler_edge_v5_5';
 const KPI_STALE_DAYS = { 'Diaria':2, 'Semanal':9, 'Mensual':35, 'Trimestral':100 };
 
 let state = { plannings:[], activePlanningId:null };
@@ -1408,9 +1408,9 @@ function tomScore(o){
   return Math.round((fields.filter(f=>txt(f).trim().length>10).length/fields.length)*100);
 }
 
-const scoreClass = score => score>=80?'igee-ok':score>=55?'igee-risk':'igee-critical';
-const kpiState = score => { if(score>=85) return {label:'Verde',cls:'kpi-state-green',color:'ok'}; if(score>=60) return {label:'Amarillo',cls:'kpi-state-yellow',color:'warn'}; return {label:'Rojo',cls:'kpi-state-red',color:'bad'}; };
-const progressColor = v => v>=80?'var(--em-l)':v>=50?'var(--amber)':'var(--rose)';
+const scoreClass = score => score>=75?'igee-ok':score>=51?'igee-risk':'igee-critical';
+const kpiState = score => { if(score>=75) return {label:'Verde',cls:'kpi-state-green',color:'ok'}; if(score>=51) return {label:'Amarillo',cls:'kpi-state-yellow',color:'warn'}; return {label:'Rojo',cls:'kpi-state-red',color:'bad'}; };
+const progressColor = v => v>=75?'var(--em-l)':v>=51?'var(--amber)':'var(--rose)';
 const riskColor = v => v>=75?'var(--rose)':v>=45?'var(--amber)':'var(--em-l)';
 
 function calcImpactScore(obj){
@@ -1430,11 +1430,11 @@ function calcInitiativeEfficiency(init){
 }
 function impactTone(value){
   const v=num(value);
-  return v>=80?'ok':v>=50?'warn':'bad';
+  return v>=75?'ok':v>=51?'warn':'bad';
 }
 function impactFillClass(value){
   const v=num(value);
-  return v>=80?'':v>=50?'mid':'low';
+  return v>=75?'':v>=51?'mid':'low';
 }
 function impactProgress(value){
   const v=Math.round(clamp(value));
@@ -1446,8 +1446,8 @@ function initiativeKpiStatus(obj,init){
   const kpi=asArray(obj?.indicators||obj?.kpis).find(k=>txt(k.name).trim().toLowerCase()===name.toLowerCase());
   if(!kpi) return {label:'KPI no encontrado',tone:'warn'};
   const score=Math.round(calcIndicatorScore(kpi));
-  if(score>=85) return {label:`OK ${score}%`,tone:'ok'};
-  if(score>=60) return {label:`Vigilar ${score}%`,tone:'warn'};
+  if(score>=75) return {label:`OK ${score}%`,tone:'ok'};
+  if(score>=51) return {label:`Vigilar ${score}%`,tone:'warn'};
   return {label:`Crítico ${score}%`,tone:'bad'};
 }
 function initiativePortfolioLabel(init){
@@ -1803,7 +1803,7 @@ function renderSummaryStrip(plan){
   const spent=inits.reduce((a,i)=>a+num(i.spent),0);
   const openCommits=(plan.commitments||[]).filter(c=>c.status!=='Cumplido').length;
   $('summaryStrip').innerHTML=[
-    ['IGEE',`${score}%`,score>=80?'Estrategia sana':score>=55?'Seguimiento':'Riesgo'],
+    ['IGEE',`${score}%`,score>=75?'Estrategia sana':score>=51?'Seguimiento':'Riesgo'],
     ['Objetivos',objs.length,'Registrados'],
     ['Iniciativas',inits.length,'En cascada'],
     ['Acciones',acts.length,`${doneActs} terminadas`],
@@ -2114,7 +2114,7 @@ function exportAgendaPDF(){
   ${agenda.length?`<h2>2. Temas de comité</h2><table><thead><tr><th>Tema</th><th>Origen</th><th>Prioridad</th><th>Responsable</th><th>Tiempo</th><th>Decisión requerida</th></tr></thead><tbody>${agenda.map(a=>{const cls=a.priority==='Crítica'?'red':a.priority==='Alta'?'amber':'gray';return `<tr><td><strong>${esc(a.title)}</strong><br><span style="color:#6b7280">${esc(a.context||'Sin contexto')}</span></td><td>${esc(a.origin||'Manual')}</td><td><span class="pill ${cls}">${esc(a.priority)}</span></td><td>${esc(a.owner||'—')}</td><td>${esc(a.duration||'10 min')}</td><td>${esc(a.decision||'—')}</td></tr>`;}).join('')}</tbody></table>`:''}
   <h2>3. Objetivos para revisión (ordenados por intervención requerida)</h2>
   <table><thead><tr><th>#</th><th>Objetivo</th><th>Responsable</th><th>IGEE</th><th>Compromiso</th><th>Decisión sugerida</th></tr></thead><tbody>
-  ${objs.map((o,i)=>{const sc=Math.round(calcObjectiveScore(o));const cls=sc>=80?'green':sc>=55?'amber':'red';const aStats=objectiveActionStats(o);const dec=sc<50?`IGEE crítico (${sc}%). Redefinir ejecución`:aStats.overdue>0?`${aStats.overdue} acción(es) vencida(s). Resolver o escalar`:'Seguimiento normal';return `<tr><td>${i+1}</td><td><strong>${esc(o.name)}</strong><br><span style="color:#6b7280">${esc(o.theme||objectiveTypeLabel(o.type))}</span></td><td>${esc(o.leader||'—')}</td><td><span class="pill ${cls}">${sc}%</span></td><td>${esc(o.end||'s/f')}<br>${daysText(o.end)}</td><td style="max-width:220px">${esc(dec)}</td></tr>`;}).join('')}
+  ${objs.map((o,i)=>{const sc=Math.round(calcObjectiveScore(o));const cls=sc>=75?'green':sc>=51?'amber':'red';const aStats=objectiveActionStats(o);const dec=sc<50?`IGEE crítico (${sc}%). Redefinir ejecución`:aStats.overdue>0?`${aStats.overdue} acción(es) vencida(s). Resolver o escalar`:'Seguimiento normal';return `<tr><td>${i+1}</td><td><strong>${esc(o.name)}</strong><br><span style="color:#6b7280">${esc(o.theme||objectiveTypeLabel(o.type))}</span></td><td>${esc(o.leader||'—')}</td><td><span class="pill ${cls}">${sc}%</span></td><td>${esc(o.end||'s/f')}<br>${daysText(o.end)}</td><td style="max-width:220px">${esc(dec)}</td></tr>`;}).join('')}
   </tbody></table>
   ${commits.length?`<h2>4. Compromisos abiertos de comité</h2><table><thead><tr><th>Compromiso</th><th>Responsable</th><th>Área</th><th>Prioridad</th><th>Fecha</th><th>Criterio de cierre</th></tr></thead><tbody>${commits.map(c=>{const cls=c.priority==='Crítica'?'red':c.priority==='Alta'?'amber':'gray';return `<tr><td>${esc(c.title)}</td><td>${esc(c.owner||'—')}</td><td>${esc(c.area||'—')}</td><td><span class="pill ${cls}">${esc(c.priority)}</span></td><td>${esc(c.dueDate||'s/f')}</td><td>${esc(c.criteria||'—')}</td></tr>`;}).join('')}</tbody></table>`:''}
   <div class="footer">Ximpler EDGE v5 · ${esc(date)} · Documento generado para uso interno de comité. No sustituye el acta oficial.</div>
@@ -2129,7 +2129,7 @@ function calcObjectiveOperationalProgress(obj){
   if(!inits.length) return 0;
   return Math.round(inits.reduce((acc,init)=>acc+calcActionsProgress(init.actions),0)/inits.length);
 }
-function opProgressClass(val){ return val>=80?'ok':val>=50?'mid':'bad'; }
+function opProgressClass(val){ return val>=75?'ok':val>=51?'mid':'bad'; }
 function opProgressPill(val,label='Avance'){ return `<span class="op-progress-pill op-progress-${opProgressClass(val)}">${esc(label)} ${val}%</span>`; }
 function opProgressBar(val){ return `<div class="op-progress-track"><div class="op-progress-fill ${opProgressClass(val)}" style="width:${clamp(val)}%"></div></div>`; }
 function opStatusTone(status){
@@ -2240,16 +2240,16 @@ function alignLevelClass(v){
 function alignPill(v,extra=''){
   return `<span class="align-pill ${extra||alignLevelClass(v)}">${esc(v||'—')}</span>`;
 }
-function alignmentRowClass(score){ return score>=75?'high':score>=50?'mid':'low'; }
+function alignmentRowClass(score){ return score>=75?'high':score>=51?'mid':'low'; }
 function alignComponentMini(item){
-  const cls=item.score>=75?'align-high':item.score>=50?'align-mid':'align-low';
+  const cls=item.score>=75?'align-high':item.score>=51?'align-mid':'align-low';
   return `<div class="align-component" title="${esc(item.source)} · ${esc(item.calcLabel||'')}"><div class="align-component-top"><span>${esc(item.key)}</span><strong>${Math.round(item.score)}%</strong></div><div class="align-component-track"><div class="align-component-fill" style="width:${clamp(item.score)}%;background:${progressColor(item.score)}"></div></div><div class="align-component-weight ${cls}">Peso ${item.weight}%</div><div class="align-component-weight" style="margin-top:4px;background:#f1f5f9;color:#475569;border:1px solid #e2e8f0">Aporta ${Number(item.points||0).toFixed(1)} / ${item.maxPoints||item.weight} pts</div></div>`;
 }
 function renderAlineacion(){
   const plan=currentPlan();
   const rows=plan.objectives.map(o=>{
     const ass=alignmentAssessment(o);
-    const cls=ass.score>=75?'align-high':ass.score>=50?'align-mid':'align-low';
+    const cls=ass.score>=75?'align-high':ass.score>=51?'align-mid':'align-low';
     const note=o.alignmentEvidence||o.correctionAction||'Sin notas de evidencia/corrección registradas.';
     const weakest=ass.items.slice().sort((a,b)=>a.points-b.points).slice(0,2).map(i=>`${i.key}: ${Math.round(i.score)}%`).join(' · ');
     return `<tr class="align-row-risk ${alignmentRowClass(ass.score)}"><td><div class="align-obj-cell"><div class="align-obj-title" data-action="viewObj" data-obj-id="${esc(o.id)}">${esc(o.name)}</div><div class="obj-sub">${esc(o.theme||objectiveTypeLabel(o.type))}</div><div class="align-score-wrap"><span class="align-pill ${cls}">IAE ${ass.score}%</span><div class="align-progress"><div class="align-progress-fill" style="width:${clamp(ass.score)}%;background:${progressColor(ass.score)}"></div></div></div><div class="align-actions"><button class="btn btn-secondary btn-xs" data-action="viewObj" data-obj-id="${esc(o.id)}">Ver detalle</button></div></div></td><td><div class="align-components-grid">${ass.items.map(alignComponentMini).join('')}</div></td><td>${alignPill(o.evidenceLevel,'align-evidence')}<div class="align-evidence-note">${esc(note)}</div></td><td class="align-reco"><div class="align-reading ${ass.tone}">${esc(ass.reading)}</div><div class="align-why"><strong>Factores a revisar:</strong> ${esc(weakest||'sin debilidades relevantes')}</div>${ass.flags.length?`<div class="align-flags">${ass.flags.map(f=>`<span class="badge b-red">${esc(f)}</span>`).join('')}</div>`:''}</td></tr>`;
@@ -2326,7 +2326,7 @@ function renderBrechas(){
         <div class="brecha-obj-box">
           <div class="brecha-obj-title" data-action="viewObj" data-obj-id="${esc(o.id)}">${esc(o.code?o.code+' · ':'')}${esc(o.name)}</div>
           <div class="brecha-obj-meta">${esc(o.breakpoint||'Sin punto de ruptura')}<br>${esc(o.leader||'Sin responsable')}</div>
-          <div class="brecha-chip-row"><span class="brecha-chip ${igee>=80?'green':igee>=55?'yellow':'red'}">IGEE ${igee}%</span><span class="brecha-chip blue">${o.initiatives.length} iniciativas</span></div>
+          <div class="brecha-chip-row"><span class="brecha-chip ${igee>=75?'green':igee>=51?'yellow':'red'}">IGEE ${igee}%</span><span class="brecha-chip blue">${o.initiatives.length} iniciativas</span></div>
           <div class="brecha-action-row"><button class="btn btn-secondary btn-xs" data-action="viewObj" data-obj-id="${esc(o.id)}">Ver detalle</button></div>
         </div>
       </td>
@@ -2334,7 +2334,7 @@ function renderBrechas(){
       <td><div class="brecha-textbox"><div class="brecha-text-label">Resultado deseado</div>${esc(target)}</div></td>
       <td><div class="brecha-textbox strong"><div class="brecha-text-label">Brecha crítica</div>${esc(gap)}</div></td>
       <td><div class="brecha-risk-stack"><div class="brecha-risk-item"><span>Declarado</span><span class="badge ${gapClass(declared)}">${esc(declared)}</span></div>${diverge?`<div class="brecha-risk-item"><span>Inferido</span><span class="badge ${gapClass(inferred)}">${esc(inferred)}</span></div>`:`<div class="brecha-risk-item"><span>Inferido</span><span class="badge ${gapClass(inferred)}">${esc(inferred)}</span></div>`}</div></td>
-      <td><div class="brecha-signal-stack"><span class="brecha-chip ${tom>=80?'green':tom>=50?'yellow':'red'}">TOM ${tom}%</span><span class="brecha-chip ${aStats.overdue?'red':'green'}">${aStats.overdue} vencidas</span><span class="brecha-chip ${aStats.progress>=80?'green':aStats.progress>=50?'yellow':'red'}">Acciones ${aStats.progress}%</span><span class="brecha-chip ${inferredTone}">Riesgo inf. ${esc(inferred)}</span></div></td>
+      <td><div class="brecha-signal-stack"><span class="brecha-chip ${tom>=75?'green':tom>=51?'yellow':'red'}">TOM ${tom}%</span><span class="brecha-chip ${aStats.overdue?'red':'green'}">${aStats.overdue} vencidas</span><span class="brecha-chip ${aStats.progress>=75?'green':aStats.progress>=51?'yellow':'red'}">Acciones ${aStats.progress}%</span><span class="brecha-chip ${inferredTone}">Riesgo inf. ${esc(inferred)}</span></div></td>
     </tr>`;
   }).join('');
   $('viewBrechas').innerHTML=`<div class="section-hero"><h2>Brechas estratégicas</h2><p>Vista ejecutiva de estado actual, estado objetivo y brecha crítica. El riesgo declarado se contrasta contra señales operativas como IGEE, TOM, acciones vencidas y riesgo inferido.</p></div><div class="card table-wrap"><table class="brecha-table"><thead><tr><th>Objetivo</th><th>Estado actual</th><th>Estado objetivo</th><th>Brecha</th><th>Riesgo gap</th><th>Señales</th></tr></thead><tbody>${rows||`<tr><td colspan="6"><div class="empty-box">Sin objetivos registrados.</div></td></tr>`}</tbody></table></div>`;
@@ -2346,7 +2346,7 @@ function renderTOM(){
   const plan=currentPlan();
   const cards=plan.objectives.map(o=>{
     const score=tomScore(o);
-    const tone=score>=80?'ok':score>=50?'mid':'bad';
+    const tone=score>=75?'ok':score>=51?'mid':'bad';
     const components=[
       ['Proceso',o.tomProcess,'Define el flujo end-to-end'],
       ['Capacidades',o.tomCapabilities,'Define capacidades y coordinación'],
@@ -3514,9 +3514,9 @@ function downloadFile(filename,content,type){ const blob=new Blob([content],{typ
 // evitar objetivos, iniciativas, KPIs y acciones dispersas o sin evidencia.
 // ══════════════════════════════════════════════════════════════════════
 const V5_LEGACY_STORAGE_KEY = 'ximpler_edge_v4';
-const V5_VERSION = 'v5.4';
+const V5_VERSION = 'v5.5';
 
-function v5Tone(score){ score=num(score); return score>=80?'green':score>=55?'yellow':'red'; }
+function v5Tone(score){ score=num(score); return score>=75?'green':score>=51?'yellow':'red'; }
 function v5Pill(label,value,tone='gray',title=''){
   return `<span class="v5-pill ${tone}" ${title?`title="${esc(title)}"`:''}>${esc(label)}${value!==undefined&&value!==null&&value!==''?` ${esc(value)}`:''}</span>`;
 }
@@ -3855,7 +3855,7 @@ function v5InjectAfter(id, html){
   const el=$(id); if(el && !document.getElementById(html.match(/id="([^"]+)"/)?.[1]||'__missing')) el.closest('.field')?.insertAdjacentHTML('afterend', html);
 }
 function applyV5DOMUpgrades(){
-  document.title='Ximpler EDGE v5.4 · Copiloto de Ejecución Estratégica';
+  document.title='Ximpler EDGE v5.5 · Copiloto de Ejecución Estratégica';
   const subtitle=document.querySelector('#planningView .subtitle'); if(subtitle) subtitle.textContent='Copiloto estratégico v5 · Trazabilidad ejecutiva: resultado, ejecución, evidencia, gobernanza y comité con reglas duras.';
   v5InjectAfter('oBudget', `<div class="field"><label>Peso estratégico %</label><input id="oStrategicWeight" class="input" type="number" min="0" max="100" step="1" value="100"><div class="hint">Define cuánto pesa este objetivo en la planeación. Ya no todos los objetivos valen igual.</div></div>`);
   v5InjectAfter('oExpectedResult', `<div class="field"><label>Hipótesis estratégica</label><input id="oHypothesis" class="input" placeholder="Si hacemos X, esperamos mover Y porque..."></div>`);
@@ -4067,7 +4067,7 @@ renderSummaryStrip = function(plan){
   const draftInits=inits.filter(i=>!v5InitiativeIsExecutable(i)).length;
   const overdue=acts.filter(a=>isOverdue(a.dueDate,a.status)).length;
   const openCommits=asArray(plan.commitments).filter(c=>c.status!=='Cumplido').length;
-  $('summaryStrip').innerHTML=[['IGEE v5',`${score}%`,'Resultado + ejecución + evidencia'],['Resultado',`${result}%`,'Cumplimiento KPI'],['Ejecución',`${exec}%`,'Avance ponderado'],['Evidencia',`${evidence}%`,'Confianza y cierre'],['Sin KPI',noKpi,'Objetivos limitados'],['Borradores',draftInits,'Iniciativas no ejecutables'],['Comité',openCommits,'Compromisos abiertos']].map(([l,v,n])=>`<div class="sc"><div class="sc-label">${esc(l)}</div><div class="sc-val">${esc(v)}</div><div class="sc-note">${esc(n)}</div></div>`).join('');
+  $('summaryStrip').innerHTML=[['IGEE',`${score}%`,'Resultado + ejecución + evidencia'],['Resultado',`${result}%`,'Cumplimiento KPI'],['Ejecución',`${exec}%`,'Avance ponderado'],['Evidencia',`${evidence}%`,'Confianza y cierre'],['Sin KPI',noKpi,'Objetivos limitados'],['Borradores',draftInits,'Iniciativas no ejecutables'],['Comité',openCommits,'Compromisos abiertos']].map(([l,v,n])=>`<div class="sc"><div class="sc-label">${esc(l)}</div><div class="sc-val">${esc(v)}</div><div class="sc-note">${esc(n)}</div></div>`).join('');
 };
 renderObjetivos = function(){
   const plan=currentPlan();
@@ -4075,9 +4075,9 @@ renderObjetivos = function(){
     const bd=v5ObjectiveScoreBreakdown(obj); const score=Math.round(bd.igee); const align=Math.round(alignmentAssessment(obj).score); const impact=Math.round(calcImpactScore(obj)); const risk=Math.round(calcRiskScore(obj)); const tom=Math.round(tomScore(obj)); const expanded=expandedObjectives.has(obj.id); const inits=obj.initiatives||[]; const isVencido=isOverdue(obj.end,obj.status); const shouldAutopsia=isVencido&&score<90; const redundant=detectRedundantInitiatives(obj); const initHtml=inits.length?`<div class="cascade-zone"><div class="cascade-header"><div style="font-weight:700;font-size:13px;color:var(--text2)">Iniciativas · madurez v5</div><div style="display:flex;gap:8px;align-items:center"><button class="btn btn-primary btn-sm" data-action="newInit" data-obj-id="${esc(obj.id)}">+ Iniciativa</button></div></div><div class="init-list">${inits.map(i=>initCardHtml(obj,i,redundant)).join('')}</div></div>`:`<div class="cascade-zone"><div class="empty-box">Sin iniciativas. <button class="btn btn-primary btn-sm" data-action="newInit" data-obj-id="${esc(obj.id)}" style="margin-left:8px">+ Crear</button></div></div>`;
     return `<tr style="${isVencido&&score<90?'border-left:4px solid var(--rose)':''}">
       <td><div class="obj-cell"><button class="obj-toggle" data-action="toggleObj" data-obj-id="${esc(obj.id)}">${expanded?'▾':'▸'}</button><div><div class="obj-name" data-action="viewObj" data-obj-id="${esc(obj.id)}">${esc(obj.code?obj.code+' · ':'')}${esc(obj.name)}</div><div class="obj-sub">${esc(obj.leader||'Sin líder')} · Peso ${num(obj.strategicWeight,100)}% · ${esc(objectiveTypeLabel(obj.type))} · ${esc(obj.level)}</div><div class="v5-score-stack">${v5Pill('Resultado',bd.resultado+'%',v5Tone(bd.resultado))}${v5Pill('Ejecución',bd.ejecucion+'%',v5Tone(bd.ejecucion))}${v5Pill('Evidencia',bd.evidencia+'%',v5Tone(bd.evidencia))}${v5Pill('Trazabilidad',bd.trazabilidad+'%',v5Tone(bd.trazabilidad),v5TraceabilityNote(obj))}${bd.sobre?v5Pill('Sobre','+'+bd.sobre+'%','blue'):''}</div>${v5BlockingSummary(obj)}${shouldAutopsia?`<button class="btn btn-sm" style="background:var(--amber-s);color:var(--amber);border:1px solid var(--amber-b);margin-top:4px" data-action="autopsia" data-obj-id="${esc(obj.id)}">⚠ Ver Autopsia</button>`:''}</div></div></td>
-      <td>${statusBadge(obj.status)}</td><td>${objMetricRing(score,'IGEE v5')}</td><td>${objMetricRing(impact,'Impacto')}</td><td>${objMetricRing(align,'Alineación')}</td><td>${objMetricRing(risk,'Riesgo',{risk:true})}</td><td>${objMetricRing(tom,'TOM')}</td><td>${esc(obj.end||'s/f')}<div class="obj-sub">${daysText(obj.end)}</div></td><td>${obj.indicators.length} KPIs<br><span class="obj-sub">${inits.length} init · ${inits.reduce((a,i)=>a+i.actions.length,0)} acc</span></td><td><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn btn-secondary btn-xs" data-action="viewObj" data-obj-id="${esc(obj.id)}">Ver</button><button class="btn btn-secondary btn-xs" data-action="editObj" data-obj-id="${esc(obj.id)}">Editar</button><button class="btn btn-danger btn-xs" data-action="deleteObj" data-obj-id="${esc(obj.id)}">Eliminar</button></div></td></tr><tr class="${expanded?'':'hidden'}"><td colspan="10" style="padding:0">${initHtml}</td></tr>`;
+      <td>${statusBadge(obj.status)}</td><td>${objMetricRing(score,'IGEE')}</td><td>${objMetricRing(impact,'Impacto')}</td><td>${objMetricRing(align,'Alineación')}</td><td>${objMetricRing(risk,'Riesgo',{risk:true})}</td><td>${objMetricRing(tom,'TOM')}</td><td>${esc(obj.end||'s/f')}<div class="obj-sub">${daysText(obj.end)}</div></td><td>${obj.indicators.length} KPIs<br><span class="obj-sub">${inits.length} init · ${inits.reduce((a,i)=>a+i.actions.length,0)} acc</span></td><td><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn btn-secondary btn-xs" data-action="viewObj" data-obj-id="${esc(obj.id)}">Ver</button><button class="btn btn-secondary btn-xs" data-action="editObj" data-obj-id="${esc(obj.id)}">Editar</button><button class="btn btn-danger btn-xs" data-action="deleteObj" data-obj-id="${esc(obj.id)}">Eliminar</button></div></td></tr><tr class="${expanded?'':'hidden'}"><td colspan="10" style="padding:0">${initHtml}</td></tr>`;
   }).join('');
-  $('viewObjetivos').innerHTML=`<div class="section-hero"><h2>Objetivos estratégicos · v5</h2><p>Vista ejecutiva con peso estratégico, resultado, ejecución, evidencia y alineación. La trazabilidad ejecutiva queda dentro del desglose del IGEE v5; la alineación visible corresponde al IAE.</p></div><div class="card table-wrap"><table><thead><tr><th>Objetivo</th><th>Estatus</th><th>IGEE</th><th>Impacto</th><th>Alineación</th><th>Riesgo</th><th>TOM</th><th>Compromiso</th><th>Alcance</th><th>Acciones</th></tr></thead><tbody>${rows||`<tr><td colspan="10"><div class="empty-box">Sin objetivos. Usa "+ Nuevo Objetivo".</div></td></tr>`}</tbody></table></div>`;
+  $('viewObjetivos').innerHTML=`<div class="section-hero"><h2>Objetivos estratégicos · v5</h2><p>Vista ejecutiva con peso estratégico, resultado, ejecución, evidencia y alineación. La trazabilidad ejecutiva queda dentro del desglose del IGEE; la alineación visible corresponde al IAE.</p></div><div class="card table-wrap"><table><thead><tr><th>Objetivo</th><th>Estatus</th><th>IGEE</th><th>Impacto</th><th>Alineación</th><th>Riesgo</th><th>TOM</th><th>Compromiso</th><th>Alcance</th><th>Acciones</th></tr></thead><tbody>${rows||`<tr><td colspan="10"><div class="empty-box">Sin objetivos. Usa "+ Nuevo Objetivo".</div></td></tr>`}</tbody></table></div>`;
 };
 initCardHtml = function(obj,init,redundant){
   const progress=Math.round(calcActionsProgress(init.actions)); const overdue=asArray(init.actions).some(a=>isOverdue(a.dueDate,a.status)); const disconnected=!init.impactKpi; const maturity=v5InitiativeMaturity(init); const kpiBadge=init.impactKpi?`<span class="redund-badge">KPI: ${esc(init.impactKpi)}</span>`:'<span class="disc-badge">Sin KPI impactado</span>';
@@ -4085,7 +4085,7 @@ initCardHtml = function(obj,init,redundant){
 };
 renderActionsBody = function(){
   const init=findInitiative(actionCtx.objectiveId,actionCtx.initiativeId);
-  $('initiativeActionsBody').innerHTML=`<div class="v5-rule-card"><div class="v5-rule-title">Cierre con evidencia</div><div class="v5-rule-text">El avance operativo se calcula por peso de acción. Terminar sin evidencia reduce la calidad de cierre y afecta el IGEE v5.</div></div><div class="action-list">${(init?.actions||[]).map(a=>`<div class="action-item ${isOverdue(a.dueDate,a.status)?'overdue-action':''}"><div style="font-weight:700;font-size:14px">${esc(a.title)}</div><div class="obj-sub">${esc(a.responsible||'Sin responsable')} · ${esc(a.status)} · Peso ${num(a.weight,1)} · ${esc(a.criticality||'Media')} · ${esc(a.dueDate||'s/f')} · ${daysText(a.dueDate)}</div><div class="v5-score-stack">${v5Pill('Cierre',v5ActionCloseQuality(a),v5ActionEvidenceScore(a)>=90?'green':v5ActionEvidenceScore(a)>=60?'yellow':'red')}${a.blocker?v5Pill('Bloqueador',a.blocker,'red'):''}${a.dependency?v5Pill('Depende de',a.dependency,'blue'):''}</div><div style="font-size:13px;color:var(--text2);margin-top:6px;white-space:pre-wrap">${esc(a.detail)}</div>${a.evidenceRequired||a.closeCriteria||a.evidence?`<div class="v5-evidence-box"><strong>Evidencia requerida:</strong> ${esc(a.evidenceRequired||'—')}<br><strong>Criterio:</strong> ${esc(a.closeCriteria||'—')}<br><strong>Evidencia:</strong> ${esc(a.evidence||'—')}</div>`:''}<div class="action-item-foot"><button class="btn btn-secondary btn-xs" data-action="viewAct" data-obj-id="${esc(actionCtx.objectiveId)}" data-init-id="${esc(actionCtx.initiativeId)}" data-act-id="${esc(a.id)}">Ver</button><button class="btn btn-secondary btn-xs" data-action="editAct" data-obj-id="${esc(actionCtx.objectiveId)}" data-init-id="${esc(actionCtx.initiativeId)}" data-act-id="${esc(a.id)}">Editar</button><button class="btn btn-primary btn-xs" data-action="completeAct" data-obj-id="${esc(actionCtx.objectiveId)}" data-init-id="${esc(actionCtx.initiativeId)}" data-act-id="${esc(a.id)}">✓ Terminar</button><button class="btn btn-danger btn-xs" data-action="delAct" data-obj-id="${esc(actionCtx.objectiveId)}" data-init-id="${esc(actionCtx.initiativeId)}" data-act-id="${esc(a.id)}">Eliminar</button></div></div>`).join('')||'<div class="empty-box">Sin acciones. Usa "+ Nueva Acción".</div>'}</div>`;
+  $('initiativeActionsBody').innerHTML=`<div class="v5-rule-card"><div class="v5-rule-title">Cierre con evidencia</div><div class="v5-rule-text">El avance operativo se calcula por peso de acción. Terminar sin evidencia reduce la calidad de cierre y afecta el IGEE.</div></div><div class="action-list">${(init?.actions||[]).map(a=>`<div class="action-item ${isOverdue(a.dueDate,a.status)?'overdue-action':''}"><div style="font-weight:700;font-size:14px">${esc(a.title)}</div><div class="obj-sub">${esc(a.responsible||'Sin responsable')} · ${esc(a.status)} · Peso ${num(a.weight,1)} · ${esc(a.criticality||'Media')} · ${esc(a.dueDate||'s/f')} · ${daysText(a.dueDate)}</div><div class="v5-score-stack">${v5Pill('Cierre',v5ActionCloseQuality(a),v5ActionEvidenceScore(a)>=75?'green':v5ActionEvidenceScore(a)>=51?'yellow':'red')}${a.blocker?v5Pill('Bloqueador',a.blocker,'red'):''}${a.dependency?v5Pill('Depende de',a.dependency,'blue'):''}</div><div style="font-size:13px;color:var(--text2);margin-top:6px;white-space:pre-wrap">${esc(a.detail)}</div>${a.evidenceRequired||a.closeCriteria||a.evidence?`<div class="v5-evidence-box"><strong>Evidencia requerida:</strong> ${esc(a.evidenceRequired||'—')}<br><strong>Criterio:</strong> ${esc(a.closeCriteria||'—')}<br><strong>Evidencia:</strong> ${esc(a.evidence||'—')}</div>`:''}<div class="action-item-foot"><button class="btn btn-secondary btn-xs" data-action="viewAct" data-obj-id="${esc(actionCtx.objectiveId)}" data-init-id="${esc(actionCtx.initiativeId)}" data-act-id="${esc(a.id)}">Ver</button><button class="btn btn-secondary btn-xs" data-action="editAct" data-obj-id="${esc(actionCtx.objectiveId)}" data-init-id="${esc(actionCtx.initiativeId)}" data-act-id="${esc(a.id)}">Editar</button><button class="btn btn-primary btn-xs" data-action="completeAct" data-obj-id="${esc(actionCtx.objectiveId)}" data-init-id="${esc(actionCtx.initiativeId)}" data-act-id="${esc(a.id)}">✓ Terminar</button><button class="btn btn-danger btn-xs" data-action="delAct" data-obj-id="${esc(actionCtx.objectiveId)}" data-init-id="${esc(actionCtx.initiativeId)}" data-act-id="${esc(a.id)}">Eliminar</button></div></div>`).join('')||'<div class="empty-box">Sin acciones. Usa "+ Nueva Acción".</div>'}</div>`;
 };
 buildOperativoRows = function(){
   const plan=currentPlan();
@@ -4113,7 +4113,7 @@ buildOperativoRows = function(){
         const contribution=act._empty?0:v5ActionContribution(act,init.actions);
         const weightHtml=act._empty?'<span class="v5-action-weight">Sin peso</span>':`<span class="v5-action-weight">Peso ${fmtNum(v5ActionWeight(act),1)} · ${v5IsDone(act.status)?'aporta':'aportará'} ${contribution}%</span><div class="v5-weight-explain">Fórmula: peso de esta acción / peso total de la iniciativa.</div>`;
         rows.push(`<tr>
-          <td>${opPrinted?'':`<div class="op-obj-cell"><div class="op-label">Objetivo</div><div class="op-name" data-action="viewObj" data-obj-id="${esc(obj.id)}" style="cursor:pointer">${esc(obj.name)}</div><div class="op-sub">${esc((obj.code?obj.code+' · ':'') + (obj.leader||''))}</div><div class="op-meta-row"><span class="igee-pill ${scoreClass(objScore)}">IGEE v5 ${objScore}%</span>${opProgressPill(objProgress,'Ejecución')}</div>${opProgressBar(objProgress)}${objectiveControls}</div>`}</td>
+          <td>${opPrinted?'':`<div class="op-obj-cell"><div class="op-label">Objetivo</div><div class="op-name" data-action="viewObj" data-obj-id="${esc(obj.id)}" style="cursor:pointer">${esc(obj.name)}</div><div class="op-sub">${esc((obj.code?obj.code+' · ':'') + (obj.leader||''))}</div><div class="op-meta-row"><span class="igee-pill ${scoreClass(objScore)}">IGEE ${objScore}%</span>${opProgressPill(objProgress,'Ejecución')}</div>${opProgressBar(objProgress)}${objectiveControls}</div>`}</td>
           <td>${initPrinted?'':`<div class="op-init-cell"><div class="op-label">Iniciativa</div><div class="op-name">${esc(init.name)}</div><div class="op-sub">${esc(init.owner||'Sin responsable')} · ${esc(maturity.level)}</div><div class="op-meta-row">${opProgressPill(initProgress,'Avance ponderado')}</div>${opProgressBar(initProgress)}<div class="v5-weight-explain"><strong>Cálculo:</strong> ${fmtNum(initDetail.doneWeight,1)} / ${fmtNum(initDetail.totalWeight,1)} pts cerrados · ${initDetail.doneActions}/${initDetail.totalActions} acciones terminadas.</div>${initiativeControls}</div>`}</td>
           <td><div class="op-action-box"><div class="op-action-title">${esc(act.title)}</div><div class="op-sub">${esc(act.detail||'')}</div>${actionControls}</div></td>
           <td>${esc(act.responsible||init.owner||'')}</td>
@@ -4174,7 +4174,7 @@ exportXLS = function(){
     ['Estatus',plan.status||'','Estatus general'],
     ['Periodo',`${plan.start||'s/f'} → ${plan.end||'s/f'}`,'Inicio y fecha compromiso'],
     ['Comité',plan.committee||'','Órgano de seguimiento'],
-    ['IGEE v5',score+'%','Resultado + ejecución + evidencia + trazabilidad + gobernanza'],
+    ['IGEE',score+'%','Resultado + ejecución + evidencia + trazabilidad + gobernanza'],
     ['Resultado KPI',result+'%','Promedio de cumplimiento de indicadores'],
     ['Ejecución ponderada',exec+'%','Avance por peso de acciones terminadas'],
     ['Evidencia',evidence+'%','Confianza del dato y cierre con evidencia'],
@@ -4187,11 +4187,11 @@ exportXLS = function(){
 
   sections.push(['Planeaciones',['ID','Nombre','Nivel','Alcance','Planeación padre','Responsable','Estatus','Inicio','Compromiso','Cadencia','Comité','Visión','Descripción','Objetivos','Actualizada'],state.plannings.map(p=>[p.id,p.name,p.planningLevel||'',p.scope||'',planName(p.parentPlanningId)||'',p.owner||'',p.status||'',p.start||'',p.end||'',p.cadence||'',p.committee||'',p.vision||'',p.desc||'',asArray(p.objectives).length,p.updatedAt||''])]);
 
-  sections.push(['Objetivos',['ID','Código','Objetivo','Planeación','Planeación padre','Objetivo padre','Tipo','Nivel','Tema','Peso estratégico','Creador','Líder','Invitados / involucrados','Áreas','Etiquetas','Proyectos ligados','Estatus','Inicio','Compromiso','Frecuencia actualización','Última actualización','Presupuesto','IGEE v5','Resultado KPI','Ejecución ponderada','Evidencia','Trazabilidad','Gobernanza','Sobrecumplimiento','Impacto','Alineación IAE','Riesgo','TOM','Hipótesis','Resultado esperado','Criterio éxito','Costo no lograrlo','Umbral intervención','Estado actual','Estado objetivo','Brecha','Riesgo declarado','Riesgo inferido','Acción correctiva'],objs.map(o=>{const bd=v5ObjectiveScoreBreakdown(o);const ass=alignmentAssessment(o);return[o.id,o.code,o.name,plan.name,planName(o.parentPlanningId)||'',objectiveDisplayName(o.parentId)||'',objectiveTypeLabel(o.type),o.level,o.theme,num(o.strategicWeight,100),o.creator,o.leader,arrCsv(o.involved),arrCsv(o.areas),arrCsv(o.tags),arrCsv(o.projects),o.status,o.start,o.end,o.updateFrequency,o.lastUpdate,o.budget,bd.igee+'%',bd.resultado+'%',bd.ejecucion+'%',bd.evidencia+'%',bd.trazabilidad+'%',bd.gobernanza+'%',bd.sobre+'%',Math.round(calcImpactScore(o))+'%',ass.score+'%',Math.round(calcRiskScore(o))+'%',Math.round(tomScore(o))+'%',o.hypothesis,o.expectedResult,o.successCriteria,o.costOfInaction,o.interventionThreshold,o.currentState,o.targetState,o.gap,o.gapRisk,inferGapRisk(o),o.correctionAction];})]);
+  sections.push(['Objetivos',['ID','Código','Objetivo','Planeación','Planeación padre','Objetivo padre','Tipo','Nivel','Tema','Peso estratégico','Creador','Líder','Invitados / involucrados','Áreas','Etiquetas','Proyectos ligados','Estatus','Inicio','Compromiso','Frecuencia actualización','Última actualización','Presupuesto','IGEE','Resultado KPI','Ejecución ponderada','Evidencia','Trazabilidad','Gobernanza','Sobrecumplimiento','Impacto','Alineación IAE','Riesgo','TOM','Hipótesis','Resultado esperado','Criterio éxito','Costo no lograrlo','Umbral intervención','Estado actual','Estado objetivo','Brecha','Riesgo declarado','Riesgo inferido','Acción correctiva'],objs.map(o=>{const bd=v5ObjectiveScoreBreakdown(o);const ass=alignmentAssessment(o);return[o.id,o.code,o.name,plan.name,planName(o.parentPlanningId)||'',objectiveDisplayName(o.parentId)||'',objectiveTypeLabel(o.type),o.level,o.theme,num(o.strategicWeight,100),o.creator,o.leader,arrCsv(o.involved),arrCsv(o.areas),arrCsv(o.tags),arrCsv(o.projects),o.status,o.start,o.end,o.updateFrequency,o.lastUpdate,o.budget,bd.igee+'%',bd.resultado+'%',bd.ejecucion+'%',bd.evidencia+'%',bd.trazabilidad+'%',bd.gobernanza+'%',bd.sobre+'%',Math.round(calcImpactScore(o))+'%',ass.score+'%',Math.round(calcRiskScore(o))+'%',Math.round(tomScore(o))+'%',o.hypothesis,o.expectedResult,o.successCriteria,o.costOfInaction,o.interventionThreshold,o.currentState,o.targetState,o.gap,o.gapRisk,inferGapRisk(o),o.correctionAction];})]);
 
   sections.push(['KPIs',['Objetivo','Código objetivo','KPI','Tipo KPI','Acción / sentido','Unidad','Dueño dato','Valida dato','Fuente del dato','Fórmula','Valor inicial','Valor actual','Meta','Peso KPI','Resultado','Sobrecumplimiento','Confianza','Frecuencia','Última actualización','Tolerancia mantener','Historial registros'],objs.flatMap(o=>asArray(o.indicators).map(k=>{const conf=kpiConfidence(k);return[o.name,o.code,k.name,k.kpiType,k.action,k.unit,k.owner,k.validator,k.source,k.formula,k.initial,k.current,k.target,k.weight,Math.round(calcIndicatorScore(k))+'%',v5KpiOverPerformance(k)+'%',conf.label,k.frequency,k.lastUpdate||'Sin fecha',k.tolerance,asArray(k.history).map(h=>`${h.date||''}: ${h.value??''} ${h.note||''}`).join(' | ')];}))]);
 
-  sections.push(['Tablero Operativo',['Objetivo','IGEE v5','Ejecución objetivo','Iniciativa','Madurez iniciativa','Avance iniciativa','Cálculo avance iniciativa','Acción','Detalle acción','Responsable','Estatus','Compromiso','Vencida','Peso acción','Aporte al avance','Criticidad','Criterio cierre','Evidencia requerida','Evidencia cierre','Calidad cierre','Bloqueador','Dependencia','Presupuesto iniciativa','Gastado iniciativa'],actions.map(x=>{const d=v5ActionsProgressDetail(x.init.actions);return[x.obj.name,Math.round(calcObjectiveScore(x.obj))+'%',v5ObjectiveExecutionScore(x.obj)+'%',x.init.name,v5InitiativeMaturity(x.init).level,calcActionsProgress(x.init.actions)+'%',`${fmtNum(d.doneWeight,1)} / ${fmtNum(d.totalWeight,1)} pts · ${d.doneActions}/${d.totalActions} acciones`,x.act.title,x.act.detail,x.act.responsible||x.init.owner,x.act.status,x.act.dueDate,isOverdue(x.act.dueDate,x.act.status)?'Sí':'No',v5ActionWeight(x.act),v5ActionContribution(x.act,x.init.actions)+'%',x.act.criticality,x.act.closeCriteria,x.act.evidenceRequired,x.act.evidence,v5ActionCloseQuality(x.act),x.act.blocker,x.act.dependency,x.init.budget,x.init.spent];})]);
+  sections.push(['Tablero Operativo',['Objetivo','IGEE','Ejecución objetivo','Iniciativa','Madurez iniciativa','Avance iniciativa','Cálculo avance iniciativa','Acción','Detalle acción','Responsable','Estatus','Compromiso','Vencida','Peso acción','Aporte al avance','Criticidad','Criterio cierre','Evidencia requerida','Evidencia cierre','Calidad cierre','Bloqueador','Dependencia','Presupuesto iniciativa','Gastado iniciativa'],actions.map(x=>{const d=v5ActionsProgressDetail(x.init.actions);return[x.obj.name,Math.round(calcObjectiveScore(x.obj))+'%',v5ObjectiveExecutionScore(x.obj)+'%',x.init.name,v5InitiativeMaturity(x.init).level,calcActionsProgress(x.init.actions)+'%',`${fmtNum(d.doneWeight,1)} / ${fmtNum(d.totalWeight,1)} pts · ${d.doneActions}/${d.totalActions} acciones`,x.act.title,x.act.detail,x.act.responsible||x.init.owner,x.act.status,x.act.dueDate,isOverdue(x.act.dueDate,x.act.status)?'Sí':'No',v5ActionWeight(x.act),v5ActionContribution(x.act,x.init.actions)+'%',x.act.criticality,x.act.closeCriteria,x.act.evidenceRequired,x.act.evidence,v5ActionCloseQuality(x.act),x.act.blocker,x.act.dependency,x.init.budget,x.init.spent];})]);
 
   sections.push(['Iniciativas',['ID','Objetivo','Código objetivo','Iniciativa','Madurez','Ejecutable','Responsable','Fecha compromiso','Estatus','Prioridad','Avance ponderado','Cálculo avance','KPI impactado','Impacto esperado','Impacto real','Eficiencia impacto','Redundante','Compite','Problema que resuelve','Causa raíz','Hipótesis impacto','Criterio éxito','Evidencia requerida','Beneficio esperado','Beneficio real','Dueño beneficio','Fecha beneficio','Presupuesto','Gastado','% uso presupuesto','Detalle / evidencia'],inits.map(x=>{const d=v5ActionsProgressDetail(x.init.actions);const use=num(x.init.budget)>0?Math.round((num(x.init.spent)/num(x.init.budget))*100)+'%':'0%';return[x.init.id,x.obj.name,x.obj.code,x.init.name,v5InitiativeMaturity(x.init).level,v5InitiativeIsExecutable(x.init)?'Sí':'No',x.init.owner,x.init.dueDate,x.init.status,x.init.priority,calcActionsProgress(x.init.actions)+'%',`${fmtNum(d.doneWeight,1)} / ${fmtNum(d.totalWeight,1)} pts`,x.init.impactKpi,x.init.expectedImpact,x.init.realImpact,calcInitiativeEfficiency(x.init)+'%',x.init.redundant,x.init.competes,x.init.problem,x.init.rootCause,x.init.hypothesis,x.init.successCriteria,x.init.evidenceRequired,x.init.benefitExpected,x.init.benefitReal,x.init.benefitOwner,x.init.benefitDate,x.init.budget,x.init.spent,use,x.init.detail];})]);
 
@@ -4248,7 +4248,7 @@ exportXLS = function(){
     return `<Worksheet ss:Name="${xmlEsc(sheetName(title))}"><Table>${rowXml(headers,'sHeader')}${rows.map(r=>rowXml(r)).join('')}</Table><WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel"><FreezePanes/><FrozenNoSplit/><SplitHorizontal>1</SplitHorizontal><TopRowBottomPane>1</TopRowBottomPane><ActivePane>2</ActivePane></WorksheetOptions></Worksheet>`;
   }
   const workbook=`<?xml version="1.0"?><?mso-application progid="Excel.Sheet"?><Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet" xmlns:html="http://www.w3.org/TR/REC-html40"><DocumentProperties xmlns="urn:schemas-microsoft-com:office:office"><Author>Ximpler EDGE</Author><Created>${new Date().toISOString()}</Created><Version>16.00</Version></DocumentProperties><Styles><Style ss:ID="Default" ss:Name="Normal"><Alignment ss:Vertical="Top"/><Font ss:FontName="Arial" ss:Size="10"/></Style><Style ss:ID="sHeader"><Font ss:FontName="Arial" ss:Size="10" ss:Bold="1"/><Interior ss:Color="#E6F4F0" ss:Pattern="Solid"/><Alignment ss:Vertical="Top" ss:WrapText="1"/></Style></Styles>${sections.map(s=>worksheetXml(s[0],s[1],s[2])).join('')}</Workbook>`;
-  downloadFile(`reporte_general_v5_4_${txt(plan.name).replace(/[^a-z0-9]+/gi,'_')}_${todayISO()}.xls`,workbook,'application/vnd.ms-excel;charset=utf-8');
+  downloadFile(`reporte_general_v5_5_${txt(plan.name).replace(/[^a-z0-9]+/gi,'_')}_${todayISO()}.xls`,workbook,'application/vnd.ms-excel;charset=utf-8');
 };
 
 // Hook de arranque v5
