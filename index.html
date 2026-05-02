@@ -782,6 +782,7 @@ tbody tr:hover td{background:#fafbfc}
   <div id="viewBeneficios" class="view-panel hidden"></div>
   <div id="viewAlertas" class="view-panel hidden"></div>
   <div id="viewComite" class="view-panel hidden"></div>
+  <div id="viewMinutas" class="view-panel hidden"></div>
 </div>
 
 <!-- ══ MODALS ══ -->
@@ -1084,7 +1085,8 @@ const TABS = [
   {id:'tom',label:'TOM',panel:'viewTOM'},
   {id:'beneficios',label:'Beneficios',panel:'viewBeneficios'},
   {id:'alertas',label:'Alertas',panel:'viewAlertas'},
-  {id:'comite',label:'Comité',panel:'viewComite'}
+  {id:'comite',label:'Comité',panel:'viewComite'},
+  {id:'minutas',label:'Minutas',panel:'viewMinutas'}
 ];
 
 // ── HELPERS ─────────────────────────────────────────────────────────
@@ -1772,7 +1774,7 @@ function renderTabs(){
 }
 function renderActiveTab(){
   TABS.forEach(t=>{ $(t.panel)?.classList.toggle('hidden',t.id!==activeTab); qsa('#mainTabs .nav-tab').find(b=>b.dataset.tab===t.id)?.classList.toggle('active',t.id===activeTab); });
-  const map={objetivos:renderObjetivos,kpi:renderKPI,operativo:renderOperativo,mapa:renderMapa,alineacion:renderAlineacion,impacto:renderImpacto,brechas:renderBrechas,tom:renderTOM,beneficios:renderBeneficios,alertas:renderAlertas,comite:renderComite};
+  const map={objetivos:renderObjetivos,kpi:renderKPI,operativo:renderOperativo,mapa:renderMapa,alineacion:renderAlineacion,impacto:renderImpacto,brechas:renderBrechas,tom:renderTOM,beneficios:renderBeneficios,alertas:renderAlertas,comite:renderComite,minutas:renderMinutas};
   (map[activeTab]||renderObjetivos)();
 }
 
@@ -1961,10 +1963,10 @@ function saveCommitment(){
   const item=existing||{id:uid('commit'),createdAt:new Date().toISOString()};
   Object.assign(item,{title,owner:$('commitOwner').value.trim(),area:$('commitArea').value.trim(),dueDate:$('commitDue').value,priority:$('commitPriority').value,status:$('commitStatus').value,criteria:$('commitCriteria').value.trim(),context:$('commitContext').value.trim()});
   if(!existing) plan.commitments.push(item);
-  saveState(); closeModal('commitModal'); if(activeTab==='comite') renderComite(); else renderWorkspace(); toast(existing?'Compromiso de seguimiento actualizado.':'Compromiso de seguimiento registrado.','t-ok');
+  saveState(); closeModal('commitModal'); if(activeTab==='comite'||activeTab==='minutas') renderActiveTab(); else renderWorkspace(); toast(existing?'Compromiso de seguimiento actualizado.':'Compromiso de seguimiento registrado.','t-ok');
 }
-function deleteCommitment(id){ if(!confirm('¿Eliminar compromiso?')) return; const plan=currentPlan(); plan.commitments=plan.commitments.filter(c=>c.id!==id); saveState(); renderComite(); }
-function completeCommitment(id){ const plan=currentPlan(); const c=plan.commitments.find(c=>c.id===id); if(c){ c.status='Cumplido'; saveState(); renderComite(); toast('Compromiso marcado como cumplido.','t-ok'); } }
+function deleteCommitment(id){ if(!confirm('¿Eliminar compromiso?')) return; const plan=currentPlan(); plan.commitments=plan.commitments.filter(c=>c.id!==id); saveState(); renderActiveTab(); }
+function completeCommitment(id){ const plan=currentPlan(); const c=plan.commitments.find(c=>c.id===id); if(c){ c.status='Cumplido'; saveState(); renderActiveTab(); toast('Compromiso marcado como cumplido.','t-ok'); } }
 
 // ── AGENDA PDF ───────────────────────────────────────────────────────
 function exportAgendaPDF(){
@@ -2809,13 +2811,13 @@ function saveMinute(){
   Object.assign(item,{type:$('minuteType').value,title,date,nextMeetingDate:$('minuteNextMeeting').value,status:$('minuteStatus').value,chair:$('minuteChair').value.trim(),secretary:$('minuteSecretary').value.trim(),attendees:csvArr($('minuteAttendees').value),linkedAgenda:$('minuteLinkedAgenda').value,summary:$('minuteSummary').value.trim(),decisions:$('minuteDecisions').value.trim(),notes:$('minuteNotes').value.trim(),agreements:collectMinuteAgreements(),updatedAt:new Date().toISOString()});
   if(!existing) plan.minutes.unshift(item);
   const synced=syncMinuteAgreements(item);
-  saveState(); closeModal('minuteModal'); renderComite(); toast(`Minuta guardada. ${synced.commits} compromiso(s) y ${synced.agenda} punto(s) de próxima reunión sincronizados.`,'t-ok');
+  saveState(); closeModal('minuteModal'); renderActiveTab(); toast(`Minuta guardada. ${synced.commits} compromiso(s) y ${synced.agenda} punto(s) de próxima reunión sincronizados.`,'t-ok');
 }
 function deleteMinute(id){
   if(!confirm('¿Eliminar minuta / acta? Los compromisos ya generados no se eliminarán automáticamente.')) return;
   const plan=currentPlan(); if(!plan) return;
   plan.minutes=asArray(plan.minutes).filter(m=>m.id!==id);
-  saveState(); renderComite(); toast('Minuta eliminada.','t-ok');
+  saveState(); renderActiveTab(); toast('Minuta eliminada.','t-ok');
 }
 function findMinuteAgreement(minuteId,agreementId){
   const minute=asArray(currentPlan()?.minutes).find(m=>m.id===minuteId);
@@ -2838,7 +2840,7 @@ function createCommitFromMinuteAgreement(minuteId,agreementId,showToast=false){
   c=c||{id:uid('commit'),createdAt:new Date().toISOString(),sourceMinuteId:minuteId,sourceAgreementId:agreementId};
   Object.assign(c,{title:agreement.title,owner:agreement.owner,area:agreement.area||'',dueDate:agreement.dueDate,priority:agreement.priority,status:commitmentStatusFromAgreement(agreement),criteria:agreement.criteria||'Criterio de cierre pendiente de definir.',context:`Derivado de ${minute.type}: ${minute.title}\nFecha: ${minute.date}\n\nAcuerdo: ${agreement.title}\n\nEvidencia requerida: ${agreement.context||'No definida'}\n\nDecisiones de la minuta: ${minute.decisions||'—'}`});
   if(created) plan.commitments.push(c);
-  if(showToast){ saveState(); renderComite(); toast(created?'Compromiso creado desde minuta.':'Compromiso actualizado desde minuta.','t-ok'); }
+  if(showToast){ saveState(); renderActiveTab(); toast(created?'Compromiso creado desde minuta.':'Compromiso actualizado desde minuta.','t-ok'); }
   return c;
 }
 function createAgendaFromMinuteAgreement(minuteId,agreementId,showToast=false){
@@ -2852,7 +2854,7 @@ function createAgendaFromMinuteAgreement(minuteId,agreementId,showToast=false){
   Object.assign(a,{origin:'Minuta / Acta',type:'Seguimiento de acuerdo',priority:agreement.priority,status:'Pendiente',title:`Seguimiento acuerdo: ${agreement.title}`,owner:agreement.owner,dueDate:minute.nextMeetingDate||agreement.dueDate||todayISO(),duration:'10 min',linkedObjective:'',linkedInitiative:'',context:`Acuerdo pendiente derivado de ${minute.type}: ${minute.title}\n\nResumen: ${minute.summary||'—'}\n\nEvidencia esperada: ${agreement.context||'—'}`,decision:'Validar avance, evidencia de cumplimiento y decidir si se cierra, se reprograma o se escala.',notes:`Criterio de cierre: ${agreement.criteria||'Pendiente'}\nResponsable: ${agreement.owner||'—'}\nFecha compromiso original: ${agreement.dueDate||'s/f'}`,expectedOutput:'Acuerdo cerrado con evidencia o nuevo compromiso formal de seguimiento.'});
   if(created) plan.agenda.push(a);
   plan.manualAgenda=plan.agenda;
-  if(showToast){ saveState(); renderComite(); toast(created?'Punto agregado a la próxima agenda.':'Punto de próxima agenda actualizado.','t-ok'); }
+  if(showToast){ saveState(); renderActiveTab(); toast(created?'Punto agregado a la próxima agenda.':'Punto de próxima agenda actualizado.','t-ok'); }
   return a;
 }
 function syncMinuteAgreements(minute){
@@ -2876,6 +2878,21 @@ function renderMinuteCards(minutes){
       <div class="minute-agreements">${agreements.length?agreements.map(a=>`<div class="minute-agreement-card ${a.status==='Cumplido'?'done':''}"><div class="minute-agreement-title">${esc(a.title)}</div><div class="minute-agreement-meta">Responsable: ${esc(a.owner||'—')} · Fecha: ${esc(a.dueDate||'s/f')} (${daysText(a.dueDate)}) · ${esc(a.status)}</div><div class="committee-chip-row" style="margin-top:7px"><span class="committee-chip ${a.priority==='Crítica'?'red':a.priority==='Alta'?'amber':a.priority==='Baja'?'green':'blue'}">${esc(a.priority)}</span>${a.followUpNext==='Sí'?'<span class="committee-chip blue">Regresa a próxima reunión</span>':''}</div><div class="minute-actions" style="margin-top:8px"><button class="btn btn-secondary btn-xs" data-action="createCommitFromMinuteAgreement" data-minute-id="${esc(m.id)}" data-agreement-id="${esc(a.id)}">Generar compromiso</button>${a.followUpNext==='Sí'?`<button class="btn btn-teal btn-xs" data-action="createAgendaFromMinuteAgreement" data-minute-id="${esc(m.id)}" data-agreement-id="${esc(a.id)}">Agendar próxima reunión</button>`:''}</div></div>`).join(''):'<div class="empty-box" style="padding:12px">Sin acuerdos registrados.</div>'}</div>
     </div>
   </div>`;}).join('')}</div>`;
+}
+
+function renderMinutas(){
+  const plan=currentPlan(); if(!plan) return;
+  if(!Array.isArray(plan.minutes)) plan.minutes=[];
+  const minutes=asArray(plan.minutes).map(normalizeMinute).sort((a,b)=>new Date(b.date||0)-new Date(a.date||0));
+  const totalAgreements=minutes.reduce((acc,m)=>acc+asArray(m.agreements).length,0);
+  const pendingAgreements=minutes.reduce((acc,m)=>acc+asArray(m.agreements).filter(a=>a.status!=='Cumplido').length,0);
+  const nextMeetingTopics=minutes.reduce((acc,m)=>acc+asArray(m.agreements).filter(a=>a.followUpNext==='Sí'&&a.status!=='Cumplido').length,0);
+  const closedMinutes=minutes.filter(m=>m.status==='Cerrada').length;
+  const lastMinute=minutes[0];
+  $('viewMinutas').innerHTML=`<div class="section-hero"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px"><div><h2>Minutas / Actas</h2><p class="subtitle">Registro formal de Consejo o Comité Directivo: discusión, decisiones, acuerdos, responsables, fechas y temas que regresan a la siguiente reunión.</p></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-teal btn-sm" data-action="addMinute">+ Nueva Minuta / Acta</button></div></div></div>
+    <div class="committee-flow-note"><div class="committee-flow-icon">↳</div><div><div class="committee-flow-title">Flujo de gobernanza documental</div><div class="committee-flow-text"><strong>Reunión</strong> → <strong>Minuta / Acta</strong> → <strong>Acuerdos</strong> → <strong>Compromisos de seguimiento</strong> → <strong>Puntos de próxima reunión</strong>. La minuta documenta lo discutido y activa seguimiento formal sin saturar la pestaña de Comité.</div></div></div>
+    <div class="metric-strip"><div class="metric-card"><div class="metric-label">Minutas / Actas</div><div class="metric-value">${minutes.length}</div><div class="metric-note">Historial formal</div></div><div class="metric-card"><div class="metric-label">Cerradas</div><div class="metric-value">${closedMinutes}</div><div class="metric-note">Actas cerradas</div></div><div class="metric-card"><div class="metric-label">Acuerdos totales</div><div class="metric-value">${totalAgreements}</div><div class="metric-note">Generados en minutas</div></div><div class="metric-card"><div class="metric-label">Acuerdos pendientes</div><div class="metric-value" style="color:${pendingAgreements?'var(--amber)':'var(--em)'}">${pendingAgreements}</div><div class="metric-note">Por cerrar con evidencia</div></div><div class="metric-card"><div class="metric-label">Próxima reunión</div><div class="metric-value">${nextMeetingTopics}</div><div class="metric-note">Acuerdos que regresan</div></div><div class="metric-card"><div class="metric-label">Última minuta</div><div class="metric-value" style="font-size:18px">${esc(lastMinute?.date||'s/f')}</div><div class="metric-note">${esc(lastMinute?.type||'Sin registro')}</div></div></div>
+    ${renderMinuteCards(minutes)}`;
 }
 
 // ── COMITÉ ─────────────────────────────────────────────────────────
@@ -2919,11 +2936,9 @@ function renderComite(){
     <div class="followup-body"><div class="committee-box"><div class="committee-box-title">Criterio de cierre</div><div class="committee-box-text">${esc(c.criteria||'Sin criterio de cierre registrado.')}</div></div><div class="committee-box"><div class="committee-box-title">Acuerdo / evidencia requerida</div><div class="committee-box-text">${esc(c.context||'Sin evidencia requerida registrada.')}</div></div></div>
   </div>`;}).join('')}</div>`:'<div class="empty-box">Sin compromisos de seguimiento registrados.</div>';
 
-  $('viewComite').innerHTML=`<div class="section-hero"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px"><div><h2>Comité</h2><p class="subtitle">Convierte señales y temas en decisiones; formaliza decisiones en minutas; convierte acuerdos en compromisos y puntos para la próxima reunión.</p></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-primary btn-sm" data-action="addAgenda">+ Tema de Comité</button><button class="btn btn-teal btn-sm" data-action="addMinute">+ Minuta / Acta</button><button class="btn btn-secondary btn-sm" data-action="addCommit">+ Compromiso de Seguimiento</button></div></div></div>
-    <div class="committee-flow-note"><div class="committee-flow-icon">↳</div><div><div class="committee-flow-title">Flujo recomendado</div><div class="committee-flow-text"><strong>Alerta / tema</strong> → <strong>Comité decide</strong> → <strong>Minuta / Acta</strong> → <strong>Acuerdos</strong> → <strong>Compromisos de seguimiento</strong> → <strong>Próxima reunión</strong>. El tema es lo que se decide; la minuta formaliza lo discutido; el compromiso da seguimiento a lo acordado.</div></div></div>
-    <div class="metric-strip"><div class="metric-card"><div class="metric-label">Temas por decidir</div><div class="metric-value">${openTopics.length}</div><div class="metric-note">Pendientes de comité</div></div><div class="metric-card"><div class="metric-label">Minutas / Actas</div><div class="metric-value">${minutes.length}</div><div class="metric-note">Historial formal</div></div><div class="metric-card"><div class="metric-label">Acuerdos pendientes</div><div class="metric-value" style="color:${pendingMinuteAgreements?'var(--amber)':'var(--em)'}">${pendingMinuteAgreements}</div><div class="metric-note">Desde minutas</div></div><div class="metric-card"><div class="metric-label">Temas críticos</div><div class="metric-value" style="color:var(--rose)">${criticalAgenda}</div><div class="metric-note">Requieren decisión prioritaria</div></div><div class="metric-card"><div class="metric-label">Compromisos abiertos</div><div class="metric-value">${openCommits.length}</div><div class="metric-note">Seguimiento ejecutivo</div></div><div class="metric-card"><div class="metric-label">Próxima reunión</div><div class="metric-value">${nextMeetingTopics}</div><div class="metric-note">Puntos derivados de acta</div></div></div>
-    <div class="committee-section-title"><div><h2>Minutas / Actas</h2><p>Registro formal de Consejo o Comité Directivo: discusión, decisiones, acuerdos, responsables, fechas y temas que regresan a la siguiente reunión.</p></div><button class="btn btn-teal btn-sm" data-action="addMinute">+ Nueva Minuta / Acta</button></div>
-    ${renderMinuteCards(minutes)}
+  $('viewComite').innerHTML=`<div class="section-hero"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px"><div><h2>Comité</h2><p class="subtitle">Convierte señales y temas en decisiones ejecutivas; registra compromisos de seguimiento y deja las actas formales en la pestaña Minutas.</p></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-primary btn-sm" data-action="addAgenda">+ Tema de Comité</button><button class="btn btn-secondary btn-sm" data-action="addCommit">+ Compromiso de Seguimiento</button></div></div></div>
+    <div class="committee-flow-note"><div class="committee-flow-icon">↳</div><div><div class="committee-flow-title">Flujo recomendado</div><div class="committee-flow-text"><strong>Alerta / tema</strong> → <strong>Comité decide</strong> → <strong>Compromiso de seguimiento</strong> → <strong>Evidencia de cierre</strong>. Para documentar la discusión, decisiones y acuerdos formales, usa la pestaña <strong>Minutas</strong>.</div></div></div>
+    <div class="metric-strip"><div class="metric-card"><div class="metric-label">Temas por decidir</div><div class="metric-value">${openTopics.length}</div><div class="metric-note">Pendientes de comité</div></div><div class="metric-card"><div class="metric-label">Temas críticos</div><div class="metric-value" style="color:var(--rose)">${criticalAgenda}</div><div class="metric-note">Requieren decisión prioritaria</div></div><div class="metric-card"><div class="metric-label">Compromisos abiertos</div><div class="metric-value">${openCommits.length}</div><div class="metric-note">Seguimiento ejecutivo</div></div><div class="metric-card"><div class="metric-label">Compromisos vencidos</div><div class="metric-value" style="color:${overdueCommits?'var(--rose)':'var(--em)'}">${overdueCommits}</div><div class="metric-note">Requieren escalamiento</div></div><div class="metric-card"><div class="metric-label">Próxima reunión</div><div class="metric-value">${nextMeetingTopics}</div><div class="metric-note">Puntos derivados de acta</div></div></div>
     <div class="committee-section-title"><div><h2>Temas para decidir</h2><p>Problemas, alertas o puntos manuales que requieren criterio ejecutivo, autorización o definición de responsables.</p></div></div>
     <div class="committee-grid">${topicCards}</div>
     ${closedTopics.length?`<div class="committee-section-title"><div><h2>Temas cerrados</h2><p>Decisiones ya resueltas, aprobadas o rechazadas.</p></div></div><div class="committee-grid">${closedTopics.map(a=>`<div class="committee-topic-card p-low"><div class="committee-topic-head"><div><div class="committee-topic-title">${esc(a.title)}</div><div class="committee-topic-meta">${esc(a.origin||'Manual')} · ${esc(a.type)} · ${esc(a.status)}</div></div>${agendaViewButton(a)}</div><div class="committee-topic-body"><div class="committee-box"><div class="committee-box-title">Cierre / salida</div><div class="committee-box-text">${esc(a.notes||a.decision||'Sin cierre registrado.')}</div></div></div></div>`).join('')}</div>`:''}
@@ -3390,9 +3405,9 @@ function saveAgenda(){
   const existing=plan.agenda.find(a=>a.id===agendaEditId); const item=existing||{id:uid('agenda')};
   Object.assign(item,{origin:item.origin||'Manual',type:$('agendaType').value,priority:$('agendaPriority').value,status:$('agendaStatus').value,title,owner:$('agendaOwner').value.trim(),dueDate:$('agendaDueDate').value,duration:$('agendaDuration').value.trim(),linkedObjective:$('agendaLinkedObjective').value,linkedInitiative:$('agendaLinkedInitiative').value,context:$('agendaContext').value.trim(),decision:$('agendaDecision').value.trim(),notes:$('agendaNotes').value.trim(),expectedOutput:$('agendaNotes').value.trim()});
   if(!existing) plan.agenda.push(item); plan.manualAgenda=plan.agenda;
-  saveState(); closeModal('manualAgendaModal'); renderComite(); toast(existing?'Tema de Comité actualizado.':'Tema de Comité agregado.','t-ok');
+  saveState(); closeModal('manualAgendaModal'); renderActiveTab(); toast(existing?'Tema de Comité actualizado.':'Tema de Comité agregado.','t-ok');
 }
-function deleteAgenda(id){ if(!confirm('¿Eliminar punto?')) return; const plan=currentPlan(); plan.agenda=plan.agenda.filter(a=>a.id!==id); plan.manualAgenda=plan.agenda; saveState(); renderComite(); }
+function deleteAgenda(id){ if(!confirm('¿Eliminar punto?')) return; const plan=currentPlan(); plan.agenda=plan.agenda.filter(a=>a.id!==id); plan.manualAgenda=plan.agenda; saveState(); renderActiveTab(); }
 
 // ── EXPORT / IMPORT ──────────────────────────────────────────────────
 function exportJSON(){
