@@ -300,6 +300,18 @@ tbody tr:hover td{background:#fafbfc}
 .kpi-sparkline{display:flex;align-items:flex-end;gap:2px;height:28px;margin-top:4px}
 .kpi-spark-bar{width:6px;border-radius:2px 2px 0 0;transition:height .3s}
 
+.kpi-objective-cell{min-width:280px;vertical-align:top;background:var(--surface)}
+.kpi-objective-title{font-weight:800;font-size:13px;line-height:1.35;color:var(--text)}
+.kpi-objective-igee{display:inline-flex;align-items:center;gap:6px;margin-top:8px;padding:5px 9px;border-radius:var(--r-full);font-size:11px;font-weight:800;background:var(--em-s);color:var(--em)}
+.kpi-objective-meta{font-size:11px;color:var(--muted);margin-top:6px;line-height:1.35}
+.kpi-metric-stack{display:flex;gap:6px;flex-wrap:wrap;align-items:stretch;min-width:260px}
+.kpi-metric-box{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:6px 8px;min-width:76px}
+.kpi-metric-label{display:block;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:2px}
+.kpi-metric-value{font-size:12px;font-weight:800;color:var(--text);white-space:nowrap}
+.kpi-metric-current{border-color:var(--blue-b);background:var(--blue-s)}
+.kpi-metric-current .kpi-metric-value{color:var(--blue)}
+.kpi-metric-note{font-size:10px;color:var(--muted);margin-top:4px;line-height:1.35}
+
 /* ── OPERATIVO ── */
 .op-obj-cell{border-left:3px solid var(--em);padding-left:8px}
 .op-init-cell{border-left:3px solid var(--blue);padding-left:8px}
@@ -778,6 +790,39 @@ const txt = (v,d='') => (v===null||v===undefined)?d:String(v);
 const esc = v => txt(v).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
 const fmtMoney = v => num(v).toLocaleString('es-MX',{style:'currency',currency:'MXN',maximumFractionDigits:0});
 const fmtNum = (v,d=1) => num(v).toLocaleString('es-MX',{maximumFractionDigits:d});
+
+function isMoneyUnit(unit){
+  unit=txt(unit).toLowerCase();
+  return unit.includes('$')||unit.includes('mxn')||unit.includes('peso');
+}
+function isPercentUnit(unit){ return txt(unit).trim().includes('%'); }
+function fmtMetricValue(value, unit=''){
+  const n=num(value);
+  const abs=Math.abs(n);
+  if(isMoneyUnit(unit)){
+    if(abs>=1000000000) return '$'+(n/1000000000).toLocaleString('es-MX',{maximumFractionDigits:1})+'B';
+    if(abs>=1000000) return '$'+(n/1000000).toLocaleString('es-MX',{maximumFractionDigits:1})+'M';
+    if(abs>=1000) return '$'+(n/1000).toLocaleString('es-MX',{maximumFractionDigits:1})+' mil';
+    return fmtMoney(n);
+  }
+  if(isPercentUnit(unit)) return fmtNum(n,1)+'%';
+  const compact=abs>=1000000?n.toLocaleString('es-MX',{notation:'compact',maximumFractionDigits:1}):abs>=1000?n.toLocaleString('es-MX',{maximumFractionDigits:0}):fmtNum(n,1);
+  return unit?`${compact} ${unit}`:compact;
+}
+function fmtMetricFull(value, unit=''){
+  const n=num(value);
+  if(isMoneyUnit(unit)) return fmtMoney(n);
+  if(isPercentUnit(unit)) return fmtNum(n,2)+'%';
+  return `${fmtNum(n,2)}${unit?' '+unit:''}`;
+}
+function kpiMeasurementHtml(k){
+  const unit=k.unit||'';
+  return `<div class="kpi-metric-stack">
+    <div class="kpi-metric-box" title="${esc(fmtMetricFull(k.initial,unit))}"><span class="kpi-metric-label">Inicial</span><span class="kpi-metric-value">${esc(fmtMetricValue(k.initial,unit))}</span></div>
+    <div class="kpi-metric-box kpi-metric-current" title="${esc(fmtMetricFull(k.current,unit))}"><span class="kpi-metric-label">Actual</span><span class="kpi-metric-value">${esc(fmtMetricValue(k.current,unit))}</span></div>
+    <div class="kpi-metric-box" title="${esc(fmtMetricFull(k.target,unit))}"><span class="kpi-metric-label">Meta</span><span class="kpi-metric-value">${esc(fmtMetricValue(k.target,unit))}</span></div>
+  </div><div class="kpi-metric-note">Lectura completa: ${esc(fmtMetricFull(k.initial,unit))} → ${esc(fmtMetricFull(k.current,unit))} / ${esc(fmtMetricFull(k.target,unit))}</div>`;
+}
 const first = (...vals) => vals.find(v=>v!==undefined&&v!==null&&v!=='')??'';
 const asArray = v => { if(Array.isArray(v)) return v; if(v===null||v===undefined||v==='') return []; if(typeof v==='string') return v.split(',').map(s=>s.trim()).filter(Boolean); return [v]; };
 const csvArr = v => asArray(v);
@@ -1338,24 +1383,29 @@ function initCardHtml(obj,init,redundant){
 // ── KPI TABLERO (con captura rápida, semáforo, sparkline) ────────────
 function renderKPI(){
   const plan=currentPlan();
-  const rows=plan.objectives.flatMap(obj=>obj.indicators.map(k=>({obj,k}))).map(({obj,k})=>{
-    const score=Math.round(calcIndicatorScore(k));
-    const st=kpiState(score);
-    const conf=kpiConfidence(k);
-    const spark=sparklineHtml(k.history||[],k.current,k.target,k.action);
-    return `<tr><td><strong>${esc(obj.code||'')} ${esc(obj.name)}</strong></td>
-      <td><div>${esc(k.name)}<span class="kpi-confidence kpi-conf-${conf.color}" title="${esc(conf.label)}">${conf.color==='stale'?'⏸':conf.color==='warn'?'⚠':'✓'} ${esc(conf.label)}</span></div><div class="obj-sub">${esc(k.owner||'Sin dueño dato')} · ${esc(k.frequency||'Mensual')}</div>${spark}</td>
-      <td>${esc(k.action)}</td>
-      <td class="mono">${fmtNum(k.initial)} → <strong>${fmtNum(k.current)}</strong> / ${fmtNum(k.target)} ${esc(k.unit)}</td>
-      <td><div class="kpi-gauge" style="--score:${clamp(score)}"><div class="kpi-needle"></div><div class="kpi-score-text">${score}%</div></div></td>
-      <td><span class="kpi-state-pill ${st.cls}">${st.label}</span></td>
-      <td>${num(k.weight,100)}%</td>
-      <td>${esc(obj.end||'s/f')}<div class="obj-sub">${daysText(obj.end)}</div></td>
-      <td><button class="btn btn-teal btn-xs" data-action="quickKpi" data-obj-id="${esc(obj.id)}" data-kpi-id="${esc(k.id)}">↑ Actualizar</button></td></tr>`;
+  const rows=plan.objectives.map(obj=>{
+    const kpis=asArray(obj.indicators||obj.kpis);
+    const igee=Math.round(calcObjectiveScore(obj));
+    if(!kpis.length){
+      return `<tr><td class="kpi-objective-cell"><div class="kpi-objective-title">${esc(obj.code?obj.code+' · ':'')}${esc(obj.name)}</div><div class="kpi-objective-igee">IGEE ${igee}%</div><div class="kpi-objective-meta">${esc(obj.leader||'Sin responsable')} · ${esc(obj.type||'Sin tipo')}</div></td><td colspan="7"><div class="empty-box" style="padding:12px">Este objetivo no tiene KPIs registrados.</div></td></tr>`;
+    }
+    return kpis.map((k,idx)=>{
+      const score=Math.round(calcIndicatorScore(k));
+      const conf=kpiConfidence(k);
+      const spark=sparklineHtml(k.history||[],k.current,k.target,k.action);
+      const objectiveCell=idx===0?`<td rowspan="${kpis.length}" class="kpi-objective-cell"><div class="kpi-objective-title">${esc(obj.code?obj.code+' · ':'')}${esc(obj.name)}</div><div class="kpi-objective-igee">IGEE ${igee}%</div><div class="kpi-objective-meta">${esc(obj.leader||'Sin responsable')} · ${esc(obj.type||'Sin tipo')}</div><div class="kpi-objective-meta">${kpis.length} KPI${kpis.length===1?'':'s'} agrupado${kpis.length===1?'':'s'}</div></td>`:'';
+      return `<tr>${objectiveCell}
+        <td><div><strong>${esc(k.name)}</strong><span class="kpi-confidence kpi-conf-${conf.color}" title="${esc(conf.label)}">${conf.color==='stale'?'⏸':conf.color==='warn'?'⚠':'✓'} ${esc(conf.label)}</span></div><div class="obj-sub">${esc(k.owner||'Sin dueño dato')} · ${esc(k.frequency||'Mensual')}</div>${spark}</td>
+        <td>${esc(k.action)}</td>
+        <td class="mono">${kpiMeasurementHtml(k)}</td>
+        <td><div class="kpi-gauge" style="--score:${clamp(score)}"><div class="kpi-needle"></div><div class="kpi-score-text">${score}%</div></div></td>
+        <td>${num(k.weight,100)}%</td>
+        <td>${esc(obj.end||'s/f')}<div class="obj-sub">${daysText(obj.end)}</div></td>
+        <td><button class="btn btn-teal btn-xs" data-action="quickKpi" data-obj-id="${esc(obj.id)}" data-kpi-id="${esc(k.id)}">↑ Actualizar</button></td></tr>`;
+    }).join('');
   }).join('');
-  $('viewKPI').innerHTML=`<div class="section-hero"><h2>Tablero de KPIs</h2><p>Incluye semáforo de confianza del dato (gris = sin actualizar según frecuencia), tendencia sparkline y botón de actualización rápida desde este tablero.</p></div><div class="card table-wrap"><table><thead><tr><th>Objetivo</th><th>KPI</th><th>Sentido</th><th>Inicial → Actual / Meta</th><th>Avance</th><th>Estado</th><th>Peso</th><th>Compromiso</th><th>Actualizar</th></tr></thead><tbody>${rows||`<tr><td colspan="9"><div class="empty-box">No hay KPIs registrados.</div></td></tr>`}</tbody></table></div>`;
+  $('viewKPI').innerHTML=`<div class="section-hero"><h2>Tablero de KPIs</h2><p>Objetivos agrupados: cada objetivo aparece una sola vez con su IGEE debajo. La medición se muestra como Inicial / Actual / Meta en formato compacto para facilitar lectura con cantidades grandes.</p></div><div class="card table-wrap"><table><thead><tr><th>Objetivo</th><th>KPI</th><th>Sentido</th><th>Medición</th><th>Avance</th><th>Peso</th><th>Compromiso</th><th>Actualizar</th></tr></thead><tbody>${rows||`<tr><td colspan="8"><div class="empty-box">No hay KPIs registrados.</div></td></tr>`}</tbody></table></div>`;
 }
-
 // ── QUICK KPI MODAL ──────────────────────────────────────────────────
 function openQuickKpi(objId, kpiId){
   const obj=findObjective(objId); if(!obj) return;
