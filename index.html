@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>Ximpler EDGE v5.3 · Copiloto Estratégico</title>
+<title>Ximpler EDGE v5.4 · Copiloto Estratégico</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -1084,7 +1084,7 @@ tbody tr:hover td{background:#fafbfc}
 'use strict';
 
 // ── CONSTANTES ──────────────────────────────────────────────────────
-const STORAGE_KEY = 'ximpler_edge_v5_3';
+const STORAGE_KEY = 'ximpler_edge_v5_4';
 const KPI_STALE_DAYS = { 'Diaria':2, 'Semanal':9, 'Mensual':35, 'Trimestral':100 };
 
 let state = { plannings:[], activePlanningId:null };
@@ -3514,7 +3514,7 @@ function downloadFile(filename,content,type){ const blob=new Blob([content],{typ
 // evitar objetivos, iniciativas, KPIs y acciones dispersas o sin evidencia.
 // ══════════════════════════════════════════════════════════════════════
 const V5_LEGACY_STORAGE_KEY = 'ximpler_edge_v4';
-const V5_VERSION = 'v5.3';
+const V5_VERSION = 'v5.4';
 
 function v5Tone(score){ score=num(score); return score>=80?'green':score>=55?'yellow':'red'; }
 function v5Pill(label,value,tone='gray',title=''){
@@ -3736,7 +3736,7 @@ function v52ParseStateRaw(raw){
 function v52HasPlans(candidate){ return !!(candidate && Array.isArray(candidate.plannings) && candidate.plannings.length); }
 loadState = function(){
   try{
-    const keys=[STORAGE_KEY,'ximpler_edge_v5_3','ximpler_edge_v5_2','ximpler_edge_v5_1','ximpler_edge_v5','ximpler_edge_v4'];
+    const keys=[STORAGE_KEY,'ximpler_edge_v5_4','ximpler_edge_v5_3','ximpler_edge_v5_2','ximpler_edge_v5_1','ximpler_edge_v5','ximpler_edge_v4'];
     let chosen=null;
     for(const key of keys){
       const candidate=v52ParseStateRaw(localStorage.getItem(key));
@@ -3825,7 +3825,7 @@ function v53CompactForStorage(payload){
   }));
 }
 function v53RemoveLegacyCopies(){
-  ['ximpler_edge_v5_2','ximpler_edge_v5_1','ximpler_edge_v5','ximpler_edge_v4'].forEach(k=>{ try{ if(k!==STORAGE_KEY) localStorage.removeItem(k); }catch(e){} });
+  ['ximpler_edge_v5_3','ximpler_edge_v5_2','ximpler_edge_v5_1','ximpler_edge_v5','ximpler_edge_v4'].forEach(k=>{ try{ if(k!==STORAGE_KEY) localStorage.removeItem(k); }catch(e){} });
 }
 saveState = function(){
   state.updatedAt=new Date().toISOString();
@@ -3855,7 +3855,7 @@ function v5InjectAfter(id, html){
   const el=$(id); if(el && !document.getElementById(html.match(/id="([^"]+)"/)?.[1]||'__missing')) el.closest('.field')?.insertAdjacentHTML('afterend', html);
 }
 function applyV5DOMUpgrades(){
-  document.title='Ximpler EDGE v5.3 · Copiloto de Ejecución Estratégica';
+  document.title='Ximpler EDGE v5.4 · Copiloto de Ejecución Estratégica';
   const subtitle=document.querySelector('#planningView .subtitle'); if(subtitle) subtitle.textContent='Copiloto estratégico v5 · Trazabilidad ejecutiva: resultado, ejecución, evidencia, gobernanza y comité con reglas duras.';
   v5InjectAfter('oBudget', `<div class="field"><label>Peso estratégico %</label><input id="oStrategicWeight" class="input" type="number" min="0" max="100" step="1" value="100"><div class="hint">Define cuánto pesa este objetivo en la planeación. Ya no todos los objetivos valen igual.</div></div>`);
   v5InjectAfter('oExpectedResult', `<div class="field"><label>Hipótesis estratégica</label><input id="oHypothesis" class="input" placeholder="Si hacemos X, esperamos mover Y porque..."></div>`);
@@ -4077,7 +4077,7 @@ renderObjetivos = function(){
       <td><div class="obj-cell"><button class="obj-toggle" data-action="toggleObj" data-obj-id="${esc(obj.id)}">${expanded?'▾':'▸'}</button><div><div class="obj-name" data-action="viewObj" data-obj-id="${esc(obj.id)}">${esc(obj.code?obj.code+' · ':'')}${esc(obj.name)}</div><div class="obj-sub">${esc(obj.leader||'Sin líder')} · Peso ${num(obj.strategicWeight,100)}% · ${esc(objectiveTypeLabel(obj.type))} · ${esc(obj.level)}</div><div class="v5-score-stack">${v5Pill('Resultado',bd.resultado+'%',v5Tone(bd.resultado))}${v5Pill('Ejecución',bd.ejecucion+'%',v5Tone(bd.ejecucion))}${v5Pill('Evidencia',bd.evidencia+'%',v5Tone(bd.evidencia))}${v5Pill('Trazabilidad',bd.trazabilidad+'%',v5Tone(bd.trazabilidad),v5TraceabilityNote(obj))}${bd.sobre?v5Pill('Sobre','+'+bd.sobre+'%','blue'):''}</div>${v5BlockingSummary(obj)}${shouldAutopsia?`<button class="btn btn-sm" style="background:var(--amber-s);color:var(--amber);border:1px solid var(--amber-b);margin-top:4px" data-action="autopsia" data-obj-id="${esc(obj.id)}">⚠ Ver Autopsia</button>`:''}</div></div></td>
       <td>${statusBadge(obj.status)}</td><td>${objMetricRing(score,'IGEE v5')}</td><td>${objMetricRing(impact,'Impacto')}</td><td>${objMetricRing(align,'Alineación')}</td><td>${objMetricRing(risk,'Riesgo',{risk:true})}</td><td>${objMetricRing(tom,'TOM')}</td><td>${esc(obj.end||'s/f')}<div class="obj-sub">${daysText(obj.end)}</div></td><td>${obj.indicators.length} KPIs<br><span class="obj-sub">${inits.length} init · ${inits.reduce((a,i)=>a+i.actions.length,0)} acc</span></td><td><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn btn-secondary btn-xs" data-action="viewObj" data-obj-id="${esc(obj.id)}">Ver</button><button class="btn btn-secondary btn-xs" data-action="editObj" data-obj-id="${esc(obj.id)}">Editar</button><button class="btn btn-danger btn-xs" data-action="deleteObj" data-obj-id="${esc(obj.id)}">Eliminar</button></div></td></tr><tr class="${expanded?'':'hidden'}"><td colspan="10" style="padding:0">${initHtml}</td></tr>`;
   }).join('');
-  $('viewObjetivos').innerHTML=`<div class="v5-rule-card"><div class="v5-rule-title">Reglas duras v5</div><div class="v5-rule-text"><strong>Objetivo sin KPI = intención.</strong> Iniciativa sin KPI/responsable/fecha = borrador. Acción terminada sin evidencia = cierre débil. El IGEE v5 separa Resultado, Ejecución, Evidencia, Trazabilidad y Gobernanza.</div></div><div class="section-hero"><h2>Objetivos estratégicos · v5</h2><p>Vista ejecutiva con peso estratégico, resultado, ejecución, evidencia y alineación. La trazabilidad ejecutiva queda dentro del desglose del IGEE v5; la alineación visible corresponde al IAE.</p></div><div class="card table-wrap"><table><thead><tr><th>Objetivo</th><th>Estatus</th><th>IGEE</th><th>Impacto</th><th>Alineación</th><th>Riesgo</th><th>TOM</th><th>Compromiso</th><th>Alcance</th><th>Acciones</th></tr></thead><tbody>${rows||`<tr><td colspan="10"><div class="empty-box">Sin objetivos. Usa "+ Nuevo Objetivo".</div></td></tr>`}</tbody></table></div>`;
+  $('viewObjetivos').innerHTML=`<div class="section-hero"><h2>Objetivos estratégicos · v5</h2><p>Vista ejecutiva con peso estratégico, resultado, ejecución, evidencia y alineación. La trazabilidad ejecutiva queda dentro del desglose del IGEE v5; la alineación visible corresponde al IAE.</p></div><div class="card table-wrap"><table><thead><tr><th>Objetivo</th><th>Estatus</th><th>IGEE</th><th>Impacto</th><th>Alineación</th><th>Riesgo</th><th>TOM</th><th>Compromiso</th><th>Alcance</th><th>Acciones</th></tr></thead><tbody>${rows||`<tr><td colspan="10"><div class="empty-box">Sin objetivos. Usa "+ Nuevo Objetivo".</div></td></tr>`}</tbody></table></div>`;
 };
 initCardHtml = function(obj,init,redundant){
   const progress=Math.round(calcActionsProgress(init.actions)); const overdue=asArray(init.actions).some(a=>isOverdue(a.dueDate,a.status)); const disconnected=!init.impactKpi; const maturity=v5InitiativeMaturity(init); const kpiBadge=init.impactKpi?`<span class="redund-badge">KPI: ${esc(init.impactKpi)}</span>`:'<span class="disc-badge">Sin KPI impactado</span>';
@@ -4137,7 +4137,7 @@ renderOperativoRowsOnly = function(){
 };
 renderOperativo = function(){
   const {rows,query}=buildOperativoRows();
-  $('viewOperativo').innerHTML=`<div class="v5-rule-card"><div class="v5-rule-title">Avance operativo ponderado</div><div class="v5-rule-text"><strong>Avance de iniciativa = Σ peso de acciones terminadas / Σ peso total de acciones.</strong> Por eso una acción crítica con peso 5 puede mover más el avance que tres acciones menores con peso 1. El tablero ahora muestra el peso cerrado, el peso total y el aporte de cada acción.</div></div><div class="section-hero"><h2>Tablero Operativo</h2><p>Vista de ejecución con explicación del peso de cada acción y su efecto en el avance ponderado de la iniciativa.</p></div><div class="op-search-wrap"><input id="operativoSearch" class="op-search-input" type="search" placeholder="Buscar objetivo, iniciativa, acción o responsable" value="${esc(operativoSearchTerm)}"></div><div class="card table-wrap"><table><thead><tr><th>Objetivo</th><th>Iniciativa</th><th>Acción</th><th>Responsable</th><th>Estatus</th><th>Compromiso</th><th>Peso / aporte</th><th>Presupuesto</th><th>Gastado</th></tr></thead><tbody id="operativoRows">${rows.join('')||`<tr><td colspan="9"><div class="empty-box">${query?'No hay coincidencias para la búsqueda.':'No hay acciones.'}</div></td></tr>`}</tbody></table></div>`;
+  $('viewOperativo').innerHTML=`<div class="section-hero"><h2>Tablero Operativo</h2><p>Vista de ejecución con explicación del peso de cada acción y su efecto en el avance ponderado de la iniciativa.</p></div><div class="op-search-wrap"><input id="operativoSearch" class="op-search-input" type="search" placeholder="Buscar objetivo, iniciativa, acción o responsable" value="${esc(operativoSearchTerm)}"></div><div class="card table-wrap"><table><thead><tr><th>Objetivo</th><th>Iniciativa</th><th>Acción</th><th>Responsable</th><th>Estatus</th><th>Compromiso</th><th>Peso / aporte</th><th>Presupuesto</th><th>Gastado</th></tr></thead><tbody id="operativoRows">${rows.join('')||`<tr><td colspan="9"><div class="empty-box">${query?'No hay coincidencias para la búsqueda.':'No hay acciones.'}</div></td></tr>`}</tbody></table></div>`;
 };
 viewAction = function(objId,initId,actId){
   const a=findAction(objId,initId,actId); if(!a) return; actionCtx={objectiveId:objId,initiativeId:initId,actionId:actId};
@@ -4153,16 +4153,102 @@ exportJSON = function(){
 const _exportXLSV4 = exportXLS;
 exportXLS = function(){
   const plan=currentPlan(); if(!plan) return;
+  const objs=asArray(plan.objectives);
+  const inits=objs.flatMap(o=>asArray(o.initiatives).map(i=>({obj:o,init:i})));
+  const actions=inits.flatMap(x=>asArray(x.init.actions).map(a=>({obj:x.obj,init:x.init,act:a})));
+  const alerts=generateAlerts?generateAlerts():[];
+  const score=Math.round(calcPlanScore(plan));
+  const result=objs.length?Math.round(objs.reduce((a,o)=>a+v5ObjectiveResultScore(o),0)/objs.length):0;
+  const exec=objs.length?Math.round(objs.reduce((a,o)=>a+v5ObjectiveExecutionScore(o),0)/objs.length):0;
+  const evidence=objs.length?Math.round(objs.reduce((a,o)=>a+v5ObjectiveEvidenceScore(o),0)/objs.length):0;
+  const openCommits=asArray(plan.commitments).filter(c=>txt(c.status)!=='Cumplido').length;
+  const overdueActions=actions.filter(x=>isOverdue(x.act.dueDate,x.act.status)).length;
+  const draftInits=inits.filter(x=>!v5InitiativeIsExecutable(x.init)).length;
   const sections=[];
-  sections.push(['Objetivos v5',['Código','Objetivo','Peso estratégico','Líder','Estatus','IGEE v5','Resultado KPI','Ejecución ponderada','Evidencia','Trazabilidad','Gobernanza','Sobrecumplimiento','Riesgo','Fecha','Hipótesis','Criterio éxito','Costo no lograrlo','Umbral intervención'],plan.objectives.map(o=>{const bd=v5ObjectiveScoreBreakdown(o);return[o.code,o.name,o.strategicWeight,o.leader,o.status,bd.igee+'%',bd.resultado+'%',bd.ejecucion+'%',bd.evidencia+'%',bd.trazabilidad+'%',bd.gobernanza+'%',bd.sobre+'%',Math.round(calcRiskScore(o))+'%',o.end,o.hypothesis,o.successCriteria,o.costOfInaction,o.interventionThreshold];})]);
-  sections.push(['KPIs v5',['Objetivo','KPI','Tipo','Acción','Inicial','Actual','Meta','Unidad','Resultado','Sobrecumplimiento','Peso','Fuente','Fórmula','Valida','Confianza','Última actualización'],plan.objectives.flatMap(o=>o.indicators.map(k=>{const conf=kpiConfidence(k);return[o.name,k.name,k.kpiType,k.action,k.initial,k.current,k.target,k.unit,Math.round(calcIndicatorScore(k))+'%',v5KpiOverPerformance(k)+'%',k.weight,k.source,k.formula,k.validator,conf.label,k.lastUpdate||'Sin fecha'];}))]);
-  sections.push(['Iniciativas v5',['Objetivo','Iniciativa','Madurez','Ejecutable','Responsable','Fecha','Estatus','Avance ponderado','KPI impactado','Problema','Causa raíz','Hipótesis','Criterio éxito','Evidencia requerida','Beneficio esperado','Beneficio real','Presupuesto','Gastado'],plan.objectives.flatMap(o=>o.initiatives.map(i=>[o.name,i.name,v5InitiativeMaturity(i).level,v5InitiativeIsExecutable(i)?'Sí':'No',i.owner,i.dueDate,i.status,calcActionsProgress(i.actions)+'%',i.impactKpi,i.problem,i.rootCause,i.hypothesis,i.successCriteria,i.evidenceRequired,i.benefitExpected,i.benefitReal,i.budget,i.spent]))]);
-  sections.push(['Acciones v5',['Objetivo','Iniciativa','Acción','Responsable','Estatus','Peso','Criticidad','Compromiso','Vencida','Criterio cierre','Evidencia requerida','Evidencia cierre','Bloqueador','Dependencia','Calidad cierre'],plan.objectives.flatMap(o=>o.initiatives.flatMap(i=>i.actions.map(a=>[o.name,i.name,a.title,a.responsible,a.status,a.weight,a.criticality,a.dueDate,isOverdue(a.dueDate,a.status)?'Sí':'No',a.closeCriteria,a.evidenceRequired,a.evidence,a.blocker,a.dependency,v5ActionCloseQuality(a)])))]);
-  sections.push(['Temas Comité',['Título','Origen','Tipo','Prioridad','Estatus','Responsable','Fecha','Duración','Contexto','Decisión'],(plan.agenda||[]).map(a=>[a.title,a.origin||'Manual',a.type,a.priority,a.status,a.owner,a.dueDate,a.duration,a.context,a.decision])]);
-  sections.push(['Compromisos Seguimiento',['Título','Responsable','Área','Prioridad','Estatus','Compromiso','Criterio de cierre','Contexto'],(plan.commitments||[]).map(c=>[c.title,c.owner,c.area,c.priority,c.status,c.dueDate,c.criteria,c.context])]);
-  sections.push(['Minutas Actas',['Título','Tipo','Fecha','Estatus','Preside','Registra','Asistentes','Próxima reunión','Resumen','Decisiones','Acuerdos pendientes'],(plan.minutes||[]).map(m=>[m.title,m.type,m.date,m.status,m.chair,m.secretary,arrCsv(m.attendees),m.nextMeetingDate,m.summary,m.decisions,asArray(m.agreements).filter(a=>a.status!=='Cumplido').length])]);
-  const html=`<html><head><meta charset="UTF-8"></head><body>${sections.map(([title,headers,rows])=>`<h2>${esc(title)}</h2><table border="1"><thead><tr>${headers.map(h=>`<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${r.map(c=>`<td>${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table><br>`).join('')}</body></html>`;
-  downloadFile(`reporte_v5_${txt(plan.name).replace(/[^a-z0-9]+/gi,'_')}_${todayISO()}.xls`,html,'application/vnd.ms-excel;charset=utf-8');
+
+  sections.push(['Resumen Ejecutivo',['Variable','Valor','Lectura / Fuente'],[
+    ['Planeación',plan.name,'Planeación activa exportada'],
+    ['Nivel',plan.planningLevel||'','Jerarquía de planeación'],
+    ['Alcance',plan.scope||'','Entidad / plaza / unidad / área'],
+    ['Responsable',plan.owner||'','Dueño de la planeación'],
+    ['Estatus',plan.status||'','Estatus general'],
+    ['Periodo',`${plan.start||'s/f'} → ${plan.end||'s/f'}`,'Inicio y fecha compromiso'],
+    ['Comité',plan.committee||'','Órgano de seguimiento'],
+    ['IGEE v5',score+'%','Resultado + ejecución + evidencia + trazabilidad + gobernanza'],
+    ['Resultado KPI',result+'%','Promedio de cumplimiento de indicadores'],
+    ['Ejecución ponderada',exec+'%','Avance por peso de acciones terminadas'],
+    ['Evidencia',evidence+'%','Confianza del dato y cierre con evidencia'],
+    ['Objetivos',objs.length,'Objetivos del plan activo'],
+    ['Iniciativas',inits.length,`${draftInits} en borrador / no ejecutables`],
+    ['Acciones',actions.length,`${overdueActions} vencidas`],
+    ['Alertas',alerts.length,'Alertas generadas por reglas del sistema'],
+    ['Compromisos abiertos',openCommits,'Compromisos de Comité no cumplidos']
+  ]]);
+
+  sections.push(['Planeaciones',['ID','Nombre','Nivel','Alcance','Planeación padre','Responsable','Estatus','Inicio','Compromiso','Cadencia','Comité','Visión','Descripción','Objetivos','Actualizada'],state.plannings.map(p=>[p.id,p.name,p.planningLevel||'',p.scope||'',planName(p.parentPlanningId)||'',p.owner||'',p.status||'',p.start||'',p.end||'',p.cadence||'',p.committee||'',p.vision||'',p.desc||'',asArray(p.objectives).length,p.updatedAt||''])]);
+
+  sections.push(['Objetivos',['ID','Código','Objetivo','Planeación','Planeación padre','Objetivo padre','Tipo','Nivel','Tema','Peso estratégico','Creador','Líder','Invitados / involucrados','Áreas','Etiquetas','Proyectos ligados','Estatus','Inicio','Compromiso','Frecuencia actualización','Última actualización','Presupuesto','IGEE v5','Resultado KPI','Ejecución ponderada','Evidencia','Trazabilidad','Gobernanza','Sobrecumplimiento','Impacto','Alineación IAE','Riesgo','TOM','Hipótesis','Resultado esperado','Criterio éxito','Costo no lograrlo','Umbral intervención','Estado actual','Estado objetivo','Brecha','Riesgo declarado','Riesgo inferido','Acción correctiva'],objs.map(o=>{const bd=v5ObjectiveScoreBreakdown(o);const ass=alignmentAssessment(o);return[o.id,o.code,o.name,plan.name,planName(o.parentPlanningId)||'',objectiveDisplayName(o.parentId)||'',objectiveTypeLabel(o.type),o.level,o.theme,num(o.strategicWeight,100),o.creator,o.leader,arrCsv(o.involved),arrCsv(o.areas),arrCsv(o.tags),arrCsv(o.projects),o.status,o.start,o.end,o.updateFrequency,o.lastUpdate,o.budget,bd.igee+'%',bd.resultado+'%',bd.ejecucion+'%',bd.evidencia+'%',bd.trazabilidad+'%',bd.gobernanza+'%',bd.sobre+'%',Math.round(calcImpactScore(o))+'%',ass.score+'%',Math.round(calcRiskScore(o))+'%',Math.round(tomScore(o))+'%',o.hypothesis,o.expectedResult,o.successCriteria,o.costOfInaction,o.interventionThreshold,o.currentState,o.targetState,o.gap,o.gapRisk,inferGapRisk(o),o.correctionAction];})]);
+
+  sections.push(['KPIs',['Objetivo','Código objetivo','KPI','Tipo KPI','Acción / sentido','Unidad','Dueño dato','Valida dato','Fuente del dato','Fórmula','Valor inicial','Valor actual','Meta','Peso KPI','Resultado','Sobrecumplimiento','Confianza','Frecuencia','Última actualización','Tolerancia mantener','Historial registros'],objs.flatMap(o=>asArray(o.indicators).map(k=>{const conf=kpiConfidence(k);return[o.name,o.code,k.name,k.kpiType,k.action,k.unit,k.owner,k.validator,k.source,k.formula,k.initial,k.current,k.target,k.weight,Math.round(calcIndicatorScore(k))+'%',v5KpiOverPerformance(k)+'%',conf.label,k.frequency,k.lastUpdate||'Sin fecha',k.tolerance,asArray(k.history).map(h=>`${h.date||''}: ${h.value??''} ${h.note||''}`).join(' | ')];}))]);
+
+  sections.push(['Tablero Operativo',['Objetivo','IGEE v5','Ejecución objetivo','Iniciativa','Madurez iniciativa','Avance iniciativa','Cálculo avance iniciativa','Acción','Detalle acción','Responsable','Estatus','Compromiso','Vencida','Peso acción','Aporte al avance','Criticidad','Criterio cierre','Evidencia requerida','Evidencia cierre','Calidad cierre','Bloqueador','Dependencia','Presupuesto iniciativa','Gastado iniciativa'],actions.map(x=>{const d=v5ActionsProgressDetail(x.init.actions);return[x.obj.name,Math.round(calcObjectiveScore(x.obj))+'%',v5ObjectiveExecutionScore(x.obj)+'%',x.init.name,v5InitiativeMaturity(x.init).level,calcActionsProgress(x.init.actions)+'%',`${fmtNum(d.doneWeight,1)} / ${fmtNum(d.totalWeight,1)} pts · ${d.doneActions}/${d.totalActions} acciones`,x.act.title,x.act.detail,x.act.responsible||x.init.owner,x.act.status,x.act.dueDate,isOverdue(x.act.dueDate,x.act.status)?'Sí':'No',v5ActionWeight(x.act),v5ActionContribution(x.act,x.init.actions)+'%',x.act.criticality,x.act.closeCriteria,x.act.evidenceRequired,x.act.evidence,v5ActionCloseQuality(x.act),x.act.blocker,x.act.dependency,x.init.budget,x.init.spent];})]);
+
+  sections.push(['Iniciativas',['ID','Objetivo','Código objetivo','Iniciativa','Madurez','Ejecutable','Responsable','Fecha compromiso','Estatus','Prioridad','Avance ponderado','Cálculo avance','KPI impactado','Impacto esperado','Impacto real','Eficiencia impacto','Redundante','Compite','Problema que resuelve','Causa raíz','Hipótesis impacto','Criterio éxito','Evidencia requerida','Beneficio esperado','Beneficio real','Dueño beneficio','Fecha beneficio','Presupuesto','Gastado','% uso presupuesto','Detalle / evidencia'],inits.map(x=>{const d=v5ActionsProgressDetail(x.init.actions);const use=num(x.init.budget)>0?Math.round((num(x.init.spent)/num(x.init.budget))*100)+'%':'0%';return[x.init.id,x.obj.name,x.obj.code,x.init.name,v5InitiativeMaturity(x.init).level,v5InitiativeIsExecutable(x.init)?'Sí':'No',x.init.owner,x.init.dueDate,x.init.status,x.init.priority,calcActionsProgress(x.init.actions)+'%',`${fmtNum(d.doneWeight,1)} / ${fmtNum(d.totalWeight,1)} pts`,x.init.impactKpi,x.init.expectedImpact,x.init.realImpact,calcInitiativeEfficiency(x.init)+'%',x.init.redundant,x.init.competes,x.init.problem,x.init.rootCause,x.init.hypothesis,x.init.successCriteria,x.init.evidenceRequired,x.init.benefitExpected,x.init.benefitReal,x.init.benefitOwner,x.init.benefitDate,x.init.budget,x.init.spent,use,x.init.detail];})]);
+
+  sections.push(['Acciones',['ID','Objetivo','Iniciativa','Acción','Responsable','Estatus','Fecha compromiso','Días','Vencida','Peso','Aporte al avance','Criticidad','Detalle','Criterio cierre','Evidencia requerida','Evidencia cierre','Calidad cierre','Bloqueador','Dependencia'],actions.map(x=>[x.act.id,x.obj.name,x.init.name,x.act.title,x.act.responsible,x.act.status,x.act.dueDate,daysText(x.act.dueDate),isOverdue(x.act.dueDate,x.act.status)?'Sí':'No',v5ActionWeight(x.act),v5ActionContribution(x.act,x.init.actions)+'%',x.act.criticality,x.act.detail,x.act.closeCriteria,x.act.evidenceRequired,x.act.evidence,v5ActionCloseQuality(x.act),x.act.blocker,x.act.dependency])]);
+
+  sections.push(['Mapeo Relaciones',['Objetivo origen','Planeación origen','Objetivo destino','Planeación destino','Tipo relación','Intensidad','Riesgo','Tiempo impacto','Responsable relación','Justificación / evidencia'],objs.flatMap(o=>asArray(o.relations).map(r=>{const found=findObjectiveGlobal(r.targetId);return[o.name,plan.name,found?.objective?.name||objectiveName(r.targetId)||'',found?.plan?.name||'',r.type,r.intensity,r.risk,r.time,r.owner,r.evidence];}))]);
+
+  sections.push(['Alineación',['Objetivo','Score IAE','Lectura','Fórmula','Por qué','Alertas consideradas'],objs.map(o=>{const a=alignmentAssessment(o);return[o.name,a.score+'%',a.reading,a.formula,a.why,asArray(a.flags).join(' | ')];})]);
+  sections.push(['Alineación Detalle',['Objetivo','Componente','Score componente','Peso','Puntos aportados','Máximo puntos','Cálculo','Fuente'],objs.flatMap(o=>alignmentAssessment(o).items.map(i=>[o.name,i.key,Math.round(i.score)+'%',i.weight+'%',i.points,i.maxPoints,i.calcLabel,i.source]))]);
+
+  sections.push(['Impacto',['Objetivo','Impacto objetivo','Iniciativa','Impacto esperado','Impacto real','Eficiencia iniciativa','KPI impactado','Estado KPI','Portfolio','Prioridad','Beneficio esperado','Beneficio real'],inits.map(x=>{const k=initiativeKpiStatus(x.obj,x.init);return[x.obj.name,Math.round(calcImpactScore(x.obj))+'%',x.init.name,x.init.expectedImpact,x.init.realImpact,calcInitiativeEfficiency(x.init)+'%',x.init.impactKpi,k.label,initiativePortfolioLabel(x.init),x.init.priority,x.init.benefitExpected,x.init.benefitReal];})]);
+
+  sections.push(['Brechas',['Objetivo','Estado actual','Estado objetivo','Brecha / Gap','Riesgo declarado','Riesgo inferido','Punto ruptura','Acción correctiva','Costo de no lograrlo','Umbral intervención','Señales'],objs.map(o=>[o.name,o.currentState,o.targetState,o.gap,o.gapRisk,inferGapRisk(o),o.breakpoint,o.correctionAction,o.costOfInaction,o.interventionThreshold,alignmentAlertFlags(o).join(' | ')])]);
+
+  sections.push(['TOM',['Objetivo','Score TOM','Tipo proceso TOM','Dueño end-to-end','Proceso TOM','Capacidades','Tecnología habilitadora','Gobernanza / escalamiento','Flujo de decisiones'],objs.map(o=>[o.name,tomScore(o)+'%',o.tomType,o.tomRole,o.tomProcess,o.tomCapabilities,o.tomTech,o.tomGovernance,o.decisionFlow])]);
+
+  sections.push(['Beneficios',['Objetivo','Iniciativa','Dueño beneficio','Fecha beneficio','Beneficio esperado','Beneficio real','Evidencia requerida','Presupuesto','Gastado','Uso presupuesto','Impacto esperado','Impacto real','Eficiencia impacto','Madurez'],inits.map(x=>{const use=num(x.init.budget)>0?Math.round((num(x.init.spent)/num(x.init.budget))*100)+'%':'0%';return[x.obj.name,x.init.name,x.init.benefitOwner,x.init.benefitDate,x.init.benefitExpected,x.init.benefitReal,x.init.evidenceRequired,x.init.budget,x.init.spent,use,x.init.expectedImpact,x.init.realImpact,calcInitiativeEfficiency(x.init)+'%',v5InitiativeMaturity(x.init).level];})]);
+
+  sections.push(['Alertas',['Nivel','Tipo','Título','Objetivo','Iniciativa','Acción','KPI','Causa','Impacto','Decisión requerida','Señales'],alerts.map(a=>[a.level,a.kind,a.title,a.obj?.name||'',a.init?.name||'',a.act?.title||'',a.kpi?.name||'',a.cause,a.impact,a.decision,asArray(a.signals).join(' | ')])]);
+
+  sections.push(['Comité',['Título','Origen','Tipo','Prioridad','Estatus','Responsable','Fecha','Duración','Objetivo relacionado','Iniciativa relacionada','Contexto','Decisión requerida','Salida esperada / notas'],asArray(plan.agenda).map(a=>[a.title,a.origin||'Manual',a.type,a.priority,a.status,a.owner,a.dueDate,a.duration,objectiveDisplayName(a.linkedObjective)||'',a.linkedInitiative||'',a.context,a.decision,a.notes])]);
+
+  sections.push(['Minutas',['ID','Título','Tipo reunión','Fecha','Próxima reunión','Estatus','Preside','Secretario / registra','Asistentes','Tema Comité relacionado','Resumen discusión','Decisiones tomadas','Notas finales','Creada','Actualizada'],asArray(plan.minutes).map(m=>[m.id,m.title,m.type,m.date,m.nextMeetingDate,m.status,m.chair,m.secretary,arrCsv(m.attendees),m.linkedAgenda,m.summary,m.decisions,m.notes,m.createdAt,m.updatedAt])]);
+
+  sections.push(['Acuerdos Minuta',['Minuta','Acuerdo','Responsable','Área','Fecha compromiso','Prioridad','Estatus','Criterio cierre','Contexto / evidencia requerida','Regresa próxima reunión','Agenda origen'],asArray(plan.minutes).flatMap(m=>asArray(m.agreements).map(a=>[m.title,a.title,a.owner,a.area,a.dueDate,a.priority,a.status,a.criteria,a.context,a.followUpNext,a.sourceAgendaId]))]);
+
+  sections.push(['Compromisos',['ID','Título','Responsable','Área','Fecha compromiso','Prioridad','Estatus','Criterio cierre','Contexto','Creado'],asArray(plan.commitments).map(c=>[c.id,c.title,c.owner,c.area,c.dueDate,c.priority,c.status,c.criteria,c.context,c.createdAt])]);
+
+  sections.push(['Checklist',['Objetivo','Punto','Fecha compromiso','Terminado','Creado'],objs.flatMap(o=>asArray(o.checklist).map(c=>[o.name,c.title,c.dueDate,c.done?'Sí':'No',c.createdAt]))]);
+  sections.push(['Adjuntos',['Objetivo','Archivo','Tipo','Tamaño bytes','Fecha carga','Tiene vista/descarga'],objs.flatMap(o=>asArray(o.attachments).map(f=>[o.name,f.name,f.type,f.size,f.addedAt,f.dataUrl?'Sí':'No']))]);
+  sections.push(['Recordatorios',['Objetivo','Recordatorio','Fecha','Hora','Notas','Creado'],objs.flatMap(o=>asArray(o.reminders).map(r=>[o.name,r.title,r.date,r.time,r.notes,r.createdAt]))]);
+  sections.push(['Enlaces',['Objetivo','Título','URL','Notas','Creado'],objs.flatMap(o=>asArray(o.links).map(l=>[o.name,l.title,l.url,l.notes,l.createdAt]))]);
+  sections.push(['Historial Bitácora',['Objetivo','Fecha / hora','Actor','Acción','Detalle'],objs.flatMap(o=>asArray(o.history).map(h=>[o.name,h.at,h.actor,h.action,h.detail]))]);
+
+  function xmlEsc(v){
+    if(v===null||v===undefined) return '';
+    if(Array.isArray(v)) v=v.join(', ');
+    if(typeof v==='object'){
+      try{ v=JSON.stringify(v); }catch(e){ v=String(v); }
+    }
+    return String(v).replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g,' ').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  const usedNames=new Set();
+  function sheetName(name){
+    let base=String(name||'Hoja').replace(/[\\/\?\*\[\]:]/g,' ').trim().slice(0,31)||'Hoja';
+    let out=base,idx=2;
+    while(usedNames.has(out)){ out=(base.slice(0,28)+' '+idx).slice(0,31); idx++; }
+    usedNames.add(out); return out;
+  }
+  function rowXml(row,style=''){
+    return `<Row>${row.map(c=>`<Cell${style?` ss:StyleID="${style}"`:''}><Data ss:Type="String">${xmlEsc(c)}</Data></Cell>`).join('')}</Row>`;
+  }
+  function worksheetXml(title,headers,rows){
+    return `<Worksheet ss:Name="${xmlEsc(sheetName(title))}"><Table>${rowXml(headers,'sHeader')}${rows.map(r=>rowXml(r)).join('')}</Table><WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel"><FreezePanes/><FrozenNoSplit/><SplitHorizontal>1</SplitHorizontal><TopRowBottomPane>1</TopRowBottomPane><ActivePane>2</ActivePane></WorksheetOptions></Worksheet>`;
+  }
+  const workbook=`<?xml version="1.0"?><?mso-application progid="Excel.Sheet"?><Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet" xmlns:html="http://www.w3.org/TR/REC-html40"><DocumentProperties xmlns="urn:schemas-microsoft-com:office:office"><Author>Ximpler EDGE</Author><Created>${new Date().toISOString()}</Created><Version>16.00</Version></DocumentProperties><Styles><Style ss:ID="Default" ss:Name="Normal"><Alignment ss:Vertical="Top"/><Font ss:FontName="Arial" ss:Size="10"/></Style><Style ss:ID="sHeader"><Font ss:FontName="Arial" ss:Size="10" ss:Bold="1"/><Interior ss:Color="#E6F4F0" ss:Pattern="Solid"/><Alignment ss:Vertical="Top" ss:WrapText="1"/></Style></Styles>${sections.map(s=>worksheetXml(s[0],s[1],s[2])).join('')}</Workbook>`;
+  downloadFile(`reporte_general_v5_4_${txt(plan.name).replace(/[^a-z0-9]+/gi,'_')}_${todayISO()}.xls`,workbook,'application/vnd.ms-excel;charset=utf-8');
 };
 
 // Hook de arranque v5
