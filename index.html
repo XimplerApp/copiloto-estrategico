@@ -414,6 +414,20 @@ tbody tr:hover td{background:#fafbfc}
 .align-row-risk.mid{border-left-color:var(--amber)}
 .align-row-risk.high{border-left-color:var(--em)}
 .align-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}
+.align-components-grid{display:grid;grid-template-columns:repeat(2,minmax(140px,1fr));gap:8px;min-width:310px}
+.align-component{border:1px solid var(--border);background:var(--surface2);border-radius:var(--r-sm);padding:8px}
+.align-component-top{display:flex;justify-content:space-between;gap:8px;align-items:center;font-size:10px;font-weight:800;color:var(--text2);text-transform:uppercase;letter-spacing:.03em}
+.align-component-track{height:5px;border-radius:var(--r-full);background:#e5e7eb;overflow:hidden;margin-top:6px}
+.align-component-fill{height:100%;border-radius:var(--r-full)}
+.align-component-weight{display:inline-flex;margin-top:6px;border-radius:var(--r-full);padding:3px 7px;font-size:9px;font-weight:800}
+.align-reading{display:inline-flex;border-radius:var(--r-full);padding:5px 9px;font-size:12px;font-weight:800;margin-bottom:7px}
+.align-reading.high{background:var(--em-s);color:var(--em)}
+.align-reading.mid{background:var(--amber-s);color:var(--amber)}
+.align-reading.low{background:var(--rose-s);color:var(--rose)}
+.align-why{font-size:11px;color:var(--muted);line-height:1.5;margin-top:4px;max-width:720px}
+.align-flags{display:flex;gap:5px;flex-wrap:wrap;margin-top:7px}
+.align-evidence-note{font-size:11px;color:var(--muted);line-height:1.45;margin-top:8px;min-width:180px}
+@media(max-width:900px){.align-components-grid{grid-template-columns:1fr}}
 
 /* ── GAP RIESGO INFERIDO ── */
 .gap-diverge-alert{background:var(--amber-s);border:1px solid var(--amber-b);border-radius:var(--r-sm);padding:7px 9px;font-size:11px;color:var(--amber);font-weight:600;margin-top:6px}
@@ -1117,13 +1131,74 @@ function calcImpactScore(obj){
   return clamp(avgProgress,0,100);
 }
 
-function calcAlignmentScore(obj){
+function alignmentDimensionScore(value){
   const map={alto:100,medio:60,bajo:25};
-  const evidenceMap={'sin evidencia':0,'declarativa':25,'parcial':55,'documentada':80,'validada':100};
-  const levels=[obj.budgetAlignment,obj.processAlignment,obj.structureAlignment,obj.indicatorAlignment];
-  const base=levels.reduce((a,x)=>a+(map[txt(x).toLowerCase()]??60),0)/(levels.length||1);
-  const evidence=evidenceMap[txt(obj.evidenceLevel).toLowerCase()]??55;
-  return clamp((base*0.8)+(evidence*0.2),0,100);
+  return map[txt(value).toLowerCase()]??60;
+}
+function evidenceAlignmentScore(value){
+  const map={'sin evidencia':0,'declarativa':25,'parcial':55,'documentada':80,'validada':100};
+  return map[txt(value).toLowerCase()]??55;
+}
+function calcKpiAlignmentComponent(obj){
+  const manual=alignmentDimensionScore(obj.indicatorAlignment);
+  const kpis=asArray(obj.indicators||obj.kpis);
+  if(!kpis.length) return Math.min(manual,30);
+  const stale=kpis.filter(k=>kpiConfidence(k).level==='stale').length;
+  const penalty=kpis.length?Math.round((stale/kpis.length)*25):25;
+  return clamp(manual-penalty,0,100);
+}
+function calcStructureAlignmentComponent(obj){
+  const base=alignmentDimensionScore(obj.structureAlignment);
+  const penalty=txt(obj.leader).trim()?0:20;
+  return clamp(base-penalty,0,100);
+}
+function calcStrategicAlignmentBreakdown(obj){
+  const operational=calcObjectiveOperationalProgress(obj);
+  const items=[
+    {key:'Presupuesto',score:alignmentDimensionScore(obj.budgetAlignment),weight:15,source:`Alineación presupuesto: ${obj.budgetAlignment||'Medio'}`},
+    {key:'Procesos',score:alignmentDimensionScore(obj.processAlignment),weight:15,source:`Alineación procesos: ${obj.processAlignment||'Medio'}`},
+    {key:'Estructura',score:calcStructureAlignmentComponent(obj),weight:15,source:`Alineación estructura/responsable: ${obj.structureAlignment||'Medio'}${txt(obj.leader).trim()?'':' · penaliza falta de responsable'}`},
+    {key:'KPIs',score:calcKpiAlignmentComponent(obj),weight:20,source:`Alineación indicadores: ${obj.indicatorAlignment||'Medio'} · ${asArray(obj.indicators||obj.kpis).length} KPI(s)`},
+    {key:'TOM',score:tomScore(obj),weight:15,source:'Completitud del modelo operativo objetivo'},
+    {key:'Avance operativo',score:operational,weight:10,source:'Promedio de avance de iniciativas por acciones terminadas'},
+    {key:'Evidencia',score:evidenceAlignmentScore(obj.evidenceLevel),weight:10,source:`Nivel de evidencia: ${obj.evidenceLevel||'Parcial'}`}
+  ];
+  const score=Math.round(clamp(items.reduce((acc,i)=>acc+(i.score*(i.weight/100)),0),0,100));
+  return {score,items};
+}
+function alignmentAlertFlags(obj){
+  const flags=[];
+  const actionStats=objectiveActionStats(obj);
+  const stale=(obj.indicators||[]).filter(k=>kpiConfidence(k).level==='stale').length;
+  const disconnected=(obj.initiatives||[]).filter(i=>!i.impactKpi).length;
+  const risk=calcRiskScore(obj);
+  const tom=tomScore(obj);
+  if(actionStats.overdue>0) flags.push(`${actionStats.overdue} acción(es) vencida(s)`);
+  if(stale>0) flags.push(`${stale} KPI(s) sin actualización confiable`);
+  if(disconnected>0) flags.push(`${disconnected} iniciativa(s) sin KPI impactado`);
+  if(risk>=75) flags.push(`riesgo estratégico alto (${Math.round(risk)}%)`);
+  if(tom<50) flags.push(`TOM incompleto (${tom}%)`);
+  return flags;
+}
+function alignmentAssessment(obj){
+  const bd=calcStrategicAlignmentBreakdown(obj);
+  const score=bd.score;
+  const flags=alignmentAlertFlags(obj);
+  let reading='',tone='mid';
+  if(score>=85){ reading='Alineación sólida'; tone='high'; }
+  else if(score>=70){ reading='Alineación adecuada con ajustes menores'; tone='high'; }
+  else if(score>=50){ reading='Alineación parcial; revisar'; tone='mid'; }
+  else if(score>=30){ reading='Alineación débil; requiere intervención'; tone='low'; }
+  else { reading='Desalineación crítica'; tone='low'; }
+  if(flags.length&&score>=70){ reading='Alineación condicionada por alertas operativas'; tone='mid'; }
+  else if(flags.length&&score<70){ reading='Alineación comprometida por señales operativas'; tone='low'; }
+  const weakest=[...bd.items].sort((a,b)=>a.score-b.score).slice(0,3).map(i=>`${i.key} ${Math.round(i.score)}%`).join(', ');
+  const formula='IAE = Presupuesto 15% + Procesos 15% + Estructura/Responsable 15% + KPIs 20% + TOM 15% + Avance operativo 10% + Evidencia 10%';
+  const why=`Resultado ${score}% calculado con ponderación ejecutiva. Factores que más presionan la calificación: ${weakest||'sin debilidades relevantes'}. ${flags.length?`Alertas consideradas: ${flags.join('; ')}.`:'No se detectaron alertas operativas críticas.'}`;
+  return {score,reading,tone,formula,why,items:bd.items,flags};
+}
+function calcAlignmentScore(obj){
+  return alignmentAssessment(obj).score;
 }
 
 function riskLevelValue(level){
@@ -1715,22 +1790,20 @@ function alignLevelClass(v){
 function alignPill(v,extra=''){
   return `<span class="align-pill ${extra||alignLevelClass(v)}">${esc(v||'—')}</span>`;
 }
-function alignmentScore(o){
-  const vals=[o.budgetAlignment,o.processAlignment,o.structureAlignment,o.indicatorAlignment].map(v=>txt(v).toLowerCase()==='alto'?100:txt(v).toLowerCase()==='medio'?60:25);
-  return Math.round(vals.reduce((a,b)=>a+b,0)/vals.length);
-}
 function alignmentRowClass(score){ return score>=75?'high':score>=50?'mid':'low'; }
+function alignComponentMini(item){
+  const cls=item.score>=75?'align-high':item.score>=50?'align-mid':'align-low';
+  return `<div class="align-component" title="${esc(item.source)}"><div class="align-component-top"><span>${esc(item.key)}</span><strong>${Math.round(item.score)}%</strong></div><div class="align-component-track"><div class="align-component-fill" style="width:${clamp(item.score)}%;background:${progressColor(item.score)}"></div></div><div class="align-component-weight ${cls}">${item.weight}% peso</div></div>`;
+}
 function renderAlineacion(){
   const plan=currentPlan();
   const rows=plan.objectives.map(o=>{
-    const levels=[o.budgetAlignment,o.processAlignment,o.structureAlignment,o.indicatorAlignment];
-    const low=levels.filter(x=>txt(x).toLowerCase()==='bajo').length;
-    const high=levels.filter(x=>txt(x).toLowerCase()==='alto').length;
-    const score=alignmentScore(o);
-    const reco=low>0?'Requiere intervención ejecutiva.':high>=3?'Alineación sólida.':'Alineación parcial; revisar.';
-    return `<tr class="align-row-risk ${alignmentRowClass(score)}"><td><div class="align-obj-cell"><div class="align-obj-title" data-action="viewObj" data-obj-id="${esc(o.id)}">${esc(o.name)}</div><div class="obj-sub">${esc(o.theme||objectiveTypeLabel(o.type))}</div><div class="align-score-wrap"><span class="align-pill ${score>=75?'align-high':score>=50?'align-mid':'align-low'}">Alineación ${score}%</span><div class="align-progress"><div class="align-progress-fill" style="width:${clamp(score)}%;background:${progressColor(score)}"></div></div></div><div class="align-actions"><button class="btn btn-secondary btn-xs" data-action="viewObj" data-obj-id="${esc(o.id)}">Ver detalle</button></div></div></td><td>${alignPill(o.budgetAlignment)}</td><td>${alignPill(o.processAlignment)}</td><td>${alignPill(o.structureAlignment)}</td><td>${alignPill(o.indicatorAlignment)}</td><td>${alignPill(o.evidenceLevel,'align-evidence')}</td><td class="align-reco"><strong>${esc(reco)}</strong><div style="margin-top:5px;font-size:11px;color:var(--muted)">${esc(o.alignmentEvidence||o.correctionAction||'Sin notas de evidencia/corrección.')}</div></td></tr>`;
+    const ass=alignmentAssessment(o);
+    const cls=ass.score>=75?'align-high':ass.score>=50?'align-mid':'align-low';
+    const note=o.alignmentEvidence||o.correctionAction||'Sin notas de evidencia/corrección registradas.';
+    return `<tr class="align-row-risk ${alignmentRowClass(ass.score)}"><td><div class="align-obj-cell"><div class="align-obj-title" data-action="viewObj" data-obj-id="${esc(o.id)}">${esc(o.name)}</div><div class="obj-sub">${esc(o.theme||objectiveTypeLabel(o.type))}</div><div class="align-score-wrap"><span class="align-pill ${cls}">IAE ${ass.score}%</span><div class="align-progress"><div class="align-progress-fill" style="width:${clamp(ass.score)}%;background:${progressColor(ass.score)}"></div></div></div><div class="align-actions"><button class="btn btn-secondary btn-xs" data-action="viewObj" data-obj-id="${esc(o.id)}">Ver detalle</button></div></div></td><td><div class="align-components-grid">${ass.items.map(alignComponentMini).join('')}</div></td><td>${alignPill(o.evidenceLevel,'align-evidence')}<div class="align-evidence-note">${esc(note)}</div></td><td class="align-reco"><div class="align-reading ${ass.tone}">${esc(ass.reading)}</div><div class="align-why"><strong>Cómo se calculó:</strong> ${esc(ass.formula)}.</div><div class="align-why"><strong>Por qué llegó a esta lectura:</strong> ${esc(ass.why)}</div>${ass.flags.length?`<div class="align-flags">${ass.flags.map(f=>`<span class="badge b-red">${esc(f)}</span>`).join('')}</div>`:''}</td></tr>`;
   }).join('');
-  $('viewAlineacion').innerHTML=`<div class="section-hero"><h2>Alineación estratégica</h2></div><div class="card table-wrap"><table><thead><tr><th>Objetivo</th><th>Presupuesto</th><th>Procesos</th><th>Estructura</th><th>Indicadores</th><th>Evidencia</th><th>Lectura ejecutiva</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  $('viewAlineacion').innerHTML=`<div class="section-hero"><h2>Alineación estratégica</h2><p>La lectura ahora usa el IAE: Índice de Alineación Estratégica. Combina diseño estratégico, ejecución operativa, TOM, KPIs y evidencia; además explica por qué se llegó a cada interpretación.</p></div><div class="card table-wrap"><table><thead><tr><th>Objetivo</th><th>Componentes del IAE</th><th>Evidencia</th><th>Lectura ejecutiva y lógica</th></tr></thead><tbody>${rows||`<tr><td colspan="4"><div class="empty-box">Sin objetivos registrados.</div></td></tr>`}</tbody></table></div>`;
 }
 
 // ── IMPACTO ──────────────────────────────────────────────────────────
@@ -2299,7 +2372,7 @@ function importJSON(e){
 function exportXLS(){
   const plan=currentPlan(); if(!plan) return;
   const sections=[];
-  sections.push(['Objetivos',['Código','Objetivo','Líder','Estatus','IGEE','Impacto','Alineación','Riesgo %','TOM','Compromiso','Alcance','Brecha','Riesgo declarado','Riesgo inferido'],plan.objectives.map(o=>[o.code,o.name,o.leader,o.status,Math.round(calcObjectiveScore(o))+'%',Math.round(calcImpactScore(o))+'%',Math.round(calcAlignmentScore(o))+'%',Math.round(calcRiskScore(o))+'%',Math.round(tomScore(o))+'%',o.end,`${o.indicators.length} KPIs · ${o.initiatives.length} iniciativas · ${o.initiatives.reduce((a,i)=>a+i.actions.length,0)} acciones`,o.gap,o.gapRisk,inferGapRisk(o)])]);
+  sections.push(['Objetivos',['Código','Objetivo','Líder','Estatus','IGEE','Impacto','IAE','Lectura alineación','Explicación IAE','Riesgo %','TOM','Compromiso','Alcance','Brecha','Riesgo declarado','Riesgo inferido'],plan.objectives.map(o=>{const ass=alignmentAssessment(o);return [o.code,o.name,o.leader,o.status,Math.round(calcObjectiveScore(o))+'%',Math.round(calcImpactScore(o))+'%',ass.score+'%',ass.reading,ass.formula+' | '+ass.why,Math.round(calcRiskScore(o))+'%',Math.round(tomScore(o))+'%',o.end,`${o.indicators.length} KPIs · ${o.initiatives.length} iniciativas · ${o.initiatives.reduce((a,i)=>a+i.actions.length,0)} acciones`,o.gap,o.gapRisk,inferGapRisk(o)];})]);
   sections.push(['KPIs',['Objetivo','KPI','Acción','Inicial','Actual','Meta','Unidad','Avance','Confianza','Última actualización'],plan.objectives.flatMap(o=>o.indicators.map(k=>{const conf=kpiConfidence(k);return[o.name,k.name,k.action,k.initial,k.current,k.target,k.unit,Math.round(calcIndicatorScore(k))+'%',conf.label,k.lastUpdate||'Sin fecha'];}))]);
   sections.push(['Iniciativas',['Objetivo','Iniciativa','Responsable','Estatus','Avance','KPI impactado','Impacto esperado','Impacto real','Redundante','Presupuesto','Gastado'],plan.objectives.flatMap(o=>o.initiatives.map(i=>[o.name,i.name,i.owner,i.status,calcActionsProgress(i.actions)+'%',i.impactKpi,(i.expectedImpact||0)+'%',(i.realImpact||0)+'%',i.redundant,i.budget,i.spent]))]);
   sections.push(['Acciones',['Objetivo','Iniciativa','Acción','Responsable','Estatus','Compromiso','Vencida'],plan.objectives.flatMap(o=>o.initiatives.flatMap(i=>i.actions.map(a=>[o.name,i.name,a.title,a.responsible,a.status,a.dueDate,isOverdue(a.dueDate,a.status)?'Sí':'No'])))]);
